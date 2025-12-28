@@ -208,3 +208,6 @@ __marimo__/
 
 # Visual Studio Code specific
 .vscode/
+
+# Configs
+settings.json
