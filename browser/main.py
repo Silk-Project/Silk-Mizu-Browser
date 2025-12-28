@@ -1,5 +1,7 @@
 import sys
 import os
+import json
+import re
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -21,8 +23,34 @@ from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtGui import QPixmap, QIcon, QAction
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "settings.json")
 VERSION_NUMBER = "0.0.1"
+SEARCH_ENGINE_SEARCH_QUERIES = {
+    "Google":"https://www.google.com/search?q=",
+    "DuckDuckGo":"https://duckduckgo.com/?q="
+}
 start_page = "https://silk-project.github.io/"
+search_engine = "Google"
+default_settings = {
+    "start_page_url":"https://silk-project.github.io/",
+    "search_engine":"Google"
+}
+
+# Load settings.json
+if os.path.exists(CONFIG_PATH):
+    with open(CONFIG_PATH, "r") as f:
+        d = json.load(f)
+
+        if d["start_page_url"] and d["search_engine"]:
+            start_page = d["start_page_url"]
+            search_engine = d["search_engine"]
+        else:
+            print("Failed to load settings.json.")
+        
+else:
+    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(default_settings, f, indent=4)
 
 class WebEngine():
     def __init__(self, window, url_bar, prevbtn, nextbtn):
@@ -38,8 +66,15 @@ class WebEngine():
         self.update_nav_btn_status()
     
     def load_page(self, url):
-        self.window.setUrl(QUrl(url))
-        self.url_bar.setText(url)
+        # Load URL if valid, else use the default search engine
+        if self.valid_url(url):
+            self.window.setUrl(QUrl(url))
+        else:
+            # Get url for search engine
+            search_url = SEARCH_ENGINE_SEARCH_QUERIES.get(search_engine) + url
+            self.window.setUrl(QUrl(search_url))
+        
+        self.update_url_bar()
         self.update_nav_btn_status()
           
     def update_url_bar(self):
@@ -51,6 +86,18 @@ class WebEngine():
         # Activate / Deactivate Back and Forward Buttons
         self.prevbtn.setEnabled(True if self.window.history().canGoBack() == True else False)
         self.nextbtn.setEnabled(True if self.window.history().canGoForward() == True else False)
+    
+    def valid_url(self, url):
+        # Regex for standard http/https URLs
+        regex = re.compile(
+            r'^(?:http|ftp)s?://' # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' # domain...
+            r'localhost|' # localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+            r'(?::\d+)?' # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
+        return re.match(regex, url) is not None
     
     def back_page(self):
         self.window.history().back()
@@ -147,6 +194,11 @@ class BrowserWindow(QMainWindow):
         start_page_lineedit.setMinimumWidth(200)
         settings_layout.addRow("Start Page: ", start_page_lineedit)
 
+        search_engine_combobox = QComboBox()
+        search_engine_combobox.addItems(["Google", "DuckDuckGo"])
+        search_engine_combobox.setCurrentText(search_engine)
+        settings_layout.addRow("Search Engine: ", search_engine_combobox)
+
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         button_box.accepted.connect(dlg.accept)
         button_box.rejected.connect(dlg.reject)
@@ -157,9 +209,14 @@ class BrowserWindow(QMainWindow):
         dlg.setLayout(layout)
 
         if dlg.exec():
-            print("Save")
-        
+            settings = {
+                "start_page_url":start_page_lineedit.text(),
+                "search_engine":search_engine_combobox.currentText()
+            }
 
+            with open(CONFIG_PATH, "w") as f:
+                json.dump(settings, f, indent=4)
+        
     def about_dialog(self):
         dlg = QDialog(self)
         dlg.setWindowTitle("About")
