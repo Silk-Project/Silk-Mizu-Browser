@@ -35,9 +35,8 @@ SEARCH_ENGINE_SEARCH_QUERIES = {
     "Ecosia":"https://www.ecosia.org/search?method=index&q=",
     "Yahoo":"https://search.yahoo.com/search?p="
 }
-start_page = "https://silk-project.github.io/"
-search_engine = "Google"
-javascript_enabled = True
+
+current_settings = {}
 default_settings = {
     "start_page_url":"https://silk-project.github.io/",
     "search_engine":"Google",
@@ -50,11 +49,11 @@ if os.path.exists(CONFIG_PATH):
         d = json.load(f)
 
         try:
-            start_page = d["start_page_url"]
-            search_engine = d["search_engine"]
-            javascript_enabled = d["javascript_enabled"]
+            for setting, value in d.items():
+                current_settings[setting] = value
         except KeyError:
-            print("Failed to load settings.json.")
+            current_settings = default_settings
+            print("Failed to load settings.json. Using default settings.")
         
 else:
     os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
@@ -62,35 +61,49 @@ else:
         json.dump(default_settings, f, indent=4)
 
 class WebEngine():
-    def __init__(self, window, url_bar, prevbtn, nextbtn, page_progress, zoom_label):
+    def __init__(self, window, url_bar, prevbtn, nextbtn, reloadbtn, page_progress, zoom_label):
         self.window = window
         self.url_bar = url_bar
         self.prevbtn = prevbtn
         self.nextbtn = nextbtn
+        self.reloadbtn = reloadbtn
         self.page_progress = page_progress
         self.zoom_label = zoom_label
+
+        self.page_is_loading = False
 
         self.init_engine()
     
     def init_engine(self):
-        self.load_page(start_page)
+        self.load_page(current_settings["start_page_url"])
         self.update_nav_btn_status()
     
     def load_page(self, url):
         # Load URL if valid, else use the default search engine
         processed_url = QUrl.fromUserInput(url).toString()
-        if self.valid_url(processed_url):
+        if self.valid_url(processed_url) or self.valid_url(url):
             self.window.setUrl(QUrl(processed_url))
         else:
             # Get url for search engine
             search_url = SEARCH_ENGINE_SEARCH_QUERIES.get(search_engine) + url
             self.window.setUrl(QUrl(search_url))
         
+        self.page_is_loading = True
         self.update_url_bar()
         self.update_nav_btn_status()
     
+    def get_page_load_status(self):
+        return self.page_is_loading
+    
     def reload_page(self):
+        self.page_is_loading = True
         self.window.reload()
+        self.update_nav_btn_status()
+    
+    def stop_page_load(self):
+        self.page_is_loading = False
+        self.window.stop()
+        self.update_nav_btn_status()
           
     def update_url_bar(self):
         url = self.window.url().toString()
@@ -99,11 +112,19 @@ class WebEngine():
     
     def update_nav_btn_status(self):
         # Activate / Deactivate Back and Forward Buttons
-        self.prevbtn.setEnabled(True if self.window.history().canGoBack() == True else False)
-        self.nextbtn.setEnabled(True if self.window.history().canGoForward() == True else False)
+        self.prevbtn.setEnabled(self.window.history().canGoBack())
+        self.nextbtn.setEnabled(self.window.history().canGoForward())
+
+        # Update reload / stop button
+        if self.page_is_loading:
+            self.reloadbtn.setIcon(qta.icon("ei.remove"))
+        else:
+            self.reloadbtn.setIcon(qta.icon("fa6s.arrow-rotate-right"))
     
     def page_load_finished(self):
+        self.page_is_loading = False
         self.page_progress.setValue(0)
+        self.update_nav_btn_status()
     
     def update_page_progress(self, prog):
         self.page_progress.setValue(prog)
@@ -145,7 +166,9 @@ class WebEngine():
         self.update_zoom_label()
     
     def update_engine(self):
-        self.window.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, javascript_enabled)
+        global current_settings
+        self.window.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled,
+                                            current_settings["javascript_enabled"])
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
@@ -295,6 +318,7 @@ class BrowserWindow(QMainWindow):
                                     self.url_bar,
                                     self.prev_page_btn,
                                     self.next_page_btn,
+                                    self.reload_page_btn,
                                     self.page_progressbar,
                                     self.zoom_factor_label)
         self.web_widget.urlChanged.connect(self.web_engine.update_url_bar)
@@ -307,11 +331,10 @@ class BrowserWindow(QMainWindow):
         self.web_engine.load_page(url)
     
     def request_reload_stop_page(self):
-        if True:
-            self.web_engine.reload_page()
+        if self.web_engine.page_is_loading:
+            self.web_engine.stop_page_load()
         else:
-            # ...
-            self.web_engine.stop_page()
+            self.web_engine.reload_page()
     
     def request_back_page(self):
         self.web_engine.back_page()
@@ -329,9 +352,7 @@ class BrowserWindow(QMainWindow):
         self.web_engine.scale_page_reset()
     
     def settings_dialog(self):
-        global start_page
-        global search_engine
-        global javascript_enabled
+        global current_settings
 
         dlg = QDialog(self)
         dlg.setWindowTitle("Settings")
@@ -346,17 +367,17 @@ class BrowserWindow(QMainWindow):
         settings_layout.addRow(title_label)
 
         start_page_lineedit = QLineEdit()
-        start_page_lineedit.setText(start_page)
+        start_page_lineedit.setText(current_settings["start_page_url"])
         start_page_lineedit.setMinimumWidth(200)
         settings_layout.addRow("Start page: ", start_page_lineedit)
 
         search_engine_combobox = QComboBox()
         search_engine_combobox.addItems(["Google", "DuckDuckGo", "Brave", "Ecosia", "Yahoo"])
-        search_engine_combobox.setCurrentText(search_engine)
+        search_engine_combobox.setCurrentText(current_settings["search_engine"])
         settings_layout.addRow("Search engine: ", search_engine_combobox)
 
         javascript_checkbox = QCheckBox()
-        javascript_checkbox.setChecked(javascript_enabled)
+        javascript_checkbox.setChecked(current_settings["javascript_enabled"])
         settings_layout.addRow("Javascript enabled", javascript_checkbox)
 
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -373,16 +394,18 @@ class BrowserWindow(QMainWindow):
             search_engine = search_engine_combobox.currentText()
             javascript_enabled = javascript_checkbox.isChecked()
 
-            settings = {
+            updated_settings = {
                 "start_page_url":start_page,
                 "search_engine":search_engine,
                 "javascript_enabled":javascript_enabled
             }
 
+            current_settings = updated_settings
+
             self.update_web_engine()
 
             with open(CONFIG_PATH, "w") as f:
-                json.dump(settings, f, indent=4)
+                json.dump(updated_settings, f, indent=4)
     
     def update_web_engine(self):
         self.web_engine.update_engine()
