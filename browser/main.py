@@ -19,7 +19,8 @@ from PyQt6.QtWidgets import (
     QLabel,
     QDialogButtonBox,
     QProgressBar,
-    QSizePolicy
+    QListWidget,
+    QListWidgetItem
 )
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtWebEngineWidgets import QWebEngineView
@@ -29,6 +30,7 @@ import qtawesome as qta
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "settings.json")
+BOOKMARKS_PATH = os.path.join(SCRIPT_DIR, "config", "bookmarks.json")
 VERSION_NUMBER = "0.2.3"
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
@@ -43,11 +45,13 @@ default_settings = {
     "start_page_url":"https://silk-project.github.io/",
     "search_engine":"Google",
     "javascript_enabled":True,
-    "default_font_size":16,
-    "bookmarks":{
-        "Google":"https://google.com/",
-        "Wikipedia":"https://wikipedia.org/"
-    }
+    "default_font_size":16
+}
+
+current_bookmarks = {}
+default_bookmarks = {
+    "Google":"https://google.com/",
+    "Wikipedia":"https://wikipedia.org/"
 }
 
 # Load settings.json
@@ -58,6 +62,7 @@ if os.path.exists(CONFIG_PATH):
         try:
             for setting, value in d.items():
                 current_settings[setting] = value
+            print(current_settings)
         except KeyError:
             current_settings = default_settings
             print("Failed to load settings.json. Using default settings.")
@@ -67,6 +72,24 @@ else:
     with open(CONFIG_PATH, "w") as f:
         json.dump(default_settings, f, indent=4)
     current_settings = default_settings
+
+# Load bookmarks.json
+if os.path.exists(BOOKMARKS_PATH):
+    with open(BOOKMARKS_PATH, "r") as f:
+        d = json.load(f)
+
+        try:
+            for name, url in d.items():
+                current_bookmarks[name] = url
+            print(current_bookmarks)
+        except KeyError:
+            current_bookmarks = default_bookmarks
+            print("Failed to load bookmarks.json. Using default bookmarks.")
+else:
+    os.makedirs(os.path.dirname(BOOKMARKS_PATH), exist_ok=True)
+    with open(BOOKMARKS_PATH, "w") as f:
+        json.dump(default_bookmarks, f, indent=4)
+    current_bookmarks = default_bookmarks
 
 class WebEngine():
     def __init__(self, window, url_bar, prevbtn, nextbtn, reloadbtn, page_progress, zoom_label):
@@ -184,6 +207,129 @@ class WebEngine():
         settings.setFontSize(QWebEngineSettings.FontSize.DefaultFontSize,
                              current_settings["default_font_size"])
 
+class ManageBookmarksDialog(QDialog):
+    def __init__(self, parent, passed_bookmarks):
+        super().__init__(parent)
+        self.setWindowTitle("Manage Bookmarks")
+        self.setFixedSize(400, 300)
+
+        # Temporary copy of bookmarks for editing
+        self.temp_bookmarks = []
+        for name, url in passed_bookmarks.items():
+            self.temp_bookmarks.append({'name':name, 'url':url})
+
+        self.init_ui()
+
+        # Select first item if exists
+        if self.list_widget.count() > 0:
+            self.list_widget.setCurrentRow(0)
+    
+    def init_ui(self):
+        self.setWindowTitle("Manage Bookmarks")
+        self.setFixedSize(400, 300)
+
+        layout = QVBoxLayout(self)
+        content_layout = QHBoxLayout()
+
+        # Title
+        title_label = QLabel("Manage Bookmarks")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px")
+        layout.addWidget(title_label)
+
+        # Left side: Bookmark list
+        self.list_widget = QListWidget()
+        for b in self.temp_bookmarks:
+            self.list_widget.addItem(b['name'])
+
+        self.list_widget.currentRowChanged.connect(self.load_bookmark_to_inputs)
+        content_layout.addWidget(self.list_widget, 1)
+
+        # Right side: Bookmark actions
+        action_layout = QVBoxLayout()
+
+        add_btn = QPushButton("+ Add New")
+        add_btn.clicked.connect(self.add_bookmark)
+        action_layout.addWidget(add_btn)
+
+        delete_btn = QPushButton("- Delete Selected")
+        delete_btn.clicked.connect(self.delete_bookmark)
+        action_layout.addWidget(delete_btn)
+
+        action_layout.addStretch(1)
+
+        # Middle: Live editor of selected bookmark
+        edit_layout = QFormLayout()
+        edit_layout.setContentsMargins(0, 5, 0, 5)
+
+        self.name_lineedit = QLineEdit()
+        self.name_lineedit.textEdited.connect(self.sync_data_live)
+        edit_layout.addRow("Bookmark Name: ", self.name_lineedit)
+
+        self.url_lineedit = QLineEdit()
+        self.url_lineedit.textEdited.connect(self.sync_data_live)
+        edit_layout.addRow("Bookmark URL: ", self.url_lineedit)
+
+        # Save / Cancel buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        # Assemble layouts
+        content_layout.addLayout(action_layout, 0)
+
+        layout.addLayout(content_layout)
+        layout.addLayout(edit_layout)
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+    
+    def load_bookmark_to_inputs(self, row):
+        """Switches the editor to show the data for the selected row."""
+        # Block signals so setting the text doesn't trigger sync_data_live
+        self.name_lineedit.blockSignals(True)
+        self.url_lineedit.blockSignals(True)
+        
+        if row >= 0:
+            bm = self.temp_bookmarks[row]
+            self.name_lineedit.setText(bm['name'])
+            self.url_lineedit.setText(bm['url'])
+            self.name_lineedit.setEnabled(True)
+            self.url_lineedit.setEnabled(True)
+        else:
+            self.name_lineedit.clear()
+            self.url_lineedit.clear()
+            self.name_lineedit.setEnabled(False)
+            self.url_lineedit.setEnabled(False)
+            
+        self.name_lineedit.blockSignals(False)
+        self.url_lineedit.blockSignals(False)
+
+    def sync_data_live(self):
+        """Updates the internal list and the Sidebar List UI as the user types."""
+        row = self.list_widget.currentRow()
+        if row >= 0:
+            new_name = self.name_lineedit.text()
+            new_url = self.url_lineedit.text()
+            
+            # Update the temporary data list
+            self.temp_bookmarks[row]['name'] = new_name
+            self.temp_bookmarks[row]['url'] = new_url
+            
+            # Update the list item text live so the user sees the rename
+            self.list_widget.item(row).setText(new_name if new_name else "Untitled")
+
+    def add_bookmark(self):
+        new_bm = {"name": "New Bookmark", "url": "https://"}
+        self.temp_bookmarks.append(new_bm)
+        self.list_widget.addItem(new_bm['name'])
+        self.list_widget.setCurrentRow(self.list_widget.count() - 1)
+
+    def delete_bookmark(self):
+        row = self.list_widget.currentRow()
+        if row >= 0:
+            self.temp_bookmarks.pop(row)
+            self.list_widget.takeItem(row)
+
 class BrowserWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -253,11 +399,12 @@ class BrowserWindow(QMainWindow):
 
         # Bookmarks Menu
         manageBookmarksAction = bookmarkMenu.addAction("Manage bookmarks")
+        manageBookmarksAction.triggered.connect(self.manage_bookmarks_dialog)
         manageBookmarksAction.setShortcut(QKeySequence("Ctrl + shift + o"))
         bookmarkMenu.addAction(manageBookmarksAction)
 
         addPageToBookmarksAction = bookmarkMenu.addAction("Add current page to bookmarks")
-        addPageToBookmarksAction.triggered.connect(self.add_to_bookmarks_dialog)
+        addPageToBookmarksAction.triggered.connect(self.add_current_to_bookmarks_dialog)
         addPageToBookmarksAction.setShortcut(QKeySequence("Ctrl + d"))
         bookmarkMenu.addAction(addPageToBookmarksAction)
 
@@ -311,7 +458,7 @@ class BrowserWindow(QMainWindow):
         self.add_to_bookmarks_btn = QPushButton()
         self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.star"))
         self.add_to_bookmarks_btn.setStyleSheet("padding: 10px;")
-        self.add_to_bookmarks_btn.clicked.connect(self.add_to_bookmarks_dialog)
+        self.add_to_bookmarks_btn.clicked.connect(self.add_current_to_bookmarks_dialog)
         controls_layout.addWidget(self.add_to_bookmarks_btn)
 
         self.settings_btn = QPushButton()
@@ -347,13 +494,18 @@ class BrowserWindow(QMainWindow):
 
     def init_bookmark_bar(self):
         # Bookmark bar
-        global current_settings
         bookmarks_layout = QHBoxLayout()
         self.layout.addLayout(bookmarks_layout, 1, 0)
 
+        # Clear existing bookmarks
+        for i in reversed(range(bookmarks_layout.count())):
+            widget_to_remove = bookmarks_layout.itemAt(i).widget()
+            if widget_to_remove is not None:
+                widget_to_remove.setParent(None)
+
         bookmark_map = {}
 
-        for name, url in current_settings["bookmarks"].items():
+        for name, url in current_bookmarks.items():
             bookmark_btn = QPushButton(name)
             bookmark_btn.setStyleSheet("padding: 5px;")
             bookmark_btn.clicked.connect(lambda checked, url=url: self.request_load_page(url))
@@ -361,6 +513,8 @@ class BrowserWindow(QMainWindow):
             bookmarks_layout.addWidget(bookmark_btn)
 
         bookmarks_layout.addStretch(1)
+
+        print("Bookmark bar initialized with bookmarks:", bookmark_map.keys())
     
     def init_web_engine(self):
         # Web Engine
@@ -405,7 +559,7 @@ class BrowserWindow(QMainWindow):
     def request_scale_page_reset(self):
         self.web_engine.scale_page_reset()
 
-    def add_to_bookmarks_dialog(self):
+    def add_current_to_bookmarks_dialog(self):
         global current_settings
 
         dlg = QDialog(self)
@@ -443,11 +597,26 @@ class BrowserWindow(QMainWindow):
             bookmark_name = name_lineedit.text()
             bookmark_url = url_lineedit.text()
 
-            current_settings["bookmarks"][bookmark_name] = bookmark_url
+            current_bookmarks[bookmark_name] = bookmark_url
 
             with open(CONFIG_PATH, "w") as f:
                 json.dump(current_settings, f, indent=4)
             
+            self.init_bookmark_bar()
+    
+    def manage_bookmarks_dialog(self):
+        global current_bookmarks
+        dlg = ManageBookmarksDialog(self, current_bookmarks)
+
+        if dlg.exec():
+            updated_bookmarks = {b['name']: b['url'] for b in dlg.temp_bookmarks}
+        
+            current_bookmarks = updated_bookmarks
+        
+            # Save to file
+            with open(BOOKMARKS_PATH, "w") as f:
+                json.dump(updated_bookmarks, f, indent=4)
+        
             self.init_bookmark_bar()
     
     def settings_dialog(self):
@@ -503,8 +672,7 @@ class BrowserWindow(QMainWindow):
                 "start_page_url":start_page,
                 "search_engine":search_engine,
                 "javascript_enabled":javascript_enabled,
-                "default_font_size":default_font_size,
-                "bookmarks":current_settings["bookmarks"]
+                "default_font_size":default_font_size
             }
 
             current_settings = updated_settings
