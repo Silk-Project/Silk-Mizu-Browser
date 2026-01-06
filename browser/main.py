@@ -706,11 +706,16 @@ class BrowserWindow(QMainWindow):
         about_label = QLabel(f"Version: {VERSION_NUMBER}\nSilk Project 2025")
         about_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        button_box.accepted.connect(dlg.accept)
+
         dlg_layout.addWidget(logoLabel, alignment=Qt.AlignmentFlag.AlignCenter)
         dlg_layout.addWidget(about_title)
         dlg_layout.addWidget(about_description)
         dlg_layout.addWidget(about_label)
+        dlg_layout.addWidget(button_box)
         dlg.setLayout(dlg_layout)
+        
         dlg.exec()
 
 if __name__ == "__main__":
