@@ -19,8 +19,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QDialogButtonBox,
     QProgressBar,
-    QListWidget,
-    QListWidgetItem
+    QListWidget
 )
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtWebEngineWidgets import QWebEngineView
@@ -31,7 +30,7 @@ import qtawesome as qta
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "settings.json")
 BOOKMARKS_PATH = os.path.join(SCRIPT_DIR, "config", "bookmarks.json")
-VERSION_NUMBER = "0.2.3"
+VERSION_NUMBER = "0.2.4"
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
     "DuckDuckGo":"https://duckduckgo.com/?q=",
@@ -427,23 +426,27 @@ class BrowserWindow(QMainWindow):
         # Browser main controls
         self.prev_page_btn = QPushButton()
         self.prev_page_btn.setIcon(qta.icon("fa6s.arrow-left"))
+        self.prev_page_btn.setProperty("class", "navbtns")
         self.prev_page_btn.setStyleSheet("padding: 10px;")
         self.prev_page_btn.clicked.connect(self.request_back_page)
         controls_layout.addWidget(self.prev_page_btn)
 
         self.next_page_btn = QPushButton()
         self.next_page_btn.setIcon(qta.icon("fa6s.arrow-right"))
+        self.next_page_btn.setProperty("class", "navbtns")
         self.next_page_btn.setStyleSheet("padding: 10px;")
         self.next_page_btn.clicked.connect(self.request_next_page)
         controls_layout.addWidget(self.next_page_btn)
 
         self.reload_page_btn = QPushButton()
         self.reload_page_btn.setIcon(qta.icon("fa6s.arrow-rotate-right"))
+        self.reload_page_btn.setProperty("class", "navbtns")
         self.reload_page_btn.setStyleSheet("padding: 10px;")
         self.reload_page_btn.clicked.connect(self.request_reload_stop_page)
         controls_layout.addWidget(self.reload_page_btn)
 
         self.url_bar = QLineEdit()
+        self.url_bar.setObjectName("url_bar")
         self.url_bar.setStyleSheet("padding: 10px;")
         self.url_bar.clearFocus()
         self.url_bar.returnPressed.connect(self.request_load_page_from_urlbar)
@@ -451,18 +454,21 @@ class BrowserWindow(QMainWindow):
 
         self.load_btn = QPushButton("Go")
         self.load_btn.setIcon(qta.icon("mdi.arrow-right-bold-box"))
+        self.load_btn.setProperty("class", "navbtns")
         self.load_btn.setStyleSheet("padding: 10px;")
         self.load_btn.clicked.connect(self.request_load_page_from_urlbar)
         controls_layout.addWidget(self.load_btn)
 
         self.add_to_bookmarks_btn = QPushButton()
         self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.star"))
+        self.add_to_bookmarks_btn.setProperty("class", "navbtns")
         self.add_to_bookmarks_btn.setStyleSheet("padding: 10px;")
         self.add_to_bookmarks_btn.clicked.connect(self.add_current_to_bookmarks_dialog)
         controls_layout.addWidget(self.add_to_bookmarks_btn)
 
         self.settings_btn = QPushButton()
         self.settings_btn.setIcon(qta.icon("fa5s.cog"))
+        self.settings_btn.setProperty("class", "navbtns")
         self.settings_btn.setStyleSheet("padding: 10px;")
         self.settings_btn.clicked.connect(self.settings_dialog)
         controls_layout.addWidget(self.settings_btn)
@@ -481,6 +487,8 @@ class BrowserWindow(QMainWindow):
 
         self.scale_down_btn = QPushButton()
         self.scale_down_btn.setIcon(qta.icon("ph.magnifying-glass-minus"))
+        self.scale_down_btn.setProperty("class", "navbtns")
+        self.scale_down_btn.setStyleSheet("padding: 5px")
         self.scale_down_btn.clicked.connect(self.request_scale_page_down)
         bottom_bar_layout.addWidget(self.scale_down_btn)
 
@@ -489,6 +497,8 @@ class BrowserWindow(QMainWindow):
 
         self.scale_up_btn = QPushButton()
         self.scale_up_btn.setIcon(qta.icon("ph.magnifying-glass-plus"))
+        self.scale_up_btn.setProperty("class", "navbtns")
+        self.scale_up_btn.setStyleSheet("padding: 5px")
         self.scale_up_btn.clicked.connect(self.request_scale_page_up)
         bottom_bar_layout.addWidget(self.scale_up_btn)
 
@@ -687,7 +697,7 @@ class BrowserWindow(QMainWindow):
         dlg = QDialog(self)
         dlg.setWindowTitle("About")
         dlg_layout = QVBoxLayout()
-        dlg.setFixedSize(240, 270)
+        dlg.setFixedSize(240, 300)
 
         logoLabel = QLabel(self)
         logoLabel.setFixedSize(150, 150)
@@ -703,17 +713,18 @@ class BrowserWindow(QMainWindow):
         about_description = QLabel("A simple PyQT6 browser for Silk and Linux devices.")
         about_description.setWordWrap(True)
         about_description.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        about_label = QLabel(f"Version: {VERSION_NUMBER}\nSilk Project 2025")
+        about_label = QLabel(f"Version: {VERSION_NUMBER}\nSilk Project 2025-26")
         about_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        button_box.setContentsMargins(0, 8, 0, 8)
         button_box.accepted.connect(dlg.accept)
 
         dlg_layout.addWidget(logoLabel, alignment=Qt.AlignmentFlag.AlignCenter)
         dlg_layout.addWidget(about_title)
         dlg_layout.addWidget(about_description)
         dlg_layout.addWidget(about_label)
-        dlg_layout.addWidget(button_box)
+        dlg_layout.addWidget(button_box, alignment=Qt.AlignmentFlag.AlignCenter)
         dlg.setLayout(dlg_layout)
         
         dlg.exec()
@@ -721,6 +732,27 @@ class BrowserWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setApplicationName("Silk Mizu")
+    app.setStyleSheet("""
+.navbtns {
+    background-color: #333;
+    border: 1px solid #444;
+    border-radius: 3px;
+}
+                      
+.navbtns:hover {
+    background-color: #393939;
+}
+
+.navbtns:pressed {
+    background-color: #353535;
+}
+                      
+QLineEdit {
+    background-color: #333;
+    border: 1px solid #444;
+    border-radius: 3px;
+}
+""")
     app.setStyle("breeze")
     window = BrowserWindow()
     window.show()
