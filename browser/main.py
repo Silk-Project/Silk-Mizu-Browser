@@ -19,9 +19,10 @@ from PyQt6.QtWidgets import (
     QLabel,
     QDialogButtonBox,
     QProgressBar,
-    QListWidget
+    QListWidget,
+    QTabWidget
 )
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtCore import Qt, QUrl, QSize
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEngineSettings
 from PyQt6.QtGui import QPixmap, QAction, QKeySequence
@@ -247,11 +248,15 @@ class ManageBookmarksDialog(QDialog):
         # Right side: Bookmark actions
         action_layout = QVBoxLayout()
 
-        add_btn = QPushButton("+ Add New")
+        add_btn = QPushButton("Add New")
+        add_btn.setIcon(qta.icon("fa6s.plus"))
+        add_btn.setIconSize(QSize(16, 16))
         add_btn.clicked.connect(self.add_bookmark)
         action_layout.addWidget(add_btn)
 
-        delete_btn = QPushButton("- Delete Selected")
+        delete_btn = QPushButton("Delete")
+        delete_btn.setIcon(qta.icon("fa6s.minus"))
+        delete_btn.setIconSize(QSize(16, 16))
         delete_btn.clicked.connect(self.delete_bookmark)
         action_layout.addWidget(delete_btn)
 
@@ -635,38 +640,66 @@ class BrowserWindow(QMainWindow):
         dlg.setFixedSize(480, 360)
 
         layout = QGridLayout()
-        settings_layout = QFormLayout()
+
+        # Settings tab widget
+        tabs = QTabWidget()
+
+        # General Tab
+        general_settings = QWidget()
+        general_settings_layout = QFormLayout()
+        general_settings.setLayout(general_settings_layout)
 
         title_label = QLabel("Browser Settings")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px")
-        settings_layout.addRow(title_label)
+        title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding-top: 20px; padding-bottom: 10px;")
+        layout.addWidget(title_label, 0, 0)
 
         start_page_lineedit = QLineEdit()
         start_page_lineedit.setText(current_settings["start_page_url"])
         start_page_lineedit.setMinimumWidth(200)
-        settings_layout.addRow("Start page: ", start_page_lineedit)
+        general_settings_layout.addRow("Start page: ", start_page_lineedit)
 
         search_engine_combobox = QComboBox()
         search_engine_combobox.addItems(["Google", "DuckDuckGo", "Brave", "Ecosia", "Yahoo"])
         search_engine_combobox.setCurrentText(current_settings["search_engine"])
-        settings_layout.addRow("Search engine: ", search_engine_combobox)
+        general_settings_layout.addRow("Search engine: ", search_engine_combobox)
 
-        javascript_checkbox = QCheckBox()
-        javascript_checkbox.setChecked(current_settings["javascript_enabled"])
-        settings_layout.addRow("Javascript enabled: ", javascript_checkbox)
+        # Display settings
+        display_settings = QWidget()
+        display_settings_layout = QFormLayout()
+        display_settings.setLayout(display_settings_layout)
 
         font_size_spinbox = QSpinBox()
         font_size_spinbox.setRange(10, 80)
         font_size_spinbox.setValue(current_settings["default_font_size"])
-        settings_layout.addRow("Default font size: ", font_size_spinbox)
+        display_settings_layout.addRow("Default font size: ", font_size_spinbox)
 
+        theme_combobox = QComboBox()
+        theme_combobox.addItems(["Light", "Dark", "System Default"])
+        theme_combobox.setCurrentText("System Default")
+        display_settings_layout.addRow("Theme: ", theme_combobox)
+
+        # Engine tab settings
+        engine_settings = QWidget()
+        engine_settings_layout = QFormLayout()
+        engine_settings.setLayout(engine_settings_layout)
+
+        javascript_checkbox = QCheckBox()
+        javascript_checkbox.setChecked(current_settings["javascript_enabled"])
+        engine_settings_layout.addRow("Javascript enabled: ", javascript_checkbox)
+
+        # Add widgets to tab widget
+        tabs.addTab(general_settings, "General")
+        tabs.addTab(display_settings, "Display")
+        tabs.addTab(engine_settings, "Engine")
+
+        # Add Ok and Cancel buttons
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         button_box.accepted.connect(dlg.accept)
         button_box.rejected.connect(dlg.reject)
 
-        layout.addLayout(settings_layout, 0, 0, 0, 2)
-        layout.addWidget(button_box, 1, 1)
+        layout.addWidget(tabs, 1, 0)
+        layout.addWidget(button_box, 2, 0, alignment=Qt.AlignmentFlag.AlignRight)
 
         dlg.setLayout(layout)
 
