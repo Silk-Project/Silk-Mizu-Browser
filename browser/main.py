@@ -25,8 +25,10 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QUrl, QSize
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEngineSettings
-from PyQt6.QtGui import QPixmap, QAction, QKeySequence
+from PyQt6.QtGui import QPixmap, QAction, QKeySequence, QIcon
 import qtawesome as qta
+import qdarktheme
+import darkdetect
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "settings.json")
@@ -45,7 +47,8 @@ default_settings = {
     "start_page_url":"https://silk-project.github.io/",
     "search_engine":"Google",
     "javascript_enabled":True,
-    "default_font_size":16
+    "default_font_size":16,
+    "theme":"Dark"
 }
 
 current_bookmarks = {}
@@ -343,6 +346,8 @@ class BrowserWindow(QMainWindow):
         self.setMinimumSize(480, 360)
         self.resize(960, 720)
         self.layout = QGridLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
 
         # Initialize whole UI
         self.init_menu_bar()
@@ -424,7 +429,13 @@ class BrowserWindow(QMainWindow):
     def init_control_ui(self):
         # Add main controls
         controls_layout = QHBoxLayout()
+        controls_layout.setContentsMargins(4, 4, 4, 4)
+        controls_layout.setSpacing(4)
+
         bottom_bar_layout = QHBoxLayout()
+        bottom_bar_layout.setContentsMargins(4, 4, 4, 4)
+        bottom_bar_layout.setSpacing(4)
+
         self.layout.addLayout(controls_layout, 0, 0)
         self.layout.addLayout(bottom_bar_layout, 3, 0)
 
@@ -432,27 +443,27 @@ class BrowserWindow(QMainWindow):
         self.prev_page_btn = QPushButton()
         self.prev_page_btn.setIcon(qta.icon("fa6s.arrow-left"))
         self.prev_page_btn.setProperty("class", "navbtns")
-        self.prev_page_btn.setStyleSheet("padding: 10px;")
+        self.prev_page_btn.setStyleSheet("padding: 8px;")
         self.prev_page_btn.clicked.connect(self.request_back_page)
         controls_layout.addWidget(self.prev_page_btn)
 
         self.next_page_btn = QPushButton()
         self.next_page_btn.setIcon(qta.icon("fa6s.arrow-right"))
         self.next_page_btn.setProperty("class", "navbtns")
-        self.next_page_btn.setStyleSheet("padding: 10px;")
+        self.next_page_btn.setStyleSheet("padding: 8px;")
         self.next_page_btn.clicked.connect(self.request_next_page)
         controls_layout.addWidget(self.next_page_btn)
 
         self.reload_page_btn = QPushButton()
         self.reload_page_btn.setIcon(qta.icon("fa6s.arrow-rotate-right"))
         self.reload_page_btn.setProperty("class", "navbtns")
-        self.reload_page_btn.setStyleSheet("padding: 10px;")
+        self.reload_page_btn.setStyleSheet("padding: 8px;")
         self.reload_page_btn.clicked.connect(self.request_reload_stop_page)
         controls_layout.addWidget(self.reload_page_btn)
 
         self.url_bar = QLineEdit()
         self.url_bar.setObjectName("url_bar")
-        self.url_bar.setStyleSheet("padding: 10px;")
+        self.url_bar.setStyleSheet("padding: 8px;")
         self.url_bar.clearFocus()
         self.url_bar.returnPressed.connect(self.request_load_page_from_urlbar)
         controls_layout.addWidget(self.url_bar)
@@ -460,21 +471,21 @@ class BrowserWindow(QMainWindow):
         self.load_btn = QPushButton("Go")
         self.load_btn.setIcon(qta.icon("mdi.arrow-right-bold-box"))
         self.load_btn.setProperty("class", "navbtns")
-        self.load_btn.setStyleSheet("padding: 10px;")
+        self.load_btn.setStyleSheet("padding: 8px;")
         self.load_btn.clicked.connect(self.request_load_page_from_urlbar)
         controls_layout.addWidget(self.load_btn)
 
         self.add_to_bookmarks_btn = QPushButton()
         self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.star"))
         self.add_to_bookmarks_btn.setProperty("class", "navbtns")
-        self.add_to_bookmarks_btn.setStyleSheet("padding: 10px;")
+        self.add_to_bookmarks_btn.setStyleSheet("padding: 8px;")
         self.add_to_bookmarks_btn.clicked.connect(self.add_current_to_bookmarks_dialog)
         controls_layout.addWidget(self.add_to_bookmarks_btn)
 
         self.settings_btn = QPushButton()
         self.settings_btn.setIcon(qta.icon("fa5s.cog"))
         self.settings_btn.setProperty("class", "navbtns")
-        self.settings_btn.setStyleSheet("padding: 10px;")
+        self.settings_btn.setStyleSheet("padding: 8px;")
         self.settings_btn.clicked.connect(self.settings_dialog)
         controls_layout.addWidget(self.settings_btn)
 
@@ -509,7 +520,12 @@ class BrowserWindow(QMainWindow):
 
     def init_bookmark_bar(self):
         # Bookmark bar
+        if not current_bookmarks:
+            return
+        
         bookmarks_layout = QHBoxLayout()
+        bookmarks_layout.setContentsMargins(4, 0, 4, 4)
+        bookmarks_layout.setSpacing(4)
         self.layout.addLayout(bookmarks_layout, 1, 0)
 
         # Clear existing bookmarks
@@ -522,7 +538,7 @@ class BrowserWindow(QMainWindow):
 
         for name, url in current_bookmarks.items():
             bookmark_btn = QPushButton(name)
-            bookmark_btn.setStyleSheet("padding: 5px;")
+            bookmark_btn.setStyleSheet("padding: 3px;")
             bookmark_btn.clicked.connect(lambda checked, url=url: self.request_load_page(url))
             bookmark_map[name] = bookmark_btn
             bookmarks_layout.addWidget(bookmark_btn)
@@ -675,8 +691,8 @@ class BrowserWindow(QMainWindow):
         display_settings_layout.addRow("Default font size: ", font_size_spinbox)
 
         theme_combobox = QComboBox()
-        theme_combobox.addItems(["Light", "Dark", "System Default"])
-        theme_combobox.setCurrentText("System Default")
+        theme_combobox.addItems(["Light", "Dark", "Automatic"])
+        theme_combobox.setCurrentText(current_settings["theme"])
         display_settings_layout.addRow("Theme: ", theme_combobox)
 
         # Engine tab settings
@@ -708,12 +724,22 @@ class BrowserWindow(QMainWindow):
             search_engine = search_engine_combobox.currentText()
             javascript_enabled = javascript_checkbox.isChecked()
             default_font_size = font_size_spinbox.value()
+            theme = theme_combobox.currentText()
+
+            if theme == "Light":
+                app.setStyleSheet(qdarktheme.load_stylesheet("light"))
+            elif theme == "Dark":
+                app.setStyleSheet(qdarktheme.load_stylesheet("dark"))
+            else:
+                system_theme = "Dark" if darkdetect.isDark() else "Light"
+                app.setStyleSheet(qdarktheme.load_stylesheet(system_theme.lower()))
 
             updated_settings = {
                 "start_page_url":start_page,
                 "search_engine":search_engine,
                 "javascript_enabled":javascript_enabled,
-                "default_font_size":default_font_size
+                "default_font_size":default_font_size,
+                "theme":theme
             }
 
             current_settings = updated_settings
@@ -765,27 +791,17 @@ class BrowserWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setApplicationName("Silk Mizu")
-    app.setStyleSheet("""
-.navbtns {
-    background-color: #333;
-    border: 1px solid #444;
-    border-radius: 3px;
-}
-                      
-.navbtns:hover {
-    background-color: #393939;
-}
+    app.setApplicationVersion(VERSION_NUMBER)
+    app.setOrganizationName("Silk Project")
 
-.navbtns:pressed {
-    background-color: #353535;
-}
-                      
-QLineEdit {
-    background-color: #333;
-    border: 1px solid #444;
-    border-radius: 3px;
-}
-""")
+    # Load theme
+    if current_settings["theme"] and current_settings["theme"] != "Automatic":
+        app.setStyleSheet(qdarktheme.load_stylesheet(current_settings["theme"].lower()))
+    else:
+        system_theme = "Dark" if darkdetect.isDark() else "Light"
+        app.setStyleSheet(qdarktheme.load_stylesheet(system_theme.lower()))
+    
+    app.setWindowIcon(QIcon(os.path.join(SCRIPT_DIR, "assets", "mizu.png")))
     app.setStyle("breeze")
     window = BrowserWindow()
     window.show()
