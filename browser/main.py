@@ -20,7 +20,9 @@ from PyQt6.QtWidgets import (
     QDialogButtonBox,
     QProgressBar,
     QListWidget,
-    QTabWidget
+    QTabWidget,
+    QRadioButton,
+    QButtonGroup
 )
 from PyQt6.QtCore import Qt, QUrl, QSize
 from PyQt6.QtWebEngineWidgets import QWebEngineView
@@ -33,6 +35,7 @@ import darkdetect
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "settings.json")
 BOOKMARKS_PATH = os.path.join(SCRIPT_DIR, "config", "bookmarks.json")
+START_PAGE_PATH = os.path.join(SCRIPT_DIR, "assets", "Silk-Start", "start", "v1.1", "full", "index.html")
 VERSION_NUMBER = "0.2.4"
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
@@ -44,11 +47,12 @@ SEARCH_ENGINE_SEARCH_QUERIES = {
 
 current_settings = {}
 default_settings = {
-    "start_page_url":"https://silk-project.github.io/",
+    "start_page_url":START_PAGE_PATH,
     "search_engine":"Google",
+    "theme":"Dark",
     "javascript_enabled":True,
     "default_font_size":16,
-    "theme":"Dark"
+    "scrollbars_enabled":True
 }
 
 current_bookmarks = {}
@@ -209,6 +213,8 @@ class WebEngine():
                              current_settings["javascript_enabled"])
         settings.setFontSize(QWebEngineSettings.FontSize.DefaultFontSize,
                              current_settings["default_font_size"])
+        settings.setAttribute(QWebEngineSettings.WebAttribute.ShowScrollBars,
+                                current_settings["scrollbars_enabled"])
 
 class ManageBookmarksDialog(QDialog):
     def __init__(self, parent, passed_bookmarks):
@@ -670,10 +676,29 @@ class BrowserWindow(QMainWindow):
         title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding-top: 20px; padding-bottom: 10px;")
         layout.addWidget(title_label, 0, 0)
 
-        start_page_lineedit = QLineEdit()
-        start_page_lineedit.setText(current_settings["start_page_url"])
-        start_page_lineedit.setMinimumWidth(200)
-        general_settings_layout.addRow("Start page: ", start_page_lineedit)
+        start_page_type_group = QButtonGroup()
+        start_page_type_group.setExclusive(True)
+
+        start_page_type_radio_button = QRadioButton("Silk Start (local)")
+        start_page_type_radio_button.setChecked(current_settings["start_page_url"] == START_PAGE_PATH)
+        start_page_type_radio_button.toggled.connect(lambda: self.toggle_url_edit(False, start_page_urledit))
+        start_page_type_group.addButton(start_page_type_radio_button)
+
+        start_page_url_radio_button = QRadioButton("URL")
+        start_page_url_radio_button.setChecked(current_settings["start_page_url"] != START_PAGE_PATH)
+        start_page_url_radio_button.toggled.connect(lambda: self.toggle_url_edit(True, start_page_urledit))
+        start_page_type_group.addButton(start_page_url_radio_button)
+
+        start_page_type_layout = QHBoxLayout()
+        start_page_type_layout.addWidget(start_page_type_radio_button)
+        start_page_type_layout.addWidget(start_page_url_radio_button)
+        general_settings_layout.addRow("Start page type: ", start_page_type_layout)
+
+        start_page_urledit = QLineEdit()
+        start_page_urledit.setText(current_settings["start_page_url"])
+        start_page_urledit.setMinimumWidth(200)
+        start_page_urledit.setEnabled(current_settings["start_page_url"] != START_PAGE_PATH)
+        general_settings_layout.addRow("Start page URL: ", start_page_urledit)
 
         search_engine_combobox = QComboBox()
         search_engine_combobox.addItems(["Google", "DuckDuckGo", "Brave", "Ecosia", "Yahoo"])
@@ -685,11 +710,6 @@ class BrowserWindow(QMainWindow):
         display_settings_layout = QFormLayout()
         display_settings.setLayout(display_settings_layout)
 
-        font_size_spinbox = QSpinBox()
-        font_size_spinbox.setRange(10, 80)
-        font_size_spinbox.setValue(current_settings["default_font_size"])
-        display_settings_layout.addRow("Default font size: ", font_size_spinbox)
-
         theme_combobox = QComboBox()
         theme_combobox.addItems(["Light", "Dark", "Automatic"])
         theme_combobox.setCurrentText(current_settings["theme"])
@@ -700,9 +720,18 @@ class BrowserWindow(QMainWindow):
         engine_settings_layout = QFormLayout()
         engine_settings.setLayout(engine_settings_layout)
 
+        font_size_spinbox = QSpinBox()
+        font_size_spinbox.setRange(10, 80)
+        font_size_spinbox.setValue(current_settings["default_font_size"])
+        engine_settings_layout.addRow("Default font size: ", font_size_spinbox)
+
         javascript_checkbox = QCheckBox()
         javascript_checkbox.setChecked(current_settings["javascript_enabled"])
         engine_settings_layout.addRow("Javascript enabled: ", javascript_checkbox)
+
+        scrollbars_enabled_checkbox = QCheckBox()
+        scrollbars_enabled_checkbox.setChecked(current_settings["scrollbars_enabled"])
+        engine_settings_layout.addRow("Scrollbars enabled: ", scrollbars_enabled_checkbox)
 
         # Add widgets to tab widget
         tabs.addTab(general_settings, "General")
@@ -720,11 +749,12 @@ class BrowserWindow(QMainWindow):
         dlg.setLayout(layout)
 
         if dlg.exec():
-            start_page = start_page_lineedit.text()
+            start_page = start_page_urledit.text() if start_page_url_radio_button.isChecked() else START_PAGE_PATH
             search_engine = search_engine_combobox.currentText()
+            theme = theme_combobox.currentText()
             javascript_enabled = javascript_checkbox.isChecked()
             default_font_size = font_size_spinbox.value()
-            theme = theme_combobox.currentText()
+            default_scrollbars_enabled = scrollbars_enabled_checkbox.isChecked()
 
             if theme == "Light":
                 app.setStyleSheet(qdarktheme.load_stylesheet("light"))
@@ -737,9 +767,10 @@ class BrowserWindow(QMainWindow):
             updated_settings = {
                 "start_page_url":start_page,
                 "search_engine":search_engine,
+                "theme":theme,
                 "javascript_enabled":javascript_enabled,
                 "default_font_size":default_font_size,
-                "theme":theme
+                "scrollbars_enabled":default_scrollbars_enabled
             }
 
             current_settings = updated_settings
@@ -748,6 +779,9 @@ class BrowserWindow(QMainWindow):
 
             with open(CONFIG_PATH, "w") as f:
                 json.dump(updated_settings, f, indent=4)
+    
+    def toggle_url_edit(self, enable, urledit):
+        urledit.setEnabled(enable)
     
     def update_web_engine(self):
         self.web_engine.update_engine()
