@@ -1,6 +1,8 @@
 # 🌊 Silk Mizu Browser
 Simple and lightweight PyQT6 browser for Silk and Linux / Windows / Mac computers. Made possible through the QWebEngineView Widget for rendering webpages. Mizu (水) translates to "water" in japanese, which makes sense because you are "surfing" the web.
 
+![Browser Preview](/assets/preview.png)
+
 ## ⭐️ Features
 - Simple but still modern ui elements using the Awesome 6 icons and QT Dark theme
 - Default search engine selection (Google, DuckDuckGo, Brave...)
