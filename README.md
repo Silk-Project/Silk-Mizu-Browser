@@ -11,6 +11,7 @@ Simple and lightweight PyQT6 browser for Silk and Linux / Windows / Mac computer
 - Accessability features (zooming, font size)
 - Bookmarks and easy Bookmark management
 - Silk-Start support
+- Tab system
 
 ## ⚙️ Requirements
 - `pyqt6` (pip)
@@ -31,7 +32,7 @@ To use this program, simply execute the main.py file directly via python3.
 python3 main.py
 ```
 ## 💻 Currently working on
-- Website tab system
+- improving website tab system and tab bar positioning at the top
 
 ## 👥 Contributing
 Feel free to open issues and create pull requests. Silk Project members can get direct access when requested.
