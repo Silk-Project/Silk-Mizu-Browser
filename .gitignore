@@ -212,3 +212,6 @@ __marimo__/
 # Configs
 settings.json
 bookmarks.json
+
+# Test Scripts
+test_scripts/

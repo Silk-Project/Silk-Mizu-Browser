@@ -3,3 +3,4 @@ pyqt6-webengine
 qtawesome
 pyqtdarktheme
 darkdetect
+ollama

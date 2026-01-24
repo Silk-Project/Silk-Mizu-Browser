@@ -25,20 +25,23 @@ from PyQt6.QtWidgets import (
     QRadioButton,
     QButtonGroup,
     QMessageBox,
-    QSizePolicy
+    QSizePolicy,
+    QTextEdit,
 )
-from PyQt6.QtCore import Qt, QUrl, QSize
+from PyQt6.QtCore import Qt, QUrl, QSize, pyqtSlot, pyqtSignal, QThreadPool, QRunnable, QObject
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEngineSettings
 from PyQt6.QtGui import QPixmap, QAction, QKeySequence, QIcon
 import qtawesome as qta
 import qdarktheme
 import darkdetect
+import ollama
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "settings.json")
 BOOKMARKS_PATH = os.path.join(SCRIPT_DIR, "config", "bookmarks.json")
 START_PAGE_PATH = os.path.join(SCRIPT_DIR, "assets", "Silk-Start", "start", "v1.1.1", "seperate", "index.html")
+AI_SYSPROMPT_PATH = os.path.join(SCRIPT_DIR, "config", "sysprompt.txt")
 VERSION_NUMBER = "0.2.5"
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
@@ -54,9 +57,11 @@ default_settings = {
     "search_engine":"Google",
     "theme":"Dark",
     "bottom_bar_visible":False,
+    "go_button_visible":False,
     "javascript_enabled":True,
     "default_font_size":16,
-    "scrollbars_enabled":True
+    "scrollbars_enabled":True,
+    "ai_summarization_enabled":False
 }
 
 current_bookmarks = {}
@@ -101,6 +106,10 @@ else:
     with open(BOOKMARKS_PATH, "w") as f:
         json.dump(default_bookmarks, f, indent=4)
     current_bookmarks = default_bookmarks
+
+# Load AI system prompt
+with open(AI_SYSPROMPT_PATH, 'r') as f:
+    ai_system_prompt = f.read()
 
 class BetterWebEngine(QWebEngineView):
     def __init__(self, parent):
@@ -300,6 +309,116 @@ class ManageBookmarksDialog(QDialog):
             self.temp_bookmarks.pop(row)
             self.list_widget.takeItem(row)
 
+class InstallerSignals(QObject):
+    installation_complete = pyqtSignal()
+
+class InstallWorker(QRunnable):
+    def __init__(self, model_name):
+        super().__init__()
+        self.model_name = model_name
+        self.signals = InstallerSignals()
+    
+    @pyqtSlot()
+    def run(self):
+        print(f"Installing model: {self.model_name}...")
+        ollama.pull(self.model_name)
+        print("Model installation complete.")
+        self.signals.installation_complete.emit()
+
+class WorkerSignals(QObject):
+    chunk_received = pyqtSignal(str)
+    finished = pyqtSignal()
+
+class AI_SummarizationWorker(QRunnable):
+    def __init__(self, text):
+        super().__init__()
+        self.text = text
+        self.signals = WorkerSignals()
+    
+    @pyqtSlot()
+    def run(self):
+        print("Summarizing page content...")
+        stream = ollama.chat(
+            model='lfm2.5-thinking:1.2b',
+            messages=[
+                {"role": "system", "content": ai_system_prompt},
+                {"role": "user", "content": self.text},
+            ],
+            stream=True,
+        )
+
+        for chunk in stream:
+            content = chunk['message']['content']
+            self.signals.chunk_received.emit(content)
+        
+        self.signals.finished.emit()
+
+class AI_Sidebar(QWidget):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setFixedWidth(300)
+        self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(5, 5, 5, 5)
+        self.layout.setSpacing(5)
+
+        self.messages = []
+
+        self.input_controls_layout = QHBoxLayout()
+
+        self.title_label = QLabel("AI Summary")
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; padding: 20px")
+        self.layout.addWidget(self.title_label)
+
+        self.output_textedit = QTextEdit()
+        self.output_textedit.setReadOnly(True)
+        self.output_textedit.setPlaceholderText("Summarization output will appear here...")
+        self.output_textedit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.layout.addWidget(self.output_textedit)
+
+        self.clear_btn = QPushButton("Clear")
+        self.clear_btn.setIcon(qta.icon("fa6s.trash", color=self.parent().get_contrast_color_from_theme()))
+        self.clear_btn.clicked.connect(self.clear_output)
+        self.input_controls_layout.addWidget(self.clear_btn)
+
+        self.update_output()
+
+        self.layout.addLayout(self.input_controls_layout)
+        self.setLayout(self.layout)
+    
+    def send_webpage(self, prompt):
+        prompt = prompt.strip()
+        self.messages.append({"role": "User", "content": f"{prompt[:100]}..."})
+        self.update_output()
+
+        # Start AI worker
+        worker = AI_SummarizationWorker(prompt)
+        worker.signals.chunk_received.connect(self.handle_chunk)
+        worker.signals.finished.connect(self.summarization_complete)
+
+        QThreadPool.globalInstance().start(worker)
+    
+    def clear_output(self):
+        self.messages = []
+        self.update_output()
+    
+    def update_output(self):
+        self.output_textedit.clear()
+        cursor = self.output_textedit.textCursor()
+        for msg in self.messages:
+            cursor.insertText(f"[{msg['role']}]:\n{msg['content']}\n\n")
+    
+    def handle_chunk(self, chunk):
+        if self.messages and self.messages[-1]['role'] == "AI":
+            self.messages[-1]['content'] += chunk
+        else:
+            self.messages.append({"role": "AI", "content": chunk})
+        
+        self.update_output()
+    
+    def summarization_complete(self):
+        self.update_output()
+
 class BrowserWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -315,6 +434,7 @@ class BrowserWindow(QMainWindow):
         # Initialize whole UI
         self.init_menu_bar()
         self.init_control_ui()
+        self.init_ai_sidebar()
         self.init_web_engine()
 
         # Add main widget
@@ -330,7 +450,10 @@ class BrowserWindow(QMainWindow):
         editMenu = menu_bar.addMenu("&Edit")
         viewMenu = menu_bar.addMenu("&View")
         bookmarkMenu = menu_bar.addMenu("&Bookmarks")
+        self.aiMenu = menu_bar.addMenu("&AI Summarization")
         helpMenu = menu_bar.addMenu("&Help")
+
+        self.aiMenu.setEnabled(current_settings["ai_summarization_enabled"])
 
         # File Menu
         settingsAction = fileMenu.addAction("Program Settings")
@@ -380,6 +503,16 @@ class BrowserWindow(QMainWindow):
         addPageToBookmarksAction.setShortcut(QKeySequence("Ctrl + d"))
         bookmarkMenu.addAction(addPageToBookmarksAction)
 
+        # AI Summarization Menu
+        toggleAIsidebarAction = self.aiMenu.addAction("Toggle AI Summarization Sidebar")
+        toggleAIsidebarAction.triggered.connect(self.toggle_ai_sidebar)
+        toggleAIsidebarAction.setShortcut(QKeySequence("Ctrl + b"))
+        self.aiMenu.addAction(toggleAIsidebarAction)
+        aiSummarizationAction = self.aiMenu.addAction("Summarize current page with AI")
+        aiSummarizationAction.triggered.connect(self.summarize_current_page_ai)
+        aiSummarizationAction.setShortcut(QKeySequence("Ctrl + m"))
+        self.aiMenu.addAction(aiSummarizationAction)
+
         # Help Menu
         documentationAction = QAction("Project Page", self)
         documentationAction.triggered.connect(lambda: self.web_engine.load_page("https://github.com/FlipArtYT/Silk-Mizu-Browser/"))
@@ -398,12 +531,10 @@ class BrowserWindow(QMainWindow):
         self.bottom_bar = QWidget()
         self.bottom_bar.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
+        self.bottom_bar.setVisible(current_settings["bottom_bar_visible"])
         bottom_bar_layout = QHBoxLayout()
         bottom_bar_layout.setContentsMargins(5, 5, 5, 5)
         bottom_bar_layout.setSpacing(5)
-
-        if not current_settings["bottom_bar_visible"]:
-            self.bottom_bar.hide()
 
         self.bottom_bar.setLayout(bottom_bar_layout)
 
@@ -412,6 +543,14 @@ class BrowserWindow(QMainWindow):
 
         # Browser main controls
         icon_color = self.get_contrast_color_from_theme()
+
+        self.ai_sidebar_btn = QPushButton()
+        self.ai_sidebar_btn.setIcon(qta.icon("msc.layout-sidebar-left", color=icon_color))
+        self.ai_sidebar_btn.setProperty("class", "navbtns")
+        self.ai_sidebar_btn.setStyleSheet("padding: 8px;")
+        self.ai_sidebar_btn.setVisible(current_settings["ai_summarization_enabled"])
+        self.ai_sidebar_btn.clicked.connect(self.toggle_ai_sidebar)
+        controls_layout.addWidget(self.ai_sidebar_btn)
 
         self.prev_page_btn = QPushButton()
         self.prev_page_btn.setIcon(qta.icon("fa6s.arrow-left", color=icon_color))
@@ -445,6 +584,7 @@ class BrowserWindow(QMainWindow):
         self.load_btn.setIcon(qta.icon("mdi.arrow-right-bold-box", color=icon_color))
         self.load_btn.setProperty("class", "navbtns")
         self.load_btn.setStyleSheet("padding: 8px;")
+        self.load_btn.setVisible(current_settings["go_button_visible"])
         self.load_btn.clicked.connect(self.request_load_page_from_urlbar)
         controls_layout.addWidget(self.load_btn)
 
@@ -455,8 +595,16 @@ class BrowserWindow(QMainWindow):
         self.add_tab_btn.clicked.connect(self.create_new_tab)
         controls_layout.addWidget(self.add_tab_btn)
 
+        self.ai_summarize_btn = QPushButton()
+        self.ai_summarize_btn.setIcon(qta.icon("ph.sparkle-fill", color=icon_color))
+        self.ai_summarize_btn.setProperty("class", "navbtns")
+        self.ai_summarize_btn.setStyleSheet("padding: 8px;")
+        self.ai_summarize_btn.setVisible(current_settings["ai_summarization_enabled"])
+        self.ai_summarize_btn.clicked.connect(self.summarize_current_page_ai)
+        controls_layout.addWidget(self.ai_summarize_btn)
+
         self.add_to_bookmarks_btn = QPushButton()
-        self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.star", color=icon_color))
+        self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.bookmark", color=icon_color))
         self.add_to_bookmarks_btn.setProperty("class", "navbtns")
         self.add_to_bookmarks_btn.setStyleSheet("padding: 8px;")
         self.add_to_bookmarks_btn.clicked.connect(self.add_current_to_bookmarks_dialog)
@@ -525,7 +673,28 @@ class BrowserWindow(QMainWindow):
             bookmarks_layout.addWidget(bookmark_btn)
 
         bookmarks_layout.addStretch(1)
+
+    def init_ai_sidebar(self):
+        # Create middle layout
+        self.middle_layout = QHBoxLayout()
+        self.middle_layout.setContentsMargins(0, 0, 0, 0)
+        self.middle_layout.setSpacing(0)
+        self.layout.addLayout(self.middle_layout, 2, 0)
+
+        # AI Sidebar
+        self.ai_sidebar = AI_Sidebar(self)
+        self.ai_sidebar.setVisible(False)
+        self.middle_layout.addWidget(self.ai_sidebar)
     
+    def toggle_ai_sidebar(self):
+        is_visible = self.ai_sidebar.isVisible()
+        self.ai_sidebar.setVisible(not is_visible)
+    
+    def summarize_current_page_ai(self):
+        self.ai_sidebar.setVisible(True)
+        current_page = self.web_tabs.currentWidget()
+        current_page.page().toPlainText(self.ai_sidebar.send_webpage)
+
     def init_web_engine(self):
         # Tab bar
         self.tab_list = []
@@ -534,7 +703,7 @@ class BrowserWindow(QMainWindow):
         self.web_tabs.setTabShape(QTabWidget.TabShape.Rounded)
         self.web_tabs.currentChanged.connect(self.update_tab_info)
         self.web_tabs.tabCloseRequested.connect(self.remove_web_tab)
-        self.layout.addWidget(self.web_tabs, 2, 0)
+        self.middle_layout.addWidget(self.web_tabs, 1)
         
         # Add start tab
         self.create_new_tab()
@@ -542,7 +711,7 @@ class BrowserWindow(QMainWindow):
     def update_tab_info(self):
         self.update_urlbar_content()
         self.update_nav_btn_status()
-        self.update_tab_title()
+        self.update_tab_titles()
     
     def create_new_tab(self):
         # Web Engine
@@ -555,17 +724,18 @@ class BrowserWindow(QMainWindow):
         self.tab_list[new_tab_index].loadStarted.connect(self.page_load_started)
         self.tab_list[new_tab_index].urlChanged.connect(self.update_urlbar_content)
 
-        self.web_tabs.addTab(self.tab_list[new_tab_index], f"{" "*5}New Tab{" "*5}")
-        self.update_urlbar_content()
-        self.update_nav_btn_status()
+        self.web_tabs.addTab(self.tab_list[new_tab_index], "New Tab")
+        self.web_tabs.setCurrentIndex(new_tab_index)
+        self.update_tab_info()
     
-    def update_tab_title(self):
-        current_index = self.web_tabs.currentIndex()
-        current_title = self.web_tabs.currentWidget().title()
-        self.web_tabs.setTabText(current_index, f"{" "*3}{current_title[:10]+"..." if len(current_title) > 10 else current_title}{" "*3}")
-        self.web_tabs.setTabIcon(current_index, QIcon(self.web_tabs.currentWidget().icon()))
-        self.web_tabs.setIconSize(QSize(16, 16))
-        self.web_tabs.setTabToolTip(current_index, self.web_tabs.currentWidget().title())
+    def update_tab_titles(self):
+        for tab_index in range(self.web_tabs.count()):
+            web_engine = self.tab_list[tab_index]
+            title = web_engine.title() if web_engine.title() else "New Tab"
+            self.web_tabs.setTabText(tab_index, f"{" "*3}{title[:10]+"..." if len(title) > 10 else title}{" "*3}")
+            self.web_tabs.setTabIcon(tab_index, QIcon(web_engine.icon()))
+            self.web_tabs.setIconSize(QSize(16, 16))
+            self.web_tabs.setTabToolTip(tab_index, web_engine.title())
 
     def request_load_page_from_urlbar(self):
         url = self.url_bar.text()
@@ -584,29 +754,29 @@ class BrowserWindow(QMainWindow):
         else:
             self.web_tabs.currentWidget().reload_page()
         
-        self.update_nav_btn_status()
+        self.update_tab_info()
     
     def request_back_page(self):
         self.web_tabs.currentWidget().history().back()
-        self.update_nav_btn_status()
+        self.update_tab_info()
 
     def request_next_page(self):
         self.web_tabs.currentWidget().history().forward()
-        self.update_nav_btn_status()
+        self.update_tab_info()
     
     def update_progressbar(self, prog):
         if self.web_tabs.currentWidget() == self.tab_list[self.web_tabs.currentIndex()]:
+            self.page_progressbar.setVisible(True)
             self.page_progressbar.setValue(prog)
 
     def page_load_finished(self):
         self.web_tabs.currentWidget().page_is_loading = False
         self.page_progressbar.setVisible(False)
-        self.update_nav_btn_status()
-        self.update_urlbar_content()
         self.update_tab_info()
     
     def page_load_started(self):
-        self.page_progressbar.setVisible(True)
+        self.update_progressbar(0)
+        self.update_tab_info()
 
     def update_nav_btn_status(self):
         # Enable / Disable back and forward buttons
@@ -659,7 +829,7 @@ class BrowserWindow(QMainWindow):
         self.next_page_btn.setIcon(qta.icon("fa6s.arrow-right", color=icon_color))
         self.reload_page_btn.setIcon(qta.icon("fa6s.arrow-rotate-right", color=icon_color))
         self.load_btn.setIcon(qta.icon("mdi.arrow-right-bold-box", color=icon_color))
-        self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.star", color=icon_color))
+        self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.bookmark", color=icon_color))
         self.settings_btn.setIcon(qta.icon("fa5s.cog", color=icon_color))
 
     def add_current_to_bookmarks_dialog(self):
@@ -789,6 +959,10 @@ class BrowserWindow(QMainWindow):
         bottom_bar_visability_checkbox = QCheckBox()
         bottom_bar_visability_checkbox.setChecked(current_settings["bottom_bar_visible"])
         display_settings_layout.addRow("Show bottom bar: ", bottom_bar_visability_checkbox)
+        
+        go_button_visibility_checkbox = QCheckBox()
+        go_button_visibility_checkbox.setChecked(current_settings["go_button_visible"])
+        display_settings_layout.addRow("Show 'Go' button in URL bar: ", go_button_visibility_checkbox)
 
         # Engine tab settings
         engine_settings = QWidget()
@@ -808,10 +982,39 @@ class BrowserWindow(QMainWindow):
         scrollbars_enabled_checkbox.setChecked(current_settings["scrollbars_enabled"])
         engine_settings_layout.addRow("Scrollbars enabled: ", scrollbars_enabled_checkbox)
 
+        # AI tab settings
+        ai_settings = QWidget()
+        ai_settings_layout = QFormLayout()
+        ai_settings.setLayout(ai_settings_layout)
+
+        raw_models = ollama.list()
+        ollama_model_names = [m.model for m in raw_models.models]
+        sum_model_installed = 'lfm2.5-thinking:1.2b' in ollama_model_names
+
+        install_model_btn = QPushButton()
+
+        if not sum_model_installed:
+            install_model_btn.setText("Install (731MB)")
+            install_model_btn.setIcon(qta.icon("fa6s.download"))
+        else:
+            install_model_btn.setText("Model Installed")
+            install_model_btn.setIcon(qta.icon("fa6s.check", color=self.get_contrast_color_from_theme()))
+
+        install_model_btn.setEnabled(not sum_model_installed)
+        install_model_btn.setFixedWidth(200)
+        install_model_btn.clicked.connect(lambda: self.start_model_installation(install_model_btn))
+        ai_settings_layout.addRow("Install AI Page Summarization Model: ", install_model_btn)
+        
+        ai_checkbox = QCheckBox()
+        ai_checkbox.setEnabled(sum_model_installed)
+        ai_checkbox.setChecked(current_settings["ai_summarization_enabled"])
+        ai_settings_layout.addRow("Enable AI Page Summarization: ", ai_checkbox)
+
         # Add widgets to tab widget
         tabs.addTab(general_settings, "General")
         tabs.addTab(display_settings, "Display")
         tabs.addTab(engine_settings, "Engine")
+        tabs.addTab(ai_settings, "AI Features")
 
         # Add Ok and Cancel buttons
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -827,10 +1030,12 @@ class BrowserWindow(QMainWindow):
             start_page = start_page_urledit.text() if start_page_url_radio_button.isChecked() else START_PAGE_PATH
             search_engine = search_engine_combobox.currentText()
             theme = theme_combobox.currentText()
+            go_button_visible = go_button_visibility_checkbox.isChecked()
             bottom_bar_visible = bottom_bar_visability_checkbox.isChecked()
             javascript_enabled = javascript_checkbox.isChecked()
             default_font_size = font_size_spinbox.value()
             default_scrollbars_enabled = scrollbars_enabled_checkbox.isChecked()
+            summarize_ai_enabled = ai_checkbox.isChecked()
 
             # Update settings in browser
             if theme == "Light":
@@ -841,10 +1046,11 @@ class BrowserWindow(QMainWindow):
                 system_theme = "Dark" if darkdetect.isDark() else "Light"
                 app.setStyleSheet(qdarktheme.load_stylesheet(system_theme.lower()))
 
-            if bottom_bar_visible:
-                self.bottom_bar.show()
-            else:
-                self.bottom_bar.hide()
+            self.bottom_bar.setVisible(bottom_bar_visible)
+            self.load_btn.setVisible(go_button_visible)
+            self.ai_summarize_btn.setVisible(summarize_ai_enabled)
+            self.ai_sidebar_btn.setVisible(summarize_ai_enabled)
+            self.aiMenu.setEnabled(summarize_ai_enabled)
 
             self.update_web_engine()
 
@@ -854,9 +1060,11 @@ class BrowserWindow(QMainWindow):
                 "search_engine":search_engine,
                 "theme":theme,
                 "bottom_bar_visible":bottom_bar_visible,
+                "go_button_visible":go_button_visible,
                 "javascript_enabled":javascript_enabled,
                 "default_font_size":default_font_size,
-                "scrollbars_enabled":default_scrollbars_enabled
+                "scrollbars_enabled":default_scrollbars_enabled,
+                "ai_summarization_enabled":summarize_ai_enabled
             }
 
             current_settings = updated_settings
@@ -866,6 +1074,23 @@ class BrowserWindow(QMainWindow):
             # Write to settings.json
             with open(CONFIG_PATH, "w") as f:
                 json.dump(updated_settings, f, indent=4)
+
+    def start_model_installation(self, install_button):
+        install_button.setEnabled(False)
+        install_button.setText("Installing...")
+        animation = qta.Spin(install_button)
+        install_button.setIcon(qta.icon("fa6s.spinner", color=self.get_contrast_color_from_theme(), animation=animation))
+
+        self.threadpool = QThreadPool()
+        worker = InstallWorker("lfm2.5-thinking:1.2b")
+        worker.signals.installation_complete.connect(lambda: self.model_installation_complete(install_button))
+        self.threadpool.start(worker)
+    
+    def model_installation_complete(self, install_button):
+        install_button.setText("Model Installed")
+        install_button.setIcon(qta.icon("fa6s.check", color=self.get_contrast_color_from_theme()))
+        
+        QMessageBox.information(self, "Model Installed", "The AI page summarization model has been installed successfully. You can now enable AI page summarization in the settings.")
     
     def toggle_url_edit(self, enable, urledit):
         urledit.setEnabled(enable)
