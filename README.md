@@ -11,7 +11,8 @@ Simple and lightweight PyQT6 browser for Silk and Linux / Windows / Mac computer
 - Accessability features (zooming, font size)
 - Bookmarks and easy Bookmark management
 - Silk-Start support
-- Tab system
+- Easy Tab system
+- AI webpage summarization
 
 ## ⚙️ Requirements
 - `pyqt6` (pip)
@@ -19,6 +20,7 @@ Simple and lightweight PyQT6 browser for Silk and Linux / Windows / Mac computer
 - `qtawesome` (pip)
 - `pyqtdarktheme` (pip)
 - `darkdetect` (pip)
+- `ollama` (pip and system wide)
 
 ## ⬇️ Getting the program
 A normal git clone will result into missing submodules. Instead use this command:
@@ -33,7 +35,7 @@ python3 main.py
 ```
 ## 💻 Currently working on
 - improving website tab system and tab bar positioning at the top
-- AI page summary, "Explain selected text with AI"
+- "Explain selected text with AI"
 
 ## 👥 Contributing
 Feel free to open issues and create pull requests. Silk Project members can get direct access when requested.
