@@ -404,9 +404,12 @@ class AI_Sidebar(QWidget):
     
     def update_output(self):
         self.output_textedit.clear()
-        cursor = self.output_textedit.textCursor()
-        for msg in self.messages:
-            cursor.insertText(f"[{msg['role']}]:\n{msg['content']}\n\n")
+        
+        formatted_output = ""
+        for message in self.messages:
+            formatted_output += f"**{message["role"]}:**  {message["content"]}\n\n"
+        
+        self.output_textedit.setMarkdown(formatted_output)
     
     def handle_chunk(self, chunk):
         if self.messages and self.messages[-1]['role'] == "AI":
