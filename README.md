@@ -4,15 +4,15 @@ Simple and lightweight PyQT6 browser for Silk and Linux / Windows / Mac computer
 ![Browser Preview](/assets/preview.png)
 
 ## ⭐️ Features
-- Simple but still modern ui elements using the Awesome 6 icons and QT Dark theme
+- Simple but still modern UI elements using the Awesome 6 icons and QT Dark theme
 - Default search engine selection (Google, DuckDuckGo, Brave...)
 - Custom start page selection
 - Basic browser navigation features (e.g. going back a page)
 - Accessability features (zooming, font size)
 - Bookmarks and easy Bookmark management
 - Silk-Start support
-- Easy Tab system
-- AI webpage summarization
+- Easy to use Tab system
+- AI webpage summarization (optional and local, without data collection)
 
 ## ⚙️ Requirements
 - `pyqt6` (pip)
@@ -36,6 +36,7 @@ python3 main.py
 ## 💻 Currently working on
 - improving website tab system and tab bar positioning at the top
 - "Explain selected text with AI"
+- Reader view
 
 ## 👥 Contributing
-Feel free to open issues and create pull requests. Silk Project members can get direct access when requested.
+Feel free to open issues and create pull requests.
