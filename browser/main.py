@@ -679,7 +679,7 @@ class BrowserWindow(QMainWindow):
 
         # Help Menu
         documentationAction = QAction("Project Page", self)
-        documentationAction.triggered.connect(lambda: self.web_engine.load_page("https://github.com/Silk-Project/Silk-Mizu-Browser/"))
+        documentationAction.triggered.connect(lambda: self.create_new_tab("https://github.com/Silk-Project/Silk-Mizu-Browser/"))
         helpMenu.addAction(documentationAction)
 
         aboutAction = helpMenu.addAction("About")
@@ -898,22 +898,25 @@ class BrowserWindow(QMainWindow):
         self.update_nav_btn_status()
         self.update_tab_titles()
     
-    def create_new_tab(self):
+    def create_new_tab(self, url=None):
         # Web Engine
         new_tab_index = len(self.tab_list)
         self.tab_list.append(BetterWebEngine(self))
+        
+        if url:
+            self.tab_list[new_tab_index].setUrl(QUrl(url))
 
         self.tab_list[new_tab_index].loadProgress.connect(self.update_progressbar)
         self.tab_list[new_tab_index].loadFinished.connect(self.page_load_finished)
         self.tab_list[new_tab_index].loadFinished.connect(self.tab_list[new_tab_index].page_load_finished)
         self.tab_list[new_tab_index].loadStarted.connect(self.page_load_started)
         self.tab_list[new_tab_index].urlChanged.connect(self.update_urlbar_content)
-        self.tab_list[new_tab_index].iconChanged(self.update_tab_info)
+        self.tab_list[new_tab_index].iconChanged.connect(self.update_tab_info)
         self.tab_list[new_tab_index].page().profile().downloadRequested.connect(self.request_download)
         self.tab_list[new_tab_index].signals.sum_selected_with_ai.connect(self.summarize_selected_with_ai)
         self.tab_list[new_tab_index].signals.sum_page_with_ai.connect(self.summarize_current_page_ai)
 
-        self.web_tabs.addTab(self.tab_list[new_tab_index], "New Tab")
+        self.web_tabs.addTab(self.tab_list[new_tab_index], None)
         self.web_tabs.setCurrentIndex(new_tab_index)
         self.update_tab_info()
     
@@ -934,7 +937,12 @@ class BrowserWindow(QMainWindow):
             self.web_tabs.setTabToolTip(tab_index, web_engine.title())
 
             if web_engine.iconUrl().isEmpty():
-                self.web_tabs.setTabIcon(tab_index, qta.icon("fa6s.spinner"))
+                self.web_tabs.setTabIcon(tab_index, QIcon())
+
+            elif web_engine.icon().isNull():
+                animation = qta.Spin(self.web_tabs)
+                self.web_tabs.setTabIcon(tab_index, qta.icon("mdi.loading", animation=animation))
+
             else:
                 self.web_tabs.setTabIcon(tab_index, QIcon(web_engine.icon()))
 
@@ -1317,7 +1325,7 @@ class BrowserWindow(QMainWindow):
         install_button.setEnabled(False)
         install_button.setText("Installing...")
         animation = qta.Spin(install_button)
-        install_button.setIcon(qta.icon("fa6s.spinner", color=self.get_contrast_color_from_theme(), animation=animation))
+        install_button.setIcon(qta.icon("mdi.loading", color=self.get_contrast_color_from_theme(), animation=animation))
 
         self.threadpool = QThreadPool()
         worker = InstallWorker(SUM_AI_MODEL["name"])
