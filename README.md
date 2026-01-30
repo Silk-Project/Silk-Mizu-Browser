@@ -40,11 +40,12 @@ To use this program, simply execute the main.py file directly via python3.
 ```
 python3 main.py
 ```
-## 💻 Currently working on
-- improving website tab system and tab bar positioning at the top
-- "Explain selected text with AI"
-- Reader view
-- Better overview of current downloads so it can't infinitely stack up in the download menu
+## 💻 To-do
+- [ ] improving website tab system and tab bar positioning at the top
+- [x] "Explain selected text with AI" (partly)
+- [ ] Reader view
+- [ ] Better overview of current downloads so it can't infinitely stack up in the download menu
+- [ ] Custom theme editor
 
 ## 👥 Contributing
 Feel free to open issues and create pull requests.
