@@ -48,7 +48,7 @@ START_PAGE_PATH = os.path.join(SCRIPT_DIR, "assets", "Silk-Start", "start", "v1.
 AI_SYSPROMPT_PATH = os.path.join(SCRIPT_DIR, "config", "sysprompt.txt")
 DOWNLOAD_PATH = os.path.join(SCRIPT_DIR, "Downloads")
 SUM_AI_MODEL = {"name":"lfm2.5-thinking:1.2b", "size":"700MB"}
-VERSION_NUMBER = "0.2.91"
+VERSION_NUMBER = "0.2.93"
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
     "DuckDuckGo":"https://duckduckgo.com/?q=",
@@ -152,13 +152,10 @@ class ThemeManager():
     def get_plain_theme(self):
         if self.theme != "automatic" and self.theme != "legacy":
             return self.theme
-        
-        elif self.theme == "automatic":
+
+        else:
             system_theme = "dark" if darkdetect.isDark() else "light"
             return system_theme
-        
-        elif self.theme == "legacy":
-            return "dark"
 
 class BetterWebEngine(QWebEngineView):
     sum_selected_with_ai = pyqtSignal(str)
@@ -823,7 +820,7 @@ class BrowserWindow(QMainWindow):
         bottom_bar_layout.addStretch(1)
 
         self.scale_down_btn = QPushButton()
-        self.scale_down_btn.setIcon(qta.icon("ph.magnifying-glass-minus"))
+        self.scale_down_btn.setIcon(qta.icon("ph.magnifying-glass-minus", color=icon_color))
         self.scale_down_btn.setProperty("class", "navbtns")
         self.scale_down_btn.setStyleSheet("padding: 5px")
         self.scale_down_btn.clicked.connect(self.request_scale_page_down)
@@ -833,10 +830,11 @@ class BrowserWindow(QMainWindow):
         bottom_bar_layout.addWidget(self.zoom_factor_label)
 
         self.scale_up_btn = QPushButton()
-        self.scale_up_btn.setIcon(qta.icon("ph.magnifying-glass-plus"))
+        self.scale_up_btn.setIcon(qta.icon("ph.magnifying-glass-plus", color=icon_color))
         self.scale_up_btn.setProperty("class", "navbtns")
         self.scale_up_btn.setStyleSheet("padding: 5px")
         self.scale_up_btn.clicked.connect(self.request_scale_page_up)
+
         bottom_bar_layout.addWidget(self.scale_up_btn)
 
     def init_bookmark_bar(self):
@@ -1018,10 +1016,12 @@ class BrowserWindow(QMainWindow):
         self.next_page_btn.setEnabled(self.web_tabs.currentWidget().history().canGoForward())
 
         # Update reload / stop button
+        icon_color = self.get_contrast_color_from_theme()
+
         if self.web_tabs.currentWidget().page_is_loading:
-            self.reload_page_btn.setIcon(qta.icon("ei.remove"))
+            self.reload_page_btn.setIcon(qta.icon("ei.remove", color=icon_color))
         else:
-            self.reload_page_btn.setIcon(qta.icon("fa6s.arrow-rotate-right"))
+            self.reload_page_btn.setIcon(qta.icon("fa6s.arrow-rotate-right", color=icon_color))
     
     # Website navigation
     def request_back_page(self):
@@ -1074,9 +1074,9 @@ class BrowserWindow(QMainWindow):
         self.next_page_btn.setIcon(qta.icon("fa6s.arrow-right", color=icon_color))
 
         if self.web_tabs.currentWidget().page_is_loading:
-            self.reload_page_btn.setIcon(qta.icon("ei.remove"))
+            self.reload_page_btn.setIcon(qta.icon("ei.remove", color=icon_color))
         else:
-            self.reload_page_btn.setIcon(qta.icon("fa6s.arrow-rotate-right"))
+            self.reload_page_btn.setIcon(qta.icon("fa6s.arrow-rotate-right", color=icon_color))
         
         self.load_btn.setIcon(qta.icon("mdi.arrow-right-bold-box", color=icon_color))
         self.add_tab_btn.setIcon(qta.icon("fa6s.plus", color=icon_color))
