@@ -152,18 +152,20 @@ class ThemeManager():
     def get_plain_theme(self):
         if self.theme != "automatic" and self.theme != "legacy":
             return self.theme
-
+        
         else:
             system_theme = "dark" if darkdetect.isDark() else "light"
             return system_theme
 
-class BetterWebEngine(QWebEngineView):
+class BetterWebEngineSignals(QObject):
     sum_selected_with_ai = pyqtSignal(str)
     sum_page_with_ai = pyqtSignal()
 
+class BetterWebEngine(QWebEngineView):
     def __init__(self, parent):
         super().__init__(parent)
         self.page_is_loading = False
+        self.signals = BetterWebEngineSignals()
 
         self.init_engine()
         self.update_engine_config()
@@ -183,7 +185,7 @@ class BetterWebEngine(QWebEngineView):
         sum_selected_with_ai_action.triggered.connect(self.prepare_sum_selected_with_ai)
 
         sum_page_with_ai_action = menu.addAction("Summarize page with AI")
-        sum_page_with_ai_action.triggered.connect(lambda: self.sum_page_with_ai.emit())
+        sum_page_with_ai_action.triggered.connect(lambda: self.signalssum_page_with_ai.emit())
 
         menu.exec(event.globalPos())
 
@@ -241,7 +243,7 @@ class BetterWebEngine(QWebEngineView):
         selected_text = self.selectedText().strip()
         
         if selected_text:
-            self.sum_selected_with_ai.emit(selected_text)
+            self.signals.sum_selected_with_ai.emit(selected_text)
     
     def update_engine_config(self):
         settings = self.settings()
@@ -478,13 +480,15 @@ class InstallWorker(QRunnable):
         print("Model installation complete.")
         self.installation_complete.emit()
 
-class AI_SummarizationWorker(QRunnable):
+class AI_SummarizationWorkerSignals(QObject):
     chunk_received = pyqtSignal(str)
     finished = pyqtSignal()
 
+class AI_SummarizationWorker(QRunnable):
     def __init__(self, text):
         super().__init__()
         self.text = text
+        self.signals = AI_SummarizationWorkerSignals()
     
     @pyqtSlot()
     def run(self):
@@ -500,9 +504,9 @@ class AI_SummarizationWorker(QRunnable):
 
         for chunk in stream:
             content = chunk['message']['content']
-            self.chunk_received.emit(content)
+            self.signals.chunk_received.emit(content)
         
-        self.finished.emit()
+        self.signals.finished.emit()
 
 class AI_Sidebar(QWidget):
     def __init__(self, parent):
@@ -549,8 +553,8 @@ class AI_Sidebar(QWidget):
 
         # Start AI worker
         worker = AI_SummarizationWorker(f"Summarize this text the way your system prompt intended to:\"{prompt}\"")
-        worker.chunk_received.connect(self.handle_chunk)
-        worker.finished.connect(self.summarization_complete)
+        worker.signals.chunk_received.connect(self.handle_chunk)
+        worker.signals.finished.connect(self.summarization_complete)
 
         QThreadPool.globalInstance().start(worker)
     
@@ -648,9 +652,14 @@ class BrowserWindow(QMainWindow):
         fileMenu.addAction(exitAction)
 
         # Edit Menu
+        createNewTabAction = editMenu.addAction("New Tab")
+        createNewTabAction.triggered.connect(self.create_new_tab)
+        createNewTabAction.setShortcut(QKeySequence("Ctrl + t"))
+        editMenu.addAction(createNewTabAction)
+
         backAction = editMenu.addAction("Back")
         backAction.triggered.connect(self.request_back_page)
-        backAction.setShortcut("Alt + left")
+        backAction.setShortcut(QKeySequence("Alt + left"))
         editMenu.addAction(backAction)
 
         nextAction = editMenu.addAction("Next")
@@ -931,8 +940,8 @@ class BrowserWindow(QMainWindow):
         self.tab_list[new_tab_index].urlChanged.connect(self.update_urlbar_content)
         self.tab_list[new_tab_index].iconChanged.connect(self.update_tab_info)
         self.tab_list[new_tab_index].page().profile().downloadRequested.connect(self.request_download)
-        self.tab_list[new_tab_index].sum_selected_with_ai.connect(self.summarize_selected_with_ai)
-        self.tab_list[new_tab_index].sum_page_with_ai.connect(self.summarize_current_page_ai)
+        self.tab_list[new_tab_index].signals.sum_selected_with_ai.connect(self.summarize_selected_with_ai)
+        self.tab_list[new_tab_index].signals.sum_page_with_ai.connect(self.summarize_current_page_ai)
 
         self.web_tabs.addTab(self.tab_list[new_tab_index], None)
         self.web_tabs.setCurrentIndex(new_tab_index)
