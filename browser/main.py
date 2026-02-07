@@ -44,6 +44,7 @@ import ollama
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "config", "settings.json")
 BOOKMARKS_PATH = os.path.join(SCRIPT_DIR, "config", "bookmarks.json")
+LOGO_PATH = os.path.join(SCRIPT_DIR, "assets", "mizu2.png")
 START_PAGE_PATH = os.path.join(SCRIPT_DIR, "assets", "Silk-Start", "start", "v1.1.1", "seperate", "index.html")
 AI_SYSPROMPT_PATH = os.path.join(SCRIPT_DIR, "config", "sysprompt.txt")
 DOWNLOAD_PATH = os.path.join(SCRIPT_DIR, "Downloads")
@@ -493,7 +494,7 @@ class AI_SummarizationWorker(QRunnable):
     @pyqtSlot()
     def run(self):
         print("Summarizing page content...")
-        stream = ollama.chat(
+        stream = ollama.generate(
             model=SUM_AI_MODEL["name"],
             messages=[
                 {"role": "system", "content": ai_system_prompt},
@@ -1092,6 +1093,8 @@ class BrowserWindow(QMainWindow):
         self.ai_summarize_btn.setIcon(qta.icon("ph.sparkle-fill", color=icon_color))
         self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.bookmark", color=icon_color))
         self.settings_btn.setIcon(qta.icon("fa5s.cog", color=icon_color))
+        self.scale_down_btn.setIcon(qta.icon("ph.magnifying-glass-minus", color=icon_color))
+        self.scale_up_btn.setIcon(qta.icon("ph.magnifying-glass-plus", color=icon_color))
 
     # Dialogs
     def add_current_to_bookmarks_dialog(self):
@@ -1382,15 +1385,14 @@ class BrowserWindow(QMainWindow):
         dlg = QDialog(self)
         dlg.setWindowTitle("About")
         dlg_layout = QVBoxLayout()
-        dlg.setFixedSize(240, 300)
+        dlg.setFixedSize(240, 325)
 
         logoLabel = QLabel(self)
-        logoLabel.setFixedSize(150, 150)
+        logoLabel.setFixedSize(170, 170)
         logoLabel.setScaledContents(True)
-        logo_path = os.path.join(SCRIPT_DIR, "assets", "mizu.png")
         
-        if os.path.exists(logo_path):
-            logoLabel.setPixmap(QPixmap(logo_path))
+        if os.path.exists(LOGO_PATH):
+            logoLabel.setPixmap(QPixmap(LOGO_PATH))
 
         about_title = QLabel("Silk Mizu")
         about_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -1423,7 +1425,7 @@ if __name__ == "__main__":
     # Load theme
     theme_manager = ThemeManager(app, current_settings["theme"])
     
-    app.setWindowIcon(QIcon(os.path.join(SCRIPT_DIR, "assets", "mizu.png")))
+    app.setWindowIcon(QIcon(LOGO_PATH))
     app.setStyle("breeze")
     window = BrowserWindow()
     window.show()
