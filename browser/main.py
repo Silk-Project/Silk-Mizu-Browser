@@ -183,10 +183,10 @@ class BetterWebEngine(QWebEngineView):
         menu = self.createStandardContextMenu()
         menu.addSeparator()
 
-        sum_selected_with_ai_action = menu.addAction("Summarize selected text with AI")
+        sum_selected_with_ai_action = menu.addAction(self.tr("Summarize selected text with AI"))
         sum_selected_with_ai_action.triggered.connect(self.prepare_sum_selected_with_ai)
 
-        sum_page_with_ai_action = menu.addAction("Summarize page with AI")
+        sum_page_with_ai_action = menu.addAction(self.tr("Summarize page with AI"))
         sum_page_with_ai_action.triggered.connect(lambda: self.signalssum_page_with_ai.emit())
 
         menu.exec(event.globalPos())
@@ -276,7 +276,7 @@ class DownloadManager(QMenu):
         container = QWidget()
 
         # Download UI elements
-        label = QLabel(f"Downloading: {self.short_if_needed(download_filename)}")
+        label = QLabel(f"{self.tr("Downloading:")} {self.short_if_needed(download_filename)}")
         label.setToolTip(download_filename)
         progress = QProgressBar()
         stop_btn = QPushButton()
@@ -329,20 +329,20 @@ class DownloadManager(QMenu):
     
         if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
             progress_bar.setValue(100)
-            label.setText(f"Finished: {self.short_if_needed(download_filename)}")
+            label.setText(f"{self.tr("Finished:")} {self.short_if_needed(download_filename)}")
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
-            label.setText(f"Canceled: {self.short_if_needed(download_filename)}")
+            label.setText(f"{self.tr("Canceled:")} {self.short_if_needed(download_filename)}")
             progress_bar.setEnabled(False)
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
-            label.setText(f"Error: {self.short_if_needed(download_filename)}")
+            label.setText(f"{self.tr("Error:")} {self.short_if_needed(download_filename)}")
             progress_bar.setStyleSheet("QProgressBar::chunk { background-color: red; }")
 
 class ManageBookmarksDialog(QDialog):
     def __init__(self, parent, passed_bookmarks):
         super().__init__(parent)
-        self.setWindowTitle("Manage Bookmarks")
+        self.setWindowTitle(self.tr("Manage Bookmarks"))
         self.setFixedSize(400, 300)
 
         # Temporary copy of bookmarks for editing
@@ -367,7 +367,7 @@ class ManageBookmarksDialog(QDialog):
         content_layout = QHBoxLayout()
 
         # Title
-        title_label = QLabel("Manage Bookmarks")
+        title_label = QLabel(self.tr("Manage Bookmarks"))
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px")
         layout.addWidget(title_label)
@@ -384,13 +384,13 @@ class ManageBookmarksDialog(QDialog):
         icon_color = self.parent().get_contrast_color_from_theme()
         action_layout = QVBoxLayout()
 
-        add_btn = QPushButton("Add New")
+        add_btn = QPushButton(self.tr("Add New"))
         add_btn.setIcon(qta.icon("fa6s.plus", color=icon_color))
         add_btn.setIconSize(QSize(16, 16))
         add_btn.clicked.connect(self.add_bookmark)
         action_layout.addWidget(add_btn)
 
-        delete_btn = QPushButton("Delete")
+        delete_btn = QPushButton(self.tr("Delete"))
         delete_btn.setIcon(qta.icon("fa6s.minus", color=icon_color))
         delete_btn.setIconSize(QSize(16, 16))
         delete_btn.clicked.connect(self.delete_bookmark)
@@ -404,11 +404,11 @@ class ManageBookmarksDialog(QDialog):
 
         self.name_lineedit = QLineEdit()
         self.name_lineedit.textEdited.connect(self.sync_data_live)
-        edit_layout.addRow("Bookmark Name: ", self.name_lineedit)
+        edit_layout.addRow(self.tr("Bookmark Name: "), self.name_lineedit)
 
         self.url_lineedit = QLineEdit()
         self.url_lineedit.textEdited.connect(self.sync_data_live)
-        edit_layout.addRow("Bookmark URL: ", self.url_lineedit)
+        edit_layout.addRow(self.tr("Bookmark URL: "), self.url_lineedit)
 
         # Save / Cancel buttons
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
@@ -457,7 +457,7 @@ class ManageBookmarksDialog(QDialog):
             self.list_widget.item(row).setText(new_name if new_name else "Untitled")
 
     def add_bookmark(self):
-        new_bm = {"name": "New Bookmark", "url": "https://"}
+        new_bm = {"name": self.tr("New Bookmark"), "url": "https://"}
         self.temp_bookmarks.append(new_bm)
         self.list_widget.addItem(new_bm['name'])
         self.list_widget.setCurrentRow(self.list_widget.count() - 1)
@@ -529,16 +529,16 @@ class AI_Sidebar(QWidget):
 
         self.output_textedit = QTextEdit()
         self.output_textedit.setReadOnly(True)
-        self.output_textedit.setPlaceholderText("Summarization output will appear here...")
+        self.output_textedit.setPlaceholderText(self.tr("Summarization output will appear here..."))
         self.output_textedit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.layout.addWidget(self.output_textedit)
 
-        self.download_chat_btn = QPushButton("Download")
+        self.download_chat_btn = QPushButton(self.tr("Download"))
         self.download_chat_btn.setIcon(qta.icon("fa6s.download", color=self.parent().get_contrast_color_from_theme()))
         self.download_chat_btn.clicked.connect(self.download_chat_dlg)
         self.input_controls_layout.addWidget(self.download_chat_btn)
 
-        self.clear_btn = QPushButton("Clear")
+        self.clear_btn = QPushButton(self.tr("Clear"))
         self.clear_btn.setIcon(qta.icon("fa6s.trash", color=self.parent().get_contrast_color_from_theme()))
         self.clear_btn.clicked.connect(self.clear_output)
         self.input_controls_layout.addWidget(self.clear_btn)
@@ -593,11 +593,11 @@ class AI_Sidebar(QWidget):
         if not chat_content:
             return
         
-        dir_name = QFileDialog.getExistingDirectory(self, "Select a Directory")
+        dir_name = QFileDialog.getExistingDirectory(self, self.tr("Select a Directory"))
         file_path = os.path.join(dir_name, file_name)
 
         if os.path.exists(file_path):
-            QMessageBox.critical(self, "Cannot write file", f"The file {file_name} already exists in the selected directory.")
+            QMessageBox.critical(self, self.tr("Cannot write file", f"The file {file_name} already exists in the selected directory."))
         
         with open(file_path, "w") as f:
             f.write(chat_content)
@@ -627,7 +627,7 @@ class BrowserWindow(QMainWindow):
         self.setCentralWidget(widget)
 
         if not os.path.exists(START_PAGE_PATH):
-            QMessageBox.critical(self, "Start page not found", "The Silk Start submodule was not found. Make sure you follow the cloning instructions carefully.")
+            QMessageBox.critical(self, self.tr("Start page not found"), self.tr("The Silk Start submodule was not found. Make sure you follow the cloning instructions carefully."))
     
     def init_menu_bar(self):
         # Add menu bar
@@ -962,7 +962,7 @@ class BrowserWindow(QMainWindow):
     def update_tab_titles(self):
         for tab_index in range(self.web_tabs.count()):
             web_engine = self.tab_list[tab_index]
-            title = web_engine.title() if web_engine.title() else "New Tab"
+            title = web_engine.title() if web_engine.title() else self.tr("New Tab")
             self.web_tabs.setTabText(tab_index, f"{" "*3}{title[:10]+"..." if len(title) > 10 else title}{" "*3}")
             self.web_tabs.setTabToolTip(tab_index, web_engine.title())
 
@@ -984,8 +984,8 @@ class BrowserWindow(QMainWindow):
     def request_download(self, download):
         if current_settings["download_warnings"]:
             warning_dlg = QMessageBox(self)
-            warning_dlg.setWindowTitle("Download Request")
-            warning_dlg.setText(f"Do you really want to download \"{download.suggestedFileName()}\"?")
+            warning_dlg.setWindowTitle(self.tr("Download Request"))
+            warning_dlg.setText(f"{self.tr("Do you really want to download")} \"{download.suggestedFileName()}\"?")
             warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
             warning_dlg.setIcon(QMessageBox.Icon.Warning)
 
@@ -1101,13 +1101,13 @@ class BrowserWindow(QMainWindow):
     # Dialogs
     def add_current_to_bookmarks_dialog(self):
         dlg = QDialog(self)
-        dlg.setWindowTitle("Add to Bookmarks")
+        dlg.setWindowTitle(self.tr("Add to Bookmarks"))
         dlg.setFixedSize(340, 220)
 
         layout = QGridLayout()
         form_layout = QFormLayout()
 
-        title_label = QLabel("Add Current Page to Bookmarks")
+        title_label = QLabel(self.tr("Add Current Page to Bookmarks"))
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("font-size: 16px; font-weight: bold; padding: 20px")
         form_layout.addRow(title_label)
@@ -1115,12 +1115,12 @@ class BrowserWindow(QMainWindow):
         name_lineedit = QLineEdit()
         name_lineedit.setText(self.web_tabs.currentWidget().title())
         name_lineedit.setMinimumWidth(200)
-        form_layout.addRow("Bookmark name: ", name_lineedit)
+        form_layout.addRow(self.tr("Bookmark name: "), name_lineedit)
 
         url_lineedit = QLineEdit()
         url_lineedit.setText(self.web_tabs.currentWidget().url().toString())
         url_lineedit.setMinimumWidth(200)
-        form_layout.addRow("Bookmark URL: ", url_lineedit)
+        form_layout.addRow(self.tr("Bookmark URL: "), url_lineedit)
 
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         button_box.accepted.connect(dlg.accept)
@@ -1150,7 +1150,7 @@ class BrowserWindow(QMainWindow):
             if dlg.temp_bookmarks == dlg.bookmarks_reference:
                 return
             
-            QMessageBox.information(self, "Changed bookmarks", "Bookmarks will refresh correctly after the program is restarted.")
+            QMessageBox.information(self, self.tr("Changed bookmarks"), self.tr("Bookmarks will refresh correctly after the program is restarted."))
 
             updated_bookmarks = {b['name']: b['url'] for b in dlg.temp_bookmarks}
         
@@ -1166,7 +1166,7 @@ class BrowserWindow(QMainWindow):
         global current_settings
 
         dlg = QDialog(self)
-        dlg.setWindowTitle("Settings")
+        dlg.setWindowTitle(self.tr("Settings"))
         dlg.setFixedSize(480, 360)
 
         layout = QGridLayout()
@@ -1284,7 +1284,7 @@ class BrowserWindow(QMainWindow):
                 install_model_btn.setText(f"{self.tr("Install")} ({SUM_AI_MODEL["size"]})")
                 install_model_btn.setIcon(qta.icon("fa6s.download", color=self.get_contrast_color_from_theme()))
             else:
-                install_model_btn.setText("Model Installed")
+                install_model_btn.setText(self.tr("Model Installed"))
                 install_model_btn.setIcon(qta.icon("fa6s.check", color=self.get_contrast_color_from_theme()))
             
             install_model_btn.setEnabled(not sum_model_installed)
@@ -1297,12 +1297,12 @@ class BrowserWindow(QMainWindow):
 
         install_model_btn.setFixedWidth(200)
         install_model_btn.clicked.connect(lambda: self.start_model_installation(install_model_btn))
-        ai_settings_layout.addRow("Install AI Page Summarization Model: ", install_model_btn)
+        ai_settings_layout.addRow(self.tr("Install AI Page Summarization Model: "), install_model_btn)
         
         ai_checkbox = QCheckBox()
         ai_checkbox.setEnabled(sum_model_installed)
         ai_checkbox.setChecked(current_settings["ai_summarization_enabled"])
-        ai_settings_layout.addRow("Enable AI Page Summarization: ", ai_checkbox)
+        ai_settings_layout.addRow(self.tr("Enable AI Page Summarization: "), ai_checkbox)
 
         # Add widgets to tab widget
         tabs.addTab(general_settings, self.tr("General"))
@@ -1374,7 +1374,7 @@ class BrowserWindow(QMainWindow):
 
     def start_model_installation(self, install_button):
         install_button.setEnabled(False)
-        install_button.setText("Installing...")
+        install_button.setText(self.tr("Installing..."))
         animation = qta.Spin(install_button)
         install_button.setIcon(qta.icon("mdi.loading", color=self.get_contrast_color_from_theme(), animation=animation))
 
@@ -1384,10 +1384,10 @@ class BrowserWindow(QMainWindow):
         self.threadpool.start(worker)
     
     def model_installation_complete(self, install_button):
-        install_button.setText("Model Installed")
+        install_button.setText(self.tr("Model Installed"))
         install_button.setIcon(qta.icon("fa6s.check", color=self.get_contrast_color_from_theme()))
         
-        QMessageBox.information(self, "Model Installed", "The AI page summarization model has been installed successfully. You can now enable AI page summarization in the settings.")
+        QMessageBox.information(self, self.tr("Model Installed"), self.tr("The AI page summarization model has been installed successfully. You can now enable AI page summarization in the settings."))
     
     def toggle_url_edit(self, enable, urledit):
         urledit.setEnabled(enable)
@@ -1398,7 +1398,7 @@ class BrowserWindow(QMainWindow):
         
     def about_dialog(self):
         dlg = QDialog(self)
-        dlg.setWindowTitle("About")
+        dlg.setWindowTitle(self.tr("About"))
         dlg_layout = QVBoxLayout()
         dlg.setFixedSize(240, 325)
 
