@@ -49,7 +49,7 @@ START_PAGE_PATH = os.path.join(SCRIPT_DIR, "assets", "Silk-Start", "start", "v1.
 AI_SYSPROMPT_PATH = os.path.join(SCRIPT_DIR, "config", "sysprompt.txt")
 DOWNLOAD_PATH = os.path.join(SCRIPT_DIR, "Downloads")
 SUM_AI_MODEL = {"name":"lfm2.5-thinking:1.2b", "size":"700MB"}
-VERSION_NUMBER = "0.2.93"
+VERSION_NUMBER = "0.2.94"
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
     "DuckDuckGo":"https://duckduckgo.com/?q=",
@@ -1250,7 +1250,7 @@ class BrowserWindow(QMainWindow):
         # Settings tab widget
         tabs = QTabWidget()
 
-        # General Tab
+        # General Settings
         general_settings = QWidget()
         general_settings_layout = QFormLayout()
         general_settings.setLayout(general_settings_layout)
@@ -1316,7 +1316,7 @@ class BrowserWindow(QMainWindow):
         download_warnings_checkbox.setChecked(current_settings["download_warnings"])
         security_settings_layout.addRow(self.tr("Display warning when download is requested: "), download_warnings_checkbox)
 
-        # Language Tab
+        # Language Settings
         language_settings = QWidget()
         language_settings_layout = QFormLayout()
         language_settings.setLayout(language_settings_layout)
@@ -1330,7 +1330,7 @@ class BrowserWindow(QMainWindow):
         language_select_combobox.setCurrentText(LANGUAGE_TO_NAME[current_settings["language"]])
         language_settings_layout.addRow(self.tr("Program Language: "), language_select_combobox)
 
-        # Engine tab settings
+        # Engine settings
         engine_settings = QWidget()
         engine_settings_layout = QFormLayout()
         engine_settings.setLayout(engine_settings_layout)
@@ -1348,7 +1348,7 @@ class BrowserWindow(QMainWindow):
         scrollbars_enabled_checkbox.setChecked(current_settings["scrollbars_enabled"])
         engine_settings_layout.addRow(self.tr("Scrollbars enabled: "), scrollbars_enabled_checkbox)
 
-        # AI tab settings
+        # AI Summarization settings
         ai_settings = QWidget()
         ai_settings_layout = QFormLayout()
         ai_settings.setLayout(ai_settings_layout)
