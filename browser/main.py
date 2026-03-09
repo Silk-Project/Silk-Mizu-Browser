@@ -41,7 +41,7 @@ from PyQt6.QtWidgets import (
     QWidgetAction,
     QScrollArea,
     QStackedWidget,
-    QFrame
+    QFrame,
 )
 from PyQt6.QtCore import Qt, QUrl, QSize, pyqtSlot, pyqtSignal, QThreadPool, QRunnable, QObject, QTranslator
 from PyQt6.QtWebEngineWidgets import QWebEngineView
@@ -866,6 +866,7 @@ class BetterWebEngine(QWebEngineView):
         super().__init__(parent)
         self.page_is_loading = False
         self.signals = BetterWebEngineSignals()
+        self.page().setBackgroundColor(QColor("#101011"))
 
         self.init_engine()
         self.update_engine_config()
