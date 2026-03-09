@@ -4,7 +4,12 @@ import json
 import re
 import copy
 import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import requests
+import subprocess
+import io
+import shutil
+import zipfile
 import importlib.util
 from pathlib import Path
 from PyQt6.QtWidgets import (
@@ -57,7 +62,7 @@ DOWNLOAD_PATH = os.path.join(SCRIPT_DIR, "Downloads")
 EXTENSIONS_PATH = os.path.join(SCRIPT_DIR, "extensions")
 ADDITIONAL_QSS_PATH = os.path.join(SCRIPT_DIR, "assets", "style.qss")
 SUM_AI_MODEL = {"name":"lfm2.5-thinking:1.2b", "size":"700MB"}
-VERSION_NUMBER = "0.2.93"
+VERSION_NUMBER = "0.3 Alpha"
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
     "DuckDuckGo":"https://duckduckgo.com/?q=",
@@ -144,6 +149,13 @@ with open(AI_SYSPROMPT_PATH, 'r') as f:
 with open(ADDITIONAL_QSS_PATH, 'r') as f:
     additional_qss = f.read()
 
+def check_dependencies(deps_list):
+    missing = []
+    for dep in deps_list:
+        if importlib.util.find_spec(dep) is None:
+            missing.append(dep)
+    return missing
+
 class ThemeManager():
     def __init__(self, applic, theme="dark"):
         self.applic = applic
@@ -212,13 +224,20 @@ class ExtensionMetadata:
     author: str
     description: str
     version: str
-    icon_path: str
-    script_path: str
+    script_path: str = None
+    icon_path: str = ""
+
+    # Installables
+    dependencies: list[str] = field(default_factory=list)
+    download_path: str = None
 
 class ExtensionItemWidget(QFrame):
-    def __init__(self, metadata: ExtensionMetadata, parent=None):
+    refresh_local_extensions = pyqtSignal()
+
+    def __init__(self, metadata: ExtensionMetadata, installable=False, parent=None):
         super().__init__(parent)
         self.setStyleSheet("ExtensionItemWidget { border: 1px solid #414242; border-radius: 3px; }")
+        self.installable = installable
         self.metadata = metadata
         
         self.layout = QHBoxLayout(self)
@@ -258,6 +277,16 @@ class ExtensionItemWidget(QFrame):
         title_layout.addWidget(extension_author, alignment=Qt.AlignmentFlag.AlignLeft)
 
         title_layout.addStretch()
+
+        if self.installable:
+            required_dependencies = check_dependencies(self.metadata.dependencies)
+
+            if len(required_dependencies) > 0:
+                extension_deps = QLabel(f"Required libraries: {", ".join(required_dependencies)}")
+                extension_deps.setWordWrap(True)
+                extension_deps.setStyleSheet("color: #808080; border: none;")
+                extension_deps.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+                details_layout.addWidget(extension_deps)
                     
         extension_description = QLabel(self.metadata.description)
         extension_description.setWordWrap(True)
@@ -265,17 +294,26 @@ class ExtensionItemWidget(QFrame):
         extension_description.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         details_layout.addWidget(extension_description)
 
-        # Extension Controls
         extension_info_btn = QPushButton()
         extension_info_btn.setIcon(qta.icon("fa6s.circle-info"))
         extension_info_btn.setStyleSheet("padding: 8px;")
         extension_info_btn.clicked.connect(self.show_extension_info)
         self.layout.addWidget(extension_info_btn, alignment=Qt.AlignmentFlag.AlignRight)
 
-        delete_extension_btn = QPushButton()
-        delete_extension_btn.setIcon(qta.icon("fa6s.trash"))
-        delete_extension_btn.setStyleSheet("padding: 8px;")
-        self.layout.addWidget(delete_extension_btn, alignment=Qt.AlignmentFlag.AlignRight)
+        # Extension Controls
+        if not self.installable:
+            self.delete_extension_btn = QPushButton()
+            self.delete_extension_btn.setIcon(qta.icon("fa6s.trash"))
+            self.delete_extension_btn.setStyleSheet("padding: 8px;")
+            self.delete_extension_btn.clicked.connect(self.delete_extension)
+            self.layout.addWidget(self.delete_extension_btn, alignment=Qt.AlignmentFlag.AlignRight)
+        
+        else:
+            self.download_extension_btn = QPushButton()
+            self.download_extension_btn.setIcon(qta.icon("fa6s.download"))
+            self.download_extension_btn.setStyleSheet("padding: 8px;")
+            self.download_extension_btn.clicked.connect(self.install_extension)
+            self.layout.addWidget(self.download_extension_btn, alignment=Qt.AlignmentFlag.AlignRight)
     
     def show_extension_info(self):
         dlg = QDialog(self)
@@ -321,6 +359,192 @@ class ExtensionItemWidget(QFrame):
         dlg.setLayout(dlg_layout)
         
         dlg.exec()
+    
+    def install_extension(self):
+        self.download_extension_btn.setEnabled(False)
+        animation = qta.Spin(self.download_extension_btn)
+        self.download_extension_btn.setIcon(qta.icon("mdi.loading", animation=animation))
+
+        warning_dlg = QMessageBox(self)
+        warning_dlg.setWindowTitle(self.tr("Download Request"))
+        warning_dlg.setText(f"{self.tr("Do you really want to download")} \"{self.metadata.name}\"?")
+        warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        warning_dlg.setIcon(QMessageBox.Icon.Warning)
+
+        if warning_dlg.exec() == QMessageBox.StandardButton.Ok:
+            install_dialog = ExtensionInstallDialog(self.metadata, self)
+            install_dialog.exec()
+            self.refresh_local_extensions.emit()
+        
+        self.download_extension_btn.setEnabled(True)
+        self.download_extension_btn.setIcon(qta.icon("fa6s.download"))
+    
+    def delete_extension(self):
+        warning_dlg = QMessageBox(self)
+        warning_dlg.setWindowTitle(self.tr("Download Request"))
+        warning_dlg.setText(f"{self.tr("Do you really want to delete")} \"{self.metadata.name}\"?")
+        warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        warning_dlg.setIcon(QMessageBox.Icon.Warning)
+
+        if warning_dlg.exec() == QMessageBox.StandardButton.Ok:
+            extension_path = os.path.join(EXTENSIONS_PATH, self.metadata.app_id)
+
+            if os.path.exists(extension_path):
+                try:
+                    shutil.rmtree(extension_path)
+                    self.refresh_local_extensions.emit()
+                
+                except Exception as e:
+                    print(e)
+
+class ExtensionInstallDialog(QDialog):
+    def __init__(self, metadata: ExtensionMetadata, parent = ...):
+        super().__init__(parent)
+
+        self.setFixedSize(300, 200)
+
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        self.metadata = metadata
+
+        self.init_ui()
+        self.install_dependencies()
+    
+    def init_ui(self):
+        self.title_label = QLabel("Install Extension")
+        self.title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px;")
+        self.layout.addWidget(self.title_label, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        self.install_progress = QProgressBar()
+        self.install_progress.setMaximum(len(self.metadata.dependencies))
+        self.install_progress.setValue(0)
+        self.layout.addWidget(self.install_progress)
+
+        self.status_label = QLabel("Preparing Installation...")
+        self.layout.addWidget(self.status_label, alignment=Qt.AlignmentFlag.AlignLeft)
+
+        self.layout.addStretch()
+    
+    def install_dependencies(self):
+        # Install depencies (if needed)
+        required_dependencies = check_dependencies(self.metadata.dependencies)
+
+        if len(required_dependencies) > 0:
+            self.threadpool = QThreadPool()
+            worker = DependencyWorker(required_dependencies=required_dependencies)
+            worker.signals.dependencies_installed.connect(self.install_extension)
+            worker.signals.dependency_install_started.connect(lambda dep: self.show_status(f"Installing dependencies: {dep}"))
+            worker.signals.dependency_installed.connect(self.update_dep_progress)
+            self.threadpool.start(worker)
+        
+        else:
+            self.install_extension()
+    
+    def install_extension(self):
+        # Download extension zip
+        self.install_progress.setMaximum(0)
+        self.show_status(f"Downloading extension: {self.metadata.name}")
+
+        self.threadpool = QThreadPool()
+        fetcher = ZipInstaller(self.metadata.download_path, self.metadata.app_id)
+        fetcher.singals.zip_fetched.connect(lambda: self.show_status(f"Extracting extension: {self.metadata.name}"))
+        fetcher.singals.zip_fetch_failed.connect(self.install_failed)
+        fetcher.singals.zip_extracted.connect(self.finish_installation)
+        self.threadpool.start(fetcher)
+    
+    def finish_installation(self):
+        self.show_status(f"Extension successfully installed: {self.metadata.name}")
+        self.accept()
+    
+    def install_failed(self, message):
+        self.show_status(f"Install failed: {message}")
+    
+    def show_status(self, string):
+        self.status_label.setText(string)
+    
+    def update_dep_progress(self):
+        current_progress = self.install_progress.value()
+        self.install_progress.setValue(current_progress + 1)
+
+class ZipInstallerObject(QObject):
+    zip_fetched = pyqtSignal()
+    zip_fetch_failed = pyqtSignal(str)
+    zip_extracted = pyqtSignal()
+
+class ZipInstaller(QRunnable):
+    def __init__(self, url, app_id):
+        super().__init__()
+
+        self.app_id = app_id
+        self.download_url = url
+        self.singals = ZipInstallerObject()
+
+    @pyqtSlot()
+    def run(self):
+        install_dir = os.path.join(EXTENSIONS_PATH, self.app_id)
+
+        try:
+            response = requests.get(self.download_url, timeout=10)
+
+            if response.status_code == 200:
+                self.singals.zip_fetched.emit()
+                
+                with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+                    if os.path.exists(install_dir):
+                        shutil.rmtree(install_dir)
+            
+                    os.makedirs(install_dir, exist_ok=True)
+                    z.extractall(install_dir)
+            
+                    self.singals.zip_extracted.emit()
+        
+        except Exception as e:
+            self.singals.zip_fetch_failed.emit(str(e))
+
+class DependencyWorkerSignals(QObject):
+    dependencies_installed = pyqtSignal()
+    dependency_install_started = pyqtSignal(str)
+    dependency_installed = pyqtSignal()
+    task_failed = pyqtSignal(str)
+
+class DependencyWorker(QRunnable):
+    def __init__(self, required_dependencies: list):
+        super().__init__()
+
+        self.required_dependencies = required_dependencies
+        self.signals = DependencyWorkerSignals()
+
+    @pyqtSlot()
+    def run(self):
+        for dep in self.required_dependencies:
+            self.signals.dependency_install_started.emit(dep)
+            print(f"Installing: {dep}")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", dep])
+            self.signals.dependency_installed.emit()
+        
+        self.signals.dependencies_installed.emit()
+
+class WebExtensionFetcherSignals(QObject):
+    response_received = pyqtSignal(list)
+    task_failed = pyqtSignal(str)
+
+class WebExtensionFetcher(QRunnable):
+    def __init__(self):
+        super().__init__()
+        self.signals = WebExtensionFetcherSignals()
+
+    @pyqtSlot()
+    def run(self):
+        try:
+            url = "https://raw.githubusercontent.com/FlipArtYT/Mizu-Browser-Extensions/refs/heads/main/index.json"
+            res = requests.get(url)
+                
+            if res.status_code == 200:
+                data = res.json()
+                self.signals.response_received.emit(data["extensions"])
+            
+        except Exception as e:
+            self.signals.task_failed.emit(e)
 
 class WebExtensionsDialog(QDialog):
     def __init__(self, parent = ...):
@@ -403,6 +627,8 @@ class WebExtensionsDialog(QDialog):
         self.store_widgets_main_layout.addLayout(self.store_widgets_controls)
         self.store_widgets_main_layout.addLayout(self.store_widgets_repeatable_layout)
 
+        self.store_widgets_main_layout.addStretch()
+
         store_tab.setWidget(self.store_widgets_widget)
 
         self.store_widgets_widget.setLayout(self.store_widgets_main_layout)
@@ -459,16 +685,36 @@ class WebExtensionsDialog(QDialog):
 
         
         for el in final_extension_data:
-            item = ExtensionItemWidget(el)
+            item = ExtensionItemWidget(el, False, self)
+            item.refresh_local_extensions.connect(self.load_installed_extensions)
             self.installed_widgets_repeatable_layout.addWidget(item)
 
-    def load_store_extensions(self):
-        self.clear_layout(self.store_widgets_repeatable_layout)
-        info_label = QLabel(self.tr("Public extensions coming soon..."))
-        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        info_label.setStyleSheet("color: grey;")
-        self.store_widgets_repeatable_layout.addWidget(info_label)
+    def load_store_extensions(self):        
+        self.threadpool = QThreadPool()
+        fetcher = WebExtensionFetcher()
+        fetcher.signals.task_failed.connect(lambda: print("Fail"))
+        fetcher.signals.response_received.connect(self.show_store_extensions)
+        self.threadpool.start(fetcher)
     
+    def show_store_extensions(self, data):
+        self.clear_layout(self.store_widgets_repeatable_layout)
+
+        if len(data) == 0:
+            info_label = QLabel(self.tr("No extensions found."))
+            info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            info_label.setStyleSheet("color: grey;")
+            self.installed_widgets_repeatable_layout.addWidget(info_label)
+
+            self.installed_widgets_repeatable_layout.addStretch()
+
+            return
+
+        for el in data:
+            metadata = ExtensionMetadata(**el)
+            item = ExtensionItemWidget(metadata, True, self)
+            item.refresh_local_extensions.connect(self.load_installed_extensions)
+            self.store_widgets_repeatable_layout.addWidget(item)
+
     def toggle_installed_order(self):
         self.installed_order_asc = not self.installed_order_asc
 
@@ -917,11 +1163,13 @@ class ManageBookmarksDialog(QDialog):
             self.temp_bookmarks.pop(row)
             self.list_widget.takeItem(row)
 
-class InstallWorker(QRunnable):
+class InstallWorkerSignals(QObject):
     installation_complete = pyqtSignal()
 
+class InstallWorker(QRunnable):
     def __init__(self, model_name):
         super().__init__()
+        self.signals = InstallWorkerSignals()
         self.model_name = model_name
     
     @pyqtSlot()
@@ -929,7 +1177,7 @@ class InstallWorker(QRunnable):
         print(f"Installing model: {self.model_name}...")
         ollama.pull(self.model_name)
         print("Model installation complete.")
-        self.installation_complete.emit()
+        self.signals.installation_complete.emit()
 
 class AI_SummarizationWorkerSignals(QObject):
     chunk_received = pyqtSignal(str)
@@ -1911,7 +2159,7 @@ class BrowserWindow(QMainWindow):
 
         self.threadpool = QThreadPool()
         worker = InstallWorker(SUM_AI_MODEL["name"])
-        worker.installation_complete.connect(lambda: self.model_installation_complete(install_button))
+        worker.signals.installation_complete.connect(lambda: self.model_installation_complete(install_button))
         self.threadpool.start(worker)
     
     def model_installation_complete(self, install_button):
