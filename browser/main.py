@@ -46,7 +46,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QUrl, QSize, pyqtSlot, pyqtSignal, QThreadPool, QRunnable, QObject, QTranslator
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEngineDownloadRequest
-from PyQt6.QtGui import QPixmap, QAction, QKeySequence, QIcon
+from PyQt6.QtGui import QPixmap, QAction, QKeySequence, QIcon, QColor
 import qtawesome as qta
 import qdarktheme
 import darkdetect
