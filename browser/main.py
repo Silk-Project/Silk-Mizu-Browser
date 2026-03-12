@@ -194,6 +194,13 @@ class ThemeManager():
         else:
             system_theme = "dark" if darkdetect.isDark() else "light"
             return system_theme
+    
+    def get_contrast_color_from_theme(self):
+        if self.get_plain_theme() == "light":
+            return "black"
+        else:
+            return "white"
+
 
 class ExtensionManager():
     def __init__(self):
@@ -554,7 +561,8 @@ class WebExtensionsDialog(QDialog):
         self.setFixedSize(624, 468)
 
         self.installed_order_asc = True
-        self.installed_extension_widgets = {}
+        self.store_order_asc = True
+        self.loaded_store_extensions = []
 
         self.init_ui()
     
@@ -601,7 +609,7 @@ class WebExtensionsDialog(QDialog):
         self.installed_widgets_controls.addWidget(self.installed_order_btn)
 
         self.install_tab_sort_combobox = QComboBox()
-        self.install_tab_sort_combobox.addItems([self.tr("Don't sort"), self.tr("Sort by name"), self.tr("Sort by Developer")])
+        self.install_tab_sort_combobox.addItems([self.tr("Sort by name"), self.tr("Sort by developer")])
         self.install_tab_sort_combobox.setStyleSheet("border-radius: 3px;")
         self.install_tab_sort_combobox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.install_tab_sort_combobox.currentTextChanged.connect(self.load_installed_extensions)
@@ -632,6 +640,29 @@ class WebExtensionsDialog(QDialog):
         store_tab.setWidget(self.store_widgets_widget)
 
         self.store_widgets_widget.setLayout(self.store_widgets_main_layout)
+
+        # Control Buttons
+        self.store_tab_refresh_btn = QPushButton("Refresh")
+        self.store_tab_refresh_btn.setIcon(qta.icon("ei.refresh"))
+        self.store_tab_refresh_btn.setStyleSheet("border: 1px solid #414242; border-radius: 3px; padding: 8px;")
+        self.store_tab_refresh_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.store_tab_refresh_btn.clicked.connect(self.load_store_extensions)
+        self.store_widgets_controls.addWidget(self.store_tab_refresh_btn)
+        
+        self.store_order_btn = QPushButton()
+        self.store_order_btn.setStyleSheet("border: 1px solid #414242; border-radius: 3px; padding: 8px;")
+        self.store_order_btn.setIcon(qta.icon("fa5s.sort-amount-down-alt"))
+        self.store_order_btn.clicked.connect(self.toggle_store_order)
+        self.store_widgets_controls.addWidget(self.store_order_btn)
+
+        self.store_tab_sort_combobox = QComboBox()
+        self.store_tab_sort_combobox.addItems([self.tr("Sort by name"), self.tr("Sort by developer")])
+        self.store_tab_sort_combobox.setStyleSheet("border-radius: 3px;")
+        self.store_tab_sort_combobox.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.store_tab_sort_combobox.currentTextChanged.connect(lambda _: self.show_store_extensions())
+        self.store_widgets_controls.addWidget(self.store_tab_sort_combobox)
+
+        self.store_widgets_controls.addStretch()
 
         self.load_store_extensions()
 
@@ -669,14 +700,15 @@ class WebExtensionsDialog(QDialog):
             return
 
         final_extension_data = extension_manager.get_installed()
-        
-        if self.install_tab_sort_combobox.currentIndex() == 1:
+
+        # Sort extensions
+        if self.install_tab_sort_combobox.currentIndex() == 0:
             # Sort by extension name
             final_extension_data.sort(key=lambda e: e.name, reverse=not self.installed_order_asc)
             self.installed_order_btn.setEnabled(True)
         
-        elif self.install_tab_sort_combobox.currentIndex() == 2:
-            # Sort by Developer name
+        elif self.install_tab_sort_combobox.currentIndex() == 1:
+            # Sort by developer name
             final_extension_data.sort(key=lambda e: e.author, reverse=not self.installed_order_asc)
             self.installed_order_btn.setEnabled(True)
         
@@ -689,17 +721,21 @@ class WebExtensionsDialog(QDialog):
             item.refresh_local_extensions.connect(self.load_installed_extensions)
             self.installed_widgets_repeatable_layout.addWidget(item)
 
-    def load_store_extensions(self):        
+    def load_store_extensions(self):
+        print("Loading store")    
         self.threadpool = QThreadPool()
         fetcher = WebExtensionFetcher()
         fetcher.signals.task_failed.connect(lambda: print("Fail"))
         fetcher.signals.response_received.connect(self.show_store_extensions)
         self.threadpool.start(fetcher)
     
-    def show_store_extensions(self, data):
+    def show_store_extensions(self, data=[]):
         self.clear_layout(self.store_widgets_repeatable_layout)
 
-        if len(data) == 0:
+        print(len(data))
+        print(len(self.loaded_store_extensions))
+
+        if len(data) == 0 and len(self.loaded_store_extensions) == 0:
             info_label = QLabel(self.tr("No extensions found."))
             info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             info_label.setStyleSheet("color: grey;")
@@ -708,8 +744,30 @@ class WebExtensionsDialog(QDialog):
             self.installed_widgets_repeatable_layout.addStretch()
 
             return
+        
+        elif len(data) > 0:
+            print(f"Heres data: {data}")
+            self.loaded_store_extensions = data
 
-        for el in data:
+        # Copy loaded extensions to a temporary variable
+        final_extension_data = self.loaded_store_extensions
+        print(f"Loaded store extensions: {self.loaded_store_extensions}")
+        
+        # Sort Extensions
+        if self.store_tab_sort_combobox.currentIndex() == 0:
+            # Sort by extension name
+            final_extension_data.sort(key=lambda e: e["name"], reverse=not self.store_order_asc)
+            self.store_order_btn.setEnabled(True)
+        
+        elif self.store_tab_sort_combobox.currentIndex() == 1:
+            # Sort by developer name
+            final_extension_data.sort(key=lambda e: e["author"], reverse=not self.store_order_asc)
+            self.store_order_btn.setEnabled(True)
+        
+        else:
+            self.store_order_btn.setEnabled(False)
+
+        for el in final_extension_data:
             metadata = ExtensionMetadata(**el)
             item = ExtensionItemWidget(metadata, True, self)
             item.refresh_local_extensions.connect(self.load_installed_extensions)
@@ -724,6 +782,16 @@ class WebExtensionsDialog(QDialog):
             self.installed_order_btn.setIcon(qta.icon("fa5s.sort-amount-up-alt"))
         
         self.load_installed_extensions()
+    
+    def toggle_store_order(self):
+        self.store_order_asc = not self.store_order_asc
+
+        if self.store_order_asc:
+            self.store_order_btn.setIcon(qta.icon("fa5s.sort-amount-down-alt"))
+        else:
+            self.store_order_btn.setIcon(qta.icon("fa5s.sort-amount-up-alt"))
+        
+        self.show_store_extensions([])
     
     def clear_layout(self, layout):
         if layout is not None:
@@ -797,13 +865,31 @@ class Extension_Sidebar(QWidget):
 
     def load_extensions(self):
         self.clear_layout(self.extension_bar_layout)
+
+        while self.extension_content.count() > 0:
+            widget = self.extension_content.widget(0)
+            self.extension_content.removeWidget(widget)
+            widget.deleteLater()
+
         
         extension_manager.update_extension_list()
         extensions = extension_manager.get_installed()
+        ai_extensions_enabled = current_settings["ai_summarization_enabled"]
 
         self.extension_bar_layout.addStretch()
 
         # Extension content
+        if ai_extensions_enabled:
+            ai_sum_ext_btn = QPushButton()
+            ai_sum_ext_btn.setIcon(qta.icon("msc.sparkle-filled"))
+            ai_sum_ext_btn.setFixedSize(35, 35)
+            ai_sum_ext_btn.clicked.connect(lambda _, i=0: self.toggle_extension(i))
+            self.extension_bar_layout.addWidget(ai_sum_ext_btn, alignment=Qt.AlignmentFlag.AlignHCenter)
+            print("AI Extension:", 0)
+
+            self.ai_sum_ext = AI_Extension(self)
+            self.extension_content.addWidget(self.ai_sum_ext)
+
         for i, el in enumerate(extensions):
             try:
                 spec = spec = importlib.util.spec_from_file_location(
@@ -819,7 +905,17 @@ class Extension_Sidebar(QWidget):
                 self.extension_content.addWidget(plugin_instance)
 
                 button = Extension_Sidebar_Button(el)
-                button.clicked.connect(lambda _, i=i: self.toggle_extension(i))
+
+                print(f"{el.name}: ", end="")
+
+                if not ai_extensions_enabled:
+                    button.clicked.connect(lambda _, i=i: self.toggle_extension(i))
+                    print(i)
+
+                else:
+                    button.clicked.connect(lambda _, i=i: self.toggle_extension(i+1))
+                    print(i+1)
+                
                 self.extension_bar_layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
                 
             except Exception as e:
@@ -828,6 +924,9 @@ class Extension_Sidebar(QWidget):
         self.extension_bar_layout.addStretch()
     
     def toggle_extension(self, id):
+        print(id)
+        print(f"Length: {self.extension_content.count()}")
+        print(f"Current: {self.extension_content.currentIndex()}")
         if id != self.extension_content.currentIndex():
             self.extension_content.setCurrentIndex(id)
 
@@ -845,7 +944,7 @@ class Extension_Sidebar(QWidget):
             self.extension_content.hide()
     
     def get_contrast_color_from_theme(self):
-        return self.parent().get_contrast_color_from_theme()
+        return theme_manager.get_contrast_color_from_theme()
     
     def clear_layout(self, layout):
         if layout is not None:
@@ -1077,7 +1176,7 @@ class ManageBookmarksDialog(QDialog):
         content_layout.addWidget(self.list_widget, 1)
 
         # Right side: Bookmark actions
-        icon_color = self.parent().get_contrast_color_from_theme()
+        icon_color = theme_manager.get_contrast_color_from_theme()
         action_layout = QVBoxLayout()
 
         add_btn = QPushButton(self.tr("Add New"))
@@ -1230,12 +1329,12 @@ class AI_Extension(QWidget):
         self.layout.addWidget(self.output_textedit)
 
         self.download_chat_btn = QPushButton(self.tr("Download"))
-        self.download_chat_btn.setIcon(qta.icon("fa6s.download", color=self.parent().get_contrast_color_from_theme()))
+        self.download_chat_btn.setIcon(qta.icon("fa6s.download", color=theme_manager.get_contrast_color_from_theme()))
         self.download_chat_btn.clicked.connect(self.download_chat_dlg)
         self.input_controls_layout.addWidget(self.download_chat_btn)
 
         self.clear_btn = QPushButton(self.tr("Clear"))
-        self.clear_btn.setIcon(qta.icon("fa6s.trash", color=self.parent().get_contrast_color_from_theme()))
+        self.clear_btn.setIcon(qta.icon("fa6s.trash", color=theme_manager.get_contrast_color_from_theme()))
         self.clear_btn.clicked.connect(self.clear_output)
         self.input_controls_layout.addWidget(self.clear_btn)
 
@@ -1320,7 +1419,7 @@ class BrowserWindow(QMainWindow):
         self.init_menu_bar()
         self.init_control_ui()
         self.init_bookmark_bar()
-        self.init_Extension_Sidebar()
+        self.init_extension_sidebar()
         self.init_web_engine()
 
         # Install translator
@@ -1403,7 +1502,7 @@ class BrowserWindow(QMainWindow):
 
         # AI Summarization Menu
         self.toggleAIsidebarAction = QAction(self.tr("Toggle AI Summarization Sidebar"), self)
-        self.toggleAIsidebarAction.triggered.connect(self.toggle_Extension_Sidebar)
+        self.toggleAIsidebarAction.triggered.connect(self.toggle_extension_sidebar)
         self.toggleAIsidebarAction.setShortcut(QKeySequence("Ctrl + b"))
         self.aiMenu.addAction(self.toggleAIsidebarAction)
 
@@ -1441,16 +1540,15 @@ class BrowserWindow(QMainWindow):
         self.layout.addWidget(self.bottom_bar, 3, 0)
 
         # Browser main controls
-        icon_color = self.get_contrast_color_from_theme()
+        icon_color = theme_manager.get_contrast_color_from_theme()
 
         # Left side: Basic navigation (Back, Forward page)
-        self.Extension_Sidebar_btn = QPushButton()
-        self.Extension_Sidebar_btn.setIcon(qta.icon("msc.layout-sidebar-left", color=icon_color))
-        self.Extension_Sidebar_btn.setProperty("class", "navbtns")
-        self.Extension_Sidebar_btn.setStyleSheet("padding: 8px;")
-        self.Extension_Sidebar_btn.setVisible(current_settings["ai_summarization_enabled"])
-        self.Extension_Sidebar_btn.clicked.connect(self.toggle_Extension_Sidebar)
-        controls_layout.addWidget(self.Extension_Sidebar_btn)
+        self.extension_sidebar_btn = QPushButton()
+        self.extension_sidebar_btn.setIcon(qta.icon("msc.layout-sidebar-left", color=icon_color))
+        self.extension_sidebar_btn.setProperty("class", "navbtns")
+        self.extension_sidebar_btn.setStyleSheet("padding: 8px;")
+        self.extension_sidebar_btn.clicked.connect(self.toggle_extension_sidebar)
+        controls_layout.addWidget(self.extension_sidebar_btn)
 
         self.prev_page_btn = QPushButton()
         self.prev_page_btn.setIcon(qta.icon("fa6s.arrow-left", color=icon_color))
@@ -1644,7 +1742,7 @@ class BrowserWindow(QMainWindow):
         self.bookmarks_layout.addStretch(1)
     
     # AI sidebar
-    def init_Extension_Sidebar(self):
+    def init_extension_sidebar(self):
         # Create middle layout
         self.middle_layout = QHBoxLayout()
         self.middle_layout.setContentsMargins(0, 0, 0, 0)
@@ -1652,28 +1750,28 @@ class BrowserWindow(QMainWindow):
         self.layout.addLayout(self.middle_layout, 2, 0)
 
         # AI Sidebar
-        self.Extension_Sidebar = Extension_Sidebar(self)
-        self.Extension_Sidebar.setVisible(False)
-        self.middle_layout.addWidget(self.Extension_Sidebar)
+        self.extension_sidebar = Extension_Sidebar(self)
+        self.extension_sidebar.setVisible(False)
+        self.middle_layout.addWidget(self.extension_sidebar)
     
-    def toggle_Extension_Sidebar(self):
-        is_visible = self.Extension_Sidebar.isVisible()
-        self.Extension_Sidebar.setVisible(not is_visible)
+    def toggle_extension_sidebar(self):
+        is_visible = self.extension_sidebar.isVisible()
+        self.extension_sidebar.setVisible(not is_visible)
     
     def summarize_current_page_ai(self):
         if not current_settings["ai_summarization_enabled"]:
             return
         
-        self.Extension_Sidebar.setVisible(True)
+        self.extension_sidebar.setVisible(True)
         current_page = self.web_tabs.currentWidget()
-        current_page.page().toPlainText(self.Extension_Sidebar.send_webpage)
+        current_page.page().toPlainText(self.extension_sidebar.ai_sum_ext.send_webpage)
     
     def summarize_selected_with_ai(self, selected_text):
         if not current_settings["ai_summarization_enabled"]:
             return
         
-        self.Extension_Sidebar.setVisible(True)
-        self.Extension_Sidebar.send_webpage(selected_text)
+        self.extension_sidebar.setVisible(True)
+        self.extension_sidebar.send_webpage(selected_text)
 
     # Website Tabs
     def init_web_engine(self):
@@ -1804,7 +1902,7 @@ class BrowserWindow(QMainWindow):
         self.next_page_btn.setEnabled(self.web_tabs.currentWidget().history().canGoForward())
 
         # Update reload / stop button
-        icon_color = self.get_contrast_color_from_theme()
+        icon_color = theme_manager.get_contrast_color_from_theme()
 
         if self.web_tabs.currentWidget().page_is_loading:
             self.reload_page_btn.setIcon(qta.icon("ei.remove", color=icon_color))
@@ -1848,16 +1946,10 @@ class BrowserWindow(QMainWindow):
         self.zoom_factor_label.setText(zoom_string)
     
     # Theme specific functions
-    def get_contrast_color_from_theme(self):
-        if theme_manager.get_plain_theme() == "light":
-            return "black"
-        else:
-            return "white"
-    
     def update_icon_colors(self):
-        icon_color = self.get_contrast_color_from_theme()
+        icon_color = theme_manager.get_contrast_color_from_theme()
 
-        self.Extension_Sidebar_btn.setIcon(qta.icon("msc.layout-sidebar-left", color=icon_color))
+        self.extension_sidebar_btn.setIcon(qta.icon("msc.layout-sidebar-left", color=icon_color))
         self.prev_page_btn.setIcon(qta.icon("fa6s.arrow-left", color=icon_color))
         self.next_page_btn.setIcon(qta.icon("fa6s.arrow-right", color=icon_color))
 
@@ -2060,17 +2152,17 @@ class BrowserWindow(QMainWindow):
 
             if not sum_model_installed:
                 install_model_btn.setText(f"{self.tr("Install")} ({SUM_AI_MODEL["size"]})")
-                install_model_btn.setIcon(qta.icon("fa6s.download", color=self.get_contrast_color_from_theme()))
+                install_model_btn.setIcon(qta.icon("fa6s.download", color=theme_manager.get_contrast_color_from_theme()))
             else:
                 install_model_btn.setText(self.tr("Model Installed"))
-                install_model_btn.setIcon(qta.icon("fa6s.check", color=self.get_contrast_color_from_theme()))
+                install_model_btn.setIcon(qta.icon("fa6s.check", color=theme_manager.get_contrast_color_from_theme()))
             
             install_model_btn.setEnabled(not sum_model_installed)
 
         except Exception:
             sum_model_installed = False
             install_model_btn.setText(self.tr("Ollama not running"))
-            install_model_btn.setIcon(qta.icon("ei.remove", color=self.get_contrast_color_from_theme()))
+            install_model_btn.setIcon(qta.icon("ei.remove", color=theme_manager.get_contrast_color_from_theme()))
             install_model_btn.setEnabled(False)
 
         install_model_btn.setFixedWidth(200)
@@ -2118,16 +2210,16 @@ class BrowserWindow(QMainWindow):
 
             self.bottom_bar.setVisible(bottom_bar_visible)
             self.load_btn.setVisible(go_button_visible)
-            self.Extension_Sidebar_btn.setVisible(summarize_ai_enabled)
             self.aiMenu.setEnabled(summarize_ai_enabled)
-
-            if self.Extension_Sidebar.isVisible():
-                self.Extension_Sidebar.setVisible(summarize_ai_enabled)
             
             if language != current_settings["language"]:
                 self.load_language(NAME_TO_LANGUAGE[language])
 
             self.update_web_engine()
+
+            if summarize_ai_enabled != current_settings["ai_summarization_enabled"]:
+                current_settings["ai_summarization_enabled"] = not current_settings["ai_summarization_enabled"]
+                self.extension_sidebar.load_extensions()
 
             # Prepare settings.json
             updated_settings = {
@@ -2156,7 +2248,7 @@ class BrowserWindow(QMainWindow):
         install_button.setEnabled(False)
         install_button.setText(self.tr("Installing..."))
         animation = qta.Spin(install_button)
-        install_button.setIcon(qta.icon("mdi.loading", color=self.get_contrast_color_from_theme(), animation=animation))
+        install_button.setIcon(qta.icon("mdi.loading", color=theme_manager.get_contrast_color_from_theme(), animation=animation))
 
         self.threadpool = QThreadPool()
         worker = InstallWorker(SUM_AI_MODEL["name"])
@@ -2165,7 +2257,7 @@ class BrowserWindow(QMainWindow):
     
     def model_installation_complete(self, install_button):
         install_button.setText(self.tr("Model Installed"))
-        install_button.setIcon(qta.icon("fa6s.check", color=self.get_contrast_color_from_theme()))
+        install_button.setIcon(qta.icon("fa6s.check", color=theme_manager.get_contrast_color_from_theme()))
         
         QMessageBox.information(self, self.tr("Model Installed"), self.tr("The AI page summarization model has been installed successfully. You can now enable AI page summarization in the settings."))
     
