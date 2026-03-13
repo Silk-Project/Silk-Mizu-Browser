@@ -108,7 +108,6 @@ if os.path.exists(CONFIG_PATH):
         try:
             for setting, value in d.items():
                 current_settings[setting] = value
-            print(current_settings)
         except KeyError:
             current_settings = default_settings
             print("Failed to load settings.json. Using default settings.")
@@ -127,7 +126,6 @@ if os.path.exists(BOOKMARKS_PATH):
         try:
             for name, url in d.items():
                 current_bookmarks[name] = url
-            print(current_bookmarks)
         except KeyError:
             current_bookmarks = default_bookmarks
             print("Failed to load bookmarks.json. Using default bookmarks.")
@@ -382,6 +380,7 @@ class ExtensionItemWidget(QFrame):
             install_dialog = ExtensionInstallDialog(self.metadata, self)
             install_dialog.exec()
             self.refresh_local_extensions.emit()
+            window.extension_sidebar.load_extensions()
         
         self.download_extension_btn.setEnabled(True)
         self.download_extension_btn.setIcon(qta.icon("fa6s.download"))
@@ -465,6 +464,7 @@ class ExtensionInstallDialog(QDialog):
     
     def install_failed(self, message):
         self.show_status(f"Install failed: {message}")
+        self.reject()
     
     def show_status(self, string):
         self.status_label.setText(string)
@@ -732,9 +732,6 @@ class WebExtensionsDialog(QDialog):
     def show_store_extensions(self, data=[]):
         self.clear_layout(self.store_widgets_repeatable_layout)
 
-        print(len(data))
-        print(len(self.loaded_store_extensions))
-
         if len(data) == 0 and len(self.loaded_store_extensions) == 0:
             info_label = QLabel(self.tr("No extensions found."))
             info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -746,12 +743,10 @@ class WebExtensionsDialog(QDialog):
             return
         
         elif len(data) > 0:
-            print(f"Heres data: {data}")
             self.loaded_store_extensions = data
 
         # Copy loaded extensions to a temporary variable
         final_extension_data = self.loaded_store_extensions
-        print(f"Loaded store extensions: {self.loaded_store_extensions}")
         
         # Sort Extensions
         if self.store_tab_sort_combobox.currentIndex() == 0:
@@ -870,7 +865,6 @@ class Extension_Sidebar(QWidget):
             widget = self.extension_content.widget(0)
             self.extension_content.removeWidget(widget)
             widget.deleteLater()
-
         
         extension_manager.update_extension_list()
         extensions = extension_manager.get_installed()
@@ -885,7 +879,6 @@ class Extension_Sidebar(QWidget):
             ai_sum_ext_btn.setFixedSize(35, 35)
             ai_sum_ext_btn.clicked.connect(lambda _, i=0: self.toggle_extension(i))
             self.extension_bar_layout.addWidget(ai_sum_ext_btn, alignment=Qt.AlignmentFlag.AlignHCenter)
-            print("AI Extension:", 0)
 
             self.ai_sum_ext = AI_Extension(self)
             self.extension_content.addWidget(self.ai_sum_ext)
@@ -906,15 +899,11 @@ class Extension_Sidebar(QWidget):
 
                 button = Extension_Sidebar_Button(el)
 
-                print(f"{el.name}: ", end="")
-
                 if not ai_extensions_enabled:
                     button.clicked.connect(lambda _, i=i: self.toggle_extension(i))
-                    print(i)
 
                 else:
                     button.clicked.connect(lambda _, i=i: self.toggle_extension(i+1))
-                    print(i+1)
                 
                 self.extension_bar_layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
                 
@@ -924,9 +913,9 @@ class Extension_Sidebar(QWidget):
         self.extension_bar_layout.addStretch()
     
     def toggle_extension(self, id):
-        print(id)
-        print(f"Length: {self.extension_content.count()}")
-        print(f"Current: {self.extension_content.currentIndex()}")
+        # print(id)
+        # print(f"Length: {self.extension_content.count()}")
+        # print(f"Current: {self.extension_content.currentIndex()}")
         if id != self.extension_content.currentIndex():
             self.extension_content.setCurrentIndex(id)
 
@@ -1723,7 +1712,7 @@ class BrowserWindow(QMainWindow):
                     self.clear_layout(item.layout())
             
         except AttributeError:
-            print("", end="")
+            pass
         
         self.bookmarks_layout = QHBoxLayout()
         self.bookmarks_layout.setContentsMargins(5, 0, 5, 5)
