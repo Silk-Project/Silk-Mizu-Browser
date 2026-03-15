@@ -212,6 +212,7 @@ __marimo__/
 # Configs
 settings.json
 bookmarks.json
+extensions.json
 
 # Dirs
 Downloads/

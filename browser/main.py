@@ -26,6 +26,7 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QSpinBox,
     QDialog,
+    QInputDialog,
     QLabel,
     QDialogButtonBox,
     QProgressBar,
@@ -60,6 +61,7 @@ START_PAGE_PATH = os.path.join(SCRIPT_DIR, "assets", "Silk-Start", "start", "v1.
 AI_SYSPROMPT_PATH = os.path.join(SCRIPT_DIR, "config", "sysprompt.txt")
 DOWNLOAD_PATH = os.path.join(SCRIPT_DIR, "Downloads")
 EXTENSIONS_PATH = os.path.join(SCRIPT_DIR, "extensions")
+EXTENSIONS_SETTINGS_PATH = os.path.join(SCRIPT_DIR, "config", "extensions.json")
 ADDITIONAL_QSS_PATH = os.path.join(SCRIPT_DIR, "assets", "style.qss")
 SUM_AI_MODEL = {"name":"lfm2.5-thinking:1.2b", "size":"700MB"}
 VERSION_NUMBER = "0.3 Alpha"
@@ -97,43 +99,13 @@ default_settings = {
 current_bookmarks = {}
 default_bookmarks = {}
 
+extensions_settings = {}
+default_extension_settings = {
+    "index_url":"https://raw.githubusercontent.com/FlipArtYT/Mizu-Browser-Extensions/refs/heads/main/index.json"
+}
+
 # Disable Chromium debug logs
 os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-logging"
-
-# Load settings.json
-if os.path.exists(CONFIG_PATH):
-    with open(CONFIG_PATH, "r") as f:
-        d = json.load(f)
-
-        try:
-            for setting, value in d.items():
-                current_settings[setting] = value
-        except KeyError:
-            current_settings = default_settings
-            print("Failed to load settings.json. Using default settings.")
-        
-else:
-    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
-    with open(CONFIG_PATH, "w") as f:
-        json.dump(default_settings, f, indent=4)
-    current_settings = default_settings
-
-# Load bookmarks.json
-if os.path.exists(BOOKMARKS_PATH):
-    with open(BOOKMARKS_PATH, "r") as f:
-        d = json.load(f)
-
-        try:
-            for name, url in d.items():
-                current_bookmarks[name] = url
-        except KeyError:
-            current_bookmarks = default_bookmarks
-            print("Failed to load bookmarks.json. Using default bookmarks.")
-else:
-    os.makedirs(os.path.dirname(BOOKMARKS_PATH), exist_ok=True)
-    with open(BOOKMARKS_PATH, "w") as f:
-        json.dump(default_bookmarks, f, indent=4)
-    current_bookmarks = default_bookmarks
 
 # Create extensions folder if it not already exists
 if not os.path.exists(EXTENSIONS_PATH):
@@ -147,12 +119,35 @@ with open(AI_SYSPROMPT_PATH, 'r') as f:
 with open(ADDITIONAL_QSS_PATH, 'r') as f:
     additional_qss = f.read()
 
+def load_config(path, settings_dict, fallback_dict):
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            d = json.load(f)
+        try:
+            for key, val in d.items():
+                settings_dict[key] = val
+        except KeyError:
+            settings_dict.clear()
+            settings_dict.update(fallback_dict)
+            print(f"Failed to load {os.path.basename(path)}. Using default values.")
+    else:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(fallback_dict, f, indent=4)
+        settings_dict.clear()
+        settings_dict.update(fallback_dict)
+
 def check_dependencies(deps_list):
     missing = []
     for dep in deps_list:
         if importlib.util.find_spec(dep) is None:
             missing.append(dep)
     return missing
+
+# Load all configs
+load_config(EXTENSIONS_SETTINGS_PATH, extensions_settings, default_extension_settings)
+load_config(BOOKMARKS_PATH, current_bookmarks, default_bookmarks)
+load_config(CONFIG_PATH, current_settings, default_settings)
 
 class ThemeManager():
     def __init__(self, applic, theme="dark"):
@@ -539,22 +534,31 @@ class WebExtensionFetcherSignals(QObject):
     task_failed = pyqtSignal(str)
 
 class WebExtensionFetcher(QRunnable):
-    def __init__(self):
+    def __init__(self, index_url):
         super().__init__()
+
+        self.index_url = index_url
         self.signals = WebExtensionFetcherSignals()
 
     @pyqtSlot()
     def run(self):
         try:
-            url = "https://raw.githubusercontent.com/FlipArtYT/Mizu-Browser-Extensions/refs/heads/main/index.json"
+            url = self.index_url
             res = requests.get(url)
-                
+
             if res.status_code == 200:
-                data = res.json()
-                self.signals.response_received.emit(data["extensions"])
+                try:
+                    data = res.json()
+                    self.signals.response_received.emit(data["extensions"])
+                
+                except Exception as e:
+                    self.signals.task_failed.emit(str(e))
+            
+            else:
+                self.signals.task_failed.emit("Failed to fetch resource.")
             
         except Exception as e:
-            self.signals.task_failed.emit(e)
+            self.signals.task_failed.emit(str(e))
 
 class WebExtensionsDialog(QDialog):
     def __init__(self, parent = ...):
@@ -645,12 +649,19 @@ class WebExtensionsDialog(QDialog):
         self.store_widgets_widget.setLayout(self.store_widgets_main_layout)
 
         # Control Buttons
-        self.store_tab_refresh_btn = QPushButton("Refresh")
+        self.store_tab_refresh_btn = QPushButton(self.tr("Refresh"))
         self.store_tab_refresh_btn.setIcon(qta.icon("ei.refresh"))
         self.store_tab_refresh_btn.setStyleSheet("border: 1px solid #414242; border-radius: 3px; padding: 8px;")
         self.store_tab_refresh_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.store_tab_refresh_btn.clicked.connect(self.load_store_extensions)
         self.store_widgets_controls.addWidget(self.store_tab_refresh_btn)
+
+        self.store_repository_btn = QPushButton(self.tr("Repository"))
+        self.store_repository_btn.setIcon(qta.icon("mdi.source-repository"))
+        self.store_repository_btn.setStyleSheet("border: 1px solid #414242; border-radius: 3px; padding: 8px;")
+        self.store_repository_btn.setToolTip(extensions_settings["index_url"])
+        self.store_repository_btn.clicked.connect(self.change_repo_url)
+        self.store_widgets_controls.addWidget(self.store_repository_btn)
         
         self.store_order_btn = QPushButton()
         self.store_order_btn.setStyleSheet("border: 1px solid #414242; border-radius: 3px; padding: 8px;")
@@ -725,17 +736,31 @@ class WebExtensionsDialog(QDialog):
             self.installed_widgets_repeatable_layout.addWidget(item)
 
     def load_store_extensions(self):
-        print("Loading store")    
+        print("Loading store")
         self.threadpool = QThreadPool()
-        fetcher = WebExtensionFetcher()
-        fetcher.signals.task_failed.connect(lambda: print("Fail"))
+        fetcher = WebExtensionFetcher(extensions_settings["index_url"])
+        fetcher.signals.task_failed.connect(self.store_load_failed)
         fetcher.signals.response_received.connect(self.show_store_extensions)
         self.threadpool.start(fetcher)
+
+    def store_load_failed(self, error):
+        self.clear_layout(self.store_widgets_repeatable_layout)
+
+        self.store_widgets_repeatable_layout.addStretch()
+
+        info_label = QLabel(f"{self.tr("Error when trying to load store items: ")}{error}")
+        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info_label.setStyleSheet("color: grey;")
+        self.store_widgets_repeatable_layout.addWidget(info_label)
+
+        self.store_widgets_repeatable_layout.addStretch()
     
     def show_store_extensions(self, data=[]):
         self.clear_layout(self.store_widgets_repeatable_layout)
 
         if len(data) == 0 and len(self.loaded_store_extensions) == 0:
+            self.store_widgets_repeatable_layout.addStretch()
+
             info_label = QLabel(self.tr("No extensions found."))
             info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             info_label.setStyleSheet("color: grey;")
@@ -770,6 +795,18 @@ class WebExtensionsDialog(QDialog):
             item = ExtensionItemWidget(metadata, True, self)
             item.refresh_local_extensions.connect(self.load_installed_extensions)
             self.store_widgets_repeatable_layout.addWidget(item)
+    
+    def change_repo_url(self):
+        url, ok = QInputDialog.getText(self, self.tr("Change repository URL"), self.tr("Input your desired repository URL that points to an index:"))
+        url = url.strip()
+
+        if ok and url:
+            extensions_settings["index_url"] = url
+
+            with open(EXTENSIONS_SETTINGS_PATH, "w") as f:
+                json.dump(extensions_settings, f, indent=4)
+            
+            self.load_store_extensions()
 
     def toggle_installed_order(self):
         self.installed_order_asc = not self.installed_order_asc
