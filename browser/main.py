@@ -1526,17 +1526,6 @@ class BrowserWindow(QMainWindow):
         self.addPageToBookmarksAction.setShortcut(QKeySequence("Ctrl + d"))
         self.bookmarkMenu.addAction(self.addPageToBookmarksAction)
 
-        # AI Summarization Menu
-        self.toggleAIsidebarAction = QAction(self.tr("Toggle AI Summarization Sidebar"), self)
-        self.toggleAIsidebarAction.triggered.connect(self.toggle_extension_sidebar)
-        self.toggleAIsidebarAction.setShortcut(QKeySequence("Ctrl + b"))
-        self.aiMenu.addAction(self.toggleAIsidebarAction)
-
-        self.aiSummarizationAction = QAction(self.tr("Summarize current page with AI"), self)
-        self.aiSummarizationAction.triggered.connect(self.summarize_current_page_ai)
-        self.aiSummarizationAction.setShortcut(QKeySequence("Ctrl + m"))
-        self.aiMenu.addAction(self.aiSummarizationAction)
-
         # Help Menu
         self.documentationAction = QAction(self.tr("Project Page"), self)
         self.documentationAction.triggered.connect(lambda: self.create_new_tab("https://github.com/Silk-Project/Silk-Mizu-Browser/"))
@@ -1725,10 +1714,6 @@ class BrowserWindow(QMainWindow):
         # Bookmarks menu
         self.manageBookmarksAction.setText(self.tr("Manage bookmarks"))
         self.addPageToBookmarksAction.setText(self.tr("Add current page to bookmarks"))
-
-        # AI Summarization menu
-        self.toggleAIsidebarAction.setText(self.tr("Toggle AI Summarization Sidebar"))
-        self.aiSummarizationAction.setText(self.tr("Summarize current page with AI"))
 
         # Help Menu
         self.documentationAction.setText(self.tr("Project Page"))
