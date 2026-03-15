@@ -53,8 +53,8 @@ python3 main.py
 - [ ] Reader view
 - [ ] Better overview of current downloads so it can't infinitely stack up in the download menu
 - [x] ~~Multi-language support~~
-- [ ] Custom extension store (for the browser itself)
-- [ ] Widgets (e. g. Notes and additional widgets from the store)
+- [x] Custom extension store (for the browser itself)
+  - [x] Widgets (e. g. Notes and additional widgets from the store)
 - [ ] Custom theme editor (with theme import) 
 
 ## 👥 Contributing
