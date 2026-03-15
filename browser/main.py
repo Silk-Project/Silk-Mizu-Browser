@@ -1468,10 +1468,7 @@ class BrowserWindow(QMainWindow):
         self.editMenu = menu_bar.addMenu(self.tr("&Edit"))
         self.viewMenu = menu_bar.addMenu(self.tr("&View"))
         self.bookmarkMenu = menu_bar.addMenu(self.tr("&Bookmarks"))
-        self.aiMenu = menu_bar.addMenu(self.tr("&AI Summarization"))
         self.helpMenu = menu_bar.addMenu(self.tr("&Help"))
-
-        self.aiMenu.setEnabled(current_settings["ai_summarization_enabled"])
 
         # File Menu
         self.settingsAction = QAction(self.tr("Program Settings"))
@@ -1694,7 +1691,6 @@ class BrowserWindow(QMainWindow):
         self.editMenu.setTitle(self.tr("&Edit"))
         self.viewMenu.setTitle(self.tr("&View"))
         self.bookmarkMenu.setTitle(self.tr("&Bookmarks"))
-        self.aiMenu.setTitle(self.tr("&AI Summarization"))
         self.helpMenu.setTitle(self.tr("&Help"))
 
         # File Menu
