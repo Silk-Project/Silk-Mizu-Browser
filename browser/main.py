@@ -185,6 +185,10 @@ class ThemeManager():
         else:
             print("Theme not found")
     
+    def load_theme_from_index(self, index):
+        theme = self.available_themes[index]
+        self.load_theme(theme)
+    
     def get_plain_theme(self):
         if self.theme != "automatic" and self.theme != "legacy":
             return self.theme
@@ -198,7 +202,6 @@ class ThemeManager():
             return "black"
         else:
             return "white"
-
 
 class ExtensionManager():
     def __init__(self):
@@ -913,9 +916,6 @@ class Extension_Sidebar(QWidget):
         self.extension_bar_layout.addStretch()
     
     def toggle_extension(self, id):
-        # print(id)
-        # print(f"Length: {self.extension_content.count()}")
-        # print(f"Current: {self.extension_content.currentIndex()}")
         if id != self.extension_content.currentIndex():
             self.extension_content.setCurrentIndex(id)
 
@@ -1063,7 +1063,7 @@ class DownloadManager(QMenu):
         container = QWidget()
 
         # Download UI elements
-        label = QLabel(f"{self.tr("Downloading:")} {self.short_if_needed(download_filename)}")
+        label = QLabel(f"{self.tr("Downloading:")} {self.shorten_if_needed(download_filename)}")
         label.setToolTip(download_filename)
         progress = QProgressBar()
         stop_btn = QPushButton()
@@ -1103,7 +1103,7 @@ class DownloadManager(QMenu):
             percent = int((download.receivedBytes() / download.totalBytes()) * 100)
             progress_bar.setValue(percent)
     
-    def short_if_needed(self, download_name):
+    def shorten_if_needed(self, download_name):
         if len(download_name) > 15:
             return f"{download_name[:15]}..."
         else:
@@ -2074,8 +2074,8 @@ class BrowserWindow(QMainWindow):
         display_settings.setLayout(display_settings_layout)
 
         theme_combobox = QComboBox()
-        theme_combobox.addItems(["Light", "Dark", "Automatic", "Legacy"])
-        theme_combobox.setCurrentText(current_settings["theme"])
+        theme_combobox.addItems([self.tr("Light"), self.tr("Dark"), self.tr("Automatic"), self.tr("Legacy (Native)")])
+        theme_combobox.setCurrentIndex(theme_manager.available_themes.index(theme_manager.theme))
         display_settings_layout.addRow(self.tr("Theme: "), theme_combobox)
 
         bottom_bar_visability_checkbox = QCheckBox()
@@ -2184,7 +2184,7 @@ class BrowserWindow(QMainWindow):
         if dlg.exec():
             start_page = start_page_urledit.text() if start_page_url_radio_button.isChecked() else START_PAGE_PATH
             search_engine = search_engine_combobox.currentText()
-            theme = theme_combobox.currentText()
+            theme_index = theme_combobox.currentIndex()
             go_button_visible = go_button_visibility_checkbox.isChecked()
             bottom_bar_visible = bottom_bar_visability_checkbox.isChecked()
             download_warnings = download_warnings_checkbox.isChecked()
@@ -2195,7 +2195,7 @@ class BrowserWindow(QMainWindow):
             summarize_ai_enabled = ai_checkbox.isChecked()
 
             # Update settings in browser
-            theme_manager.load_theme(theme)
+            theme_manager.load_theme_from_index(theme_index)
 
             self.bottom_bar.setVisible(bottom_bar_visible)
             self.load_btn.setVisible(go_button_visible)
@@ -2214,7 +2214,7 @@ class BrowserWindow(QMainWindow):
             updated_settings = {
                 "start_page_url":start_page,
                 "search_engine":search_engine,
-                "theme":theme,
+                "theme":theme_manager.available_themes[theme_index],
                 "bottom_bar_visible":bottom_bar_visible,
                 "go_button_visible":go_button_visible,
                 "download_warnings":download_warnings,
