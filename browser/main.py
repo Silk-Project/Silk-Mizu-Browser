@@ -64,7 +64,7 @@ EXTENSIONS_PATH = os.path.join(SCRIPT_DIR, "extensions")
 EXTENSIONS_SETTINGS_PATH = os.path.join(SCRIPT_DIR, "config", "extensions.json")
 ADDITIONAL_QSS_PATH = os.path.join(SCRIPT_DIR, "assets", "style.qss")
 SUM_AI_MODEL = {"name":"lfm2.5-thinking:1.2b", "size":"700MB"}
-VERSION_NUMBER = "0.3 Alpha"
+VERSION_NUMBER = "0.3 Public Preview"
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
     "DuckDuckGo":"https://duckduckgo.com/?q=",
@@ -2313,7 +2313,7 @@ class BrowserWindow(QMainWindow):
         about_description = QLabel("A simple PyQT6 browser for Silk and Linux devices.")
         about_description.setWordWrap(True)
         about_description.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        about_label = QLabel(f"Version: {VERSION_NUMBER}\nSilk Project 2025-26")
+        about_label = QLabel(f"Version: {VERSION_NUMBER}\nSilk Project 2025-2026")
         about_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
