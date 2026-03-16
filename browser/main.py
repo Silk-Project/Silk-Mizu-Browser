@@ -2217,7 +2217,6 @@ class BrowserWindow(QMainWindow):
 
             self.bottom_bar.setVisible(bottom_bar_visible)
             self.load_btn.setVisible(go_button_visible)
-            self.aiMenu.setEnabled(summarize_ai_enabled)
             
             if language != current_settings["language"]:
                 self.load_language(NAME_TO_LANGUAGE[language])
