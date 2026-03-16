@@ -1,0 +1,9 @@
+{
+    "app_id": "weather",
+    "name": "Wetter Seitenleiste",
+    "author":"bgg",
+    "description": "lorem ipsum dolor sit amet",
+    "version": "1.0.2",
+    "icon_path": "application.png",
+    "script_path":"main.py"
+}

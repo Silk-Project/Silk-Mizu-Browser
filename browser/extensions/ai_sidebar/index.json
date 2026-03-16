@@ -1,0 +1,9 @@
+{
+    "app_id": "ai_sidebar",
+    "name": "AI Sidebar",
+    "author":"FlipArtYT",
+    "description": "An AI API client directly accessible in your sidebar",
+    "version": "1.0.2",
+    "icon_path":"application.png",
+    "script_path":"main.py"
+}
