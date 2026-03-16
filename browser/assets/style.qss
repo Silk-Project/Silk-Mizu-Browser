@@ -1,3 +1,8 @@
 .noborder {
-    border: none;
+    border: none
+}
+
+#extension_content {
+    border: 1px solid #414242;
+    border-radius: 3px;
 }

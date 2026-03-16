@@ -48,14 +48,14 @@ To use this program, simply execute the main.py file directly via python3.
 python3 main.py
 ```
 ## 💻 To-do
-- [ ] Improve website tab system and tab bar positioning at the top
-- [x] "Explain selected text with AI" (partly)
+- [ ] ~~Improve website tab system and tab bar positioning at the top~~ (Unchanged because of performance reasons)
+- [x] ~~"Explain selected text with AI"~~
 - [ ] Reader view
 - [ ] Better overview of current downloads so it can't infinitely stack up in the download menu
-- [x] Multi-language support
-- [ ] Custom extension store (for the browser itself)
-- [ ] Widgets (e. g. Notes and additional widgets from the store)
-- [ ] Custom theme editor (with theme import)
+- [x] ~~Multi-language support~~
+- [x] ~~Custom extension store (for the browser itself)~~
+  - [x] Widgets ~~(e. g. Notes and additional widgets from the store)~~
+  - [ ] Custom theme editor (with theme import) 
 
 ## 👥 Contributing
 Feel free to open issues and create pull requests.

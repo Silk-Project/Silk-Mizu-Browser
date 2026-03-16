@@ -4,3 +4,4 @@ qtawesome
 pyqtdarktheme
 darkdetect
 ollama
+requests
