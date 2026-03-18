@@ -233,6 +233,7 @@ class ExtensionMetadata:
     # Installables
     dependencies: list[str] = field(default_factory=list)
     download_path: str = None
+    index_source: str = None
 
 class ExtensionItemWidget(QFrame):
     refresh_local_extensions = pyqtSignal()
@@ -275,7 +276,7 @@ class ExtensionItemWidget(QFrame):
         extension_title.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         title_layout.addWidget(extension_title, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        extension_author = QLabel(f"by {self.metadata.author}")
+        extension_author = QLabel(f"{self.tr("by")} {self.metadata.author}")
         extension_author.setStyleSheet("font-size: 10px; color: #808080; border: none;")
         title_layout.addWidget(extension_author, alignment=Qt.AlignmentFlag.AlignLeft)
 
@@ -285,7 +286,7 @@ class ExtensionItemWidget(QFrame):
             required_dependencies = check_dependencies(self.metadata.dependencies)
 
             if len(required_dependencies) > 0:
-                extension_deps = QLabel(f"Required libraries: {", ".join(required_dependencies)}")
+                extension_deps = QLabel(f"{self.tr("Required libraries: ")}{", ".join(required_dependencies)}")
                 extension_deps.setWordWrap(True)
                 extension_deps.setStyleSheet("color: #808080; border: none;")
                 extension_deps.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
@@ -326,7 +327,7 @@ class ExtensionItemWidget(QFrame):
         dlg_layout.addStretch()
         
         if os.path.exists(self.extension_icon_path) and self.metadata.icon_path != "":
-            dlg.setFixedSize(240, 325)
+            dlg.setFixedSize(240, 360)
 
             logoLabel = QLabel(self)
             logoLabel.setFixedSize(128, 128)
@@ -335,7 +336,7 @@ class ExtensionItemWidget(QFrame):
             dlg_layout.addWidget(logoLabel, alignment=Qt.AlignmentFlag.AlignCenter)
         
         else:
-            dlg.setFixedSize(240, 240)
+            dlg.setFixedSize(240, 300)
 
         about_title = QLabel(self.metadata.name)
         about_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -347,9 +348,17 @@ class ExtensionItemWidget(QFrame):
         about_description.setAlignment(Qt.AlignmentFlag.AlignCenter)
         dlg_layout.addWidget(about_description)
 
-        about_label = QLabel(f"Version: {self.metadata.version}\nby {self.metadata.author}")
+        about_label = QLabel(f"{self.tr("Version: ")}{self.metadata.version}\n{self.tr("by")} {self.metadata.author}")
         about_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         dlg_layout.addWidget(about_label)
+
+        if self.installable:
+            source_label = QTextEdit(f"{self.tr("Source: ")}{self.metadata.index_source}")
+            source_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            source_label.setFixedHeight(90)
+            source_label.setReadOnly(True)
+            source_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            dlg_layout.addWidget(source_label)
 
         if os.path.exists(self.extension_icon_path) and self.metadata.icon_path != "":
             dlg_layout.addStretch()
@@ -549,7 +558,12 @@ class WebExtensionFetcher(QRunnable):
 
                 try:
                     data = response.json()
-                    self.jsons.extend(data["extensions"])
+                    extensions = data["extensions"]
+
+                    for e in extensions:
+                        e["index_source"] = url
+
+                    self.jsons.extend(extensions)
 
                 except Exception as e:
                     self.task_failed.emit(str(e))
@@ -601,7 +615,7 @@ class WebExtensionsDialog(QDialog):
         self.installed_widgets_widget.setLayout(self.installed_widgets_main_layout)
 
         # Control Buttons
-        self.install_tab_refresh_btn = QPushButton("Refresh")
+        self.install_tab_refresh_btn = QPushButton(self.tr("Refresh"))
         self.install_tab_refresh_btn.setIcon(qta.icon("ei.refresh"))
         self.install_tab_refresh_btn.setStyleSheet("border: 1px solid #414242; border-radius: 3px; padding: 8px;")
         self.install_tab_refresh_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -736,6 +750,24 @@ class WebExtensionsDialog(QDialog):
 
     def load_store_extensions(self):
         print("Loading store")
+        self.clear_layout(self.store_widgets_repeatable_layout)
+
+        self.store_widgets_repeatable_layout.addStretch()
+
+        self.load_label = QLabel(self.tr("Loading extensions..."))
+        self.load_label.setStyleSheet("color: grey;")
+        self.load_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.store_widgets_repeatable_layout.addWidget(self.load_label)
+
+        self.throbber = qta.IconWidget()
+        self.throbber.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        animation = qta.Spin(self.throbber)
+        spin_icon = qta.icon('mdi.loading', color="grey", animation=animation)
+        self.throbber.setIcon(spin_icon)
+        self.store_widgets_repeatable_layout.addWidget(self.throbber)
+
+        self.store_widgets_repeatable_layout.addStretch()
+
         self.threadpool = QThreadPool()
         fetcher = WebExtensionFetcher(extensions_settings["index_urls"])
         fetcher.signals.task_failed.connect(self.store_load_failed)
@@ -1547,12 +1579,18 @@ class BrowserWindow(QMainWindow):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
 
+        # Threadpool
+        self.threadpool = QThreadPool()
+
         # Initialize whole UI
         self.init_menu_bar()
         self.init_control_ui()
         self.init_bookmark_bar()
         self.init_extension_sidebar()
         self.init_web_engine()
+
+        self.extension_updates = False
+        self.check_extension_updates()
 
         # Install translator
         self.translator = QTranslator()
@@ -1731,7 +1769,7 @@ class BrowserWindow(QMainWindow):
         self.web_extensions_menu = WebExtensionsMenu()
         self.web_extensions_menu.signals.request_manage_extensions.connect(self.web_extension_dialog)
         self.web_extensions_btn = QPushButton()
-        self.web_extensions_btn.setIcon(qta.icon("fa6s.puzzle-piece", color=icon_color))
+        self.web_extensions_btn.setIcon(qta.icon("mdi6.puzzle", color=icon_color))
         self.web_extensions_btn.setProperty("class", "navbtns")
         self.web_extensions_btn.setStyleSheet("padding: 8px;")
         self.web_extensions_btn.clicked.connect(self.show_extension_menu)
@@ -1984,7 +2022,43 @@ class BrowserWindow(QMainWindow):
 
     def web_extension_dialog(self):
         dlg = WebExtensionsDialog(self)
-        dlg.exec()
+
+        if dlg.exec():
+            self.check_extension_updates()
+        
+        else:
+            self.check_extension_updates()
+
+    def check_extension_updates(self):
+        print("Checking for extension updates")
+        fetcher = WebExtensionFetcher(extensions_settings["index_urls"])
+        fetcher.signals.response_received.connect(self.show_extension_status)
+        self.threadpool.start(fetcher)
+    
+    def show_extension_status(self, store_extensions):
+        # Get current extensions and compare versions
+        local_extensions = extension_manager.get_installed()
+        updateable_extensions = 0
+
+        try:
+            self.extension_updates = False
+
+            for i, el in enumerate(store_extensions):
+                if el["version"] != local_extensions[i].version:
+                    print(f"Update for {el["name"]}")
+                    self.extension_updates = True
+                    updateable_extensions += 1
+            
+            if self.extension_updates:
+                self.web_extensions_btn.setToolTip(f"{self.tr("Extension updates: ")}{updateable_extensions}")
+            
+            else:
+                self.web_extensions_btn.setToolTip("")
+            
+            self.update_icon_colors()
+
+        except Exception as e:
+            print(f"Error when checking extensions for updates: {e}")
 
     # Website content specific functions
     def request_load_page_from_urlbar(self):
@@ -2074,7 +2148,13 @@ class BrowserWindow(QMainWindow):
         self.load_btn.setIcon(qta.icon("mdi.arrow-right-bold-box", color=icon_color))
         self.add_tab_btn.setIcon(qta.icon("fa6s.plus", color=icon_color))
         self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.bookmark", color=icon_color))
-        self.web_extensions_btn.setIcon(qta.icon("fa6s.puzzle-piece", color=icon_color))
+
+        if self.extension_updates:
+            self.web_extensions_btn.setIcon(qta.icon("mdi6.puzzle-plus", color=icon_color))
+        
+        else:
+            self.web_extensions_btn.setIcon(qta.icon("mdi6.puzzle", color=icon_color))
+        
         self.settings_btn.setIcon(qta.icon("fa5s.cog", color=icon_color))
         self.scale_down_btn.setIcon(qta.icon("ph.magnifying-glass-minus", color=icon_color))
         self.scale_up_btn.setIcon(qta.icon("ph.magnifying-glass-plus", color=icon_color))
@@ -2089,6 +2169,7 @@ class BrowserWindow(QMainWindow):
         form_layout = QFormLayout()
 
         title_label = QLabel(self.tr("Add Current Page to Bookmarks"))
+        title_label.setWordWrap(True)
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("font-size: 16px; font-weight: bold; padding: 20px")
         form_layout.addRow(title_label)
