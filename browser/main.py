@@ -1022,6 +1022,7 @@ class BetterWebEngine(QWebEngineView):
         self.page_is_loading = False
         self.signals = BetterWebEngineSignals()
         self.page().setBackgroundColor(QColor("#101011"))
+        self.urlChanged.connect(lambda: self.page().setBackgroundColor(QColor("#101011")))
 
         self.init_engine()
         self.update_engine_config()
@@ -1067,6 +1068,7 @@ class BetterWebEngine(QWebEngineView):
     
     def page_load_finished(self):
         self.page_is_loading = False
+        self.page().setBackgroundColor(QColor("#ffffff"))
     
     def valid_url(self, url):
         # Regex for standard http/https URLs and file paths
