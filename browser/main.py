@@ -26,7 +26,6 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QSpinBox,
     QDialog,
-    QInputDialog,
     QLabel,
     QDialogButtonBox,
     QProgressBar,
@@ -44,9 +43,9 @@ from PyQt6.QtWidgets import (
     QStackedWidget,
     QFrame,
 )
-from PyQt6.QtCore import Qt, QUrl, QSize, pyqtSlot, pyqtSignal, QThreadPool, QRunnable, QObject, QTranslator
+from PyQt6.QtCore import Qt, QUrl, QSize, pyqtSlot, pyqtSignal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEngineDownloadRequest
+from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEngineDownloadRequest, QWebEngineProfile, QWebEnginePage
 from PyQt6.QtGui import QPixmap, QAction, QKeySequence, QIcon, QColor
 import qtawesome as qta
 import qdarktheme
@@ -60,6 +59,7 @@ LOGO_PATH = os.path.join(SCRIPT_DIR, "assets", "mizu2.png")
 START_PAGE_PATH = os.path.join(SCRIPT_DIR, "assets", "Silk-Start", "start", "v1.1.1", "seperate", "index.html")
 AI_SYSPROMPT_PATH = os.path.join(SCRIPT_DIR, "config", "sysprompt.txt")
 DOWNLOAD_PATH = os.path.join(SCRIPT_DIR, "Downloads")
+STORAGE_PATH = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), "Silk-Mizu-Browser")
 EXTENSIONS_PATH = os.path.join(SCRIPT_DIR, "extensions")
 EXTENSIONS_SETTINGS_PATH = os.path.join(SCRIPT_DIR, "config", "extensions.json")
 ADDITIONAL_QSS_PATH = os.path.join(SCRIPT_DIR, "assets", "style.qss")
@@ -1033,7 +1033,7 @@ class BetterWebEngine(QWebEngineView):
             self.load_page(current_settings["start_page_url"])
         else:
             self.load_page(SEARCH_ENGINE_SEARCH_QUERIES.get(current_settings["search_engine"]))
-
+        
     def contextMenuEvent(self, event):
         menu = self.createStandardContextMenu()
         menu.addSeparator()
@@ -1589,6 +1589,7 @@ class BrowserWindow(QMainWindow):
         self.init_control_ui()
         self.init_bookmark_bar()
         self.init_extension_sidebar()
+        self.setup_profile()
         self.init_web_engine()
 
         self.extension_updates = False
@@ -1940,6 +1941,17 @@ class BrowserWindow(QMainWindow):
         
         # Add start tab
         self.create_new_tab()
+    
+    def setup_profile(self):
+        if not os.path.exists(STORAGE_PATH):
+            os.makedirs(STORAGE_PATH)
+
+        self.profile = QWebEngineProfile("Default", self)
+        self.profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
+        self.profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
+        self.profile.setCachePath(STORAGE_PATH)
+        self.profile.setPersistentStoragePath(STORAGE_PATH)
+        self.profile.setParent(self)
 
     def update_tab_info(self):
         self.update_urlbar_content()
@@ -1948,24 +1960,30 @@ class BrowserWindow(QMainWindow):
     
     def create_new_tab(self, url=None):
         # Web Engine
-        new_tab_index = len(self.tab_list)
-        self.tab_list.append(BetterWebEngine(self))
+        web_tab = BetterWebEngine(self)
+        web_tab.setPage(QWebEnginePage(self.profile, web_tab))
+        web_tab.init_engine()
+
+        # Setup localstorage for the new tab
+        web_tab.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
+
+        self.tab_list.append(web_tab)
         
         if url:
-            self.tab_list[new_tab_index].setUrl(QUrl(url))
+            self.tab_list[-1].setUrl(QUrl(url))
 
-        self.tab_list[new_tab_index].loadProgress.connect(self.update_progressbar)
-        self.tab_list[new_tab_index].loadFinished.connect(self.page_load_finished)
-        self.tab_list[new_tab_index].loadFinished.connect(self.tab_list[new_tab_index].page_load_finished)
-        self.tab_list[new_tab_index].loadStarted.connect(self.page_load_started)
-        self.tab_list[new_tab_index].urlChanged.connect(self.update_urlbar_content)
-        self.tab_list[new_tab_index].iconChanged.connect(self.update_tab_info)
-        self.tab_list[new_tab_index].page().profile().downloadRequested.connect(self.request_download)
-        self.tab_list[new_tab_index].signals.sum_selected_with_ai.connect(self.summarize_selected_with_ai)
-        self.tab_list[new_tab_index].signals.sum_page_with_ai.connect(self.summarize_current_page_ai)
+        self.tab_list[-1].loadProgress.connect(self.update_progressbar)
+        self.tab_list[-1].loadFinished.connect(self.page_load_finished)
+        self.tab_list[-1].loadFinished.connect(self.tab_list[-1].page_load_finished)
+        self.tab_list[-1].loadStarted.connect(self.page_load_started)
+        self.tab_list[-1].urlChanged.connect(self.update_urlbar_content)
+        self.tab_list[-1].iconChanged.connect(self.update_tab_info)
+        self.tab_list[-1].page().profile().downloadRequested.connect(self.request_download)
+        self.tab_list[-1].signals.sum_selected_with_ai.connect(self.summarize_selected_with_ai)
+        self.tab_list[-1].signals.sum_page_with_ai.connect(self.summarize_current_page_ai)
 
-        self.web_tabs.addTab(self.tab_list[new_tab_index], None)
-        self.web_tabs.setCurrentIndex(new_tab_index)
+        self.web_tabs.addTab(self.tab_list[-1], None)
+        self.web_tabs.setCurrentIndex(len(self.tab_list) - 1)
         self.update_tab_info()
     
     def remove_web_tab(self, index):
@@ -2032,24 +2050,36 @@ class BrowserWindow(QMainWindow):
             self.check_extension_updates()
 
     def check_extension_updates(self):
-        print("Checking for extension updates")
         fetcher = WebExtensionFetcher(extensions_settings["index_urls"])
         fetcher.signals.response_received.connect(self.show_extension_status)
         self.threadpool.start(fetcher)
     
-    def show_extension_status(self, store_extensions):
+    def show_extension_status(self, store_extensions_json):
         # Get current extensions and compare versions
         local_extensions = extension_manager.get_installed()
         updateable_extensions = 0
 
+        # Parse store extensions into an ExtensionMetadata instance for easier access
+        store_extensions = {}
+        for ext_data in store_extensions_json:
+            try:
+                ext_meta = ExtensionMetadata(**ext_data)
+                store_extensions[ext_meta.app_id] = ext_meta
+            except Exception as e:
+                print(f"Error parsing extension data from store: {e}")
+                continue
+
         try:
             self.extension_updates = False
 
-            for i, el in enumerate(store_extensions):
-                if el["version"] != local_extensions[i].version:
-                    print(f"Update for {el["name"]}")
-                    self.extension_updates = True
-                    updateable_extensions += 1
+            for el in local_extensions:
+                if el.app_id in store_extensions:
+                    local_version = self.version_parser(el.version)
+                    store_version = self.version_parser(store_extensions[el.app_id].version)
+
+                    if store_version > local_version:
+                        updateable_extensions += 1
+                        self.extension_updates = True
             
             if self.extension_updates:
                 self.web_extensions_btn.setToolTip(f"{self.tr("Extension updates: ")}{updateable_extensions}")
@@ -2061,6 +2091,15 @@ class BrowserWindow(QMainWindow):
 
         except Exception as e:
             print(f"Error when checking extensions for updates: {e}")
+    
+    def version_parser(self, version_string):
+        # Simple version parser that converts a version string like "1.2.3" into a tuple of integers (1, 2, 3)
+        try:
+            version_tuple = tuple(map(int, version_string.split(".")))
+            return version_tuple
+        except Exception as e:
+            print(f"Error parsing version string '{version_string}': {e}")
+            return (0,)
 
     # Website content specific functions
     def request_load_page_from_urlbar(self):
