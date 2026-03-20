@@ -1606,7 +1606,7 @@ class BrowserWindow(QMainWindow):
 
         if not os.path.exists(START_PAGE_PATH):
             QMessageBox.critical(self, self.tr("Start page not found"), self.tr("The Silk Start submodule was not found. Make sure you follow the cloning instructions carefully."))
-    
+
     def init_menu_bar(self):
         # Add menu bar
         menu_bar = self.menuBar()
@@ -1928,6 +1928,20 @@ class BrowserWindow(QMainWindow):
         self.extension_sidebar.send_webpage(selected_text)
 
     # Website Tabs
+    def closeEvent(self, a0):
+        self.web_tabs.blockSignals(True)
+        for tab in range(0, self.web_tabs.count()):
+            print(tab)
+            tab_widget = self.tab_list[tab]
+            profile = tab_widget.page().profile()
+            profile.clearHttpCache()
+            profile.cookieStore().deleteAllCookies()
+
+            # self.tab_list.pop(tab)
+            self.web_tabs.removeTab(0)
+            tab_widget.deleteLater()
+
+
     def init_web_engine(self):
         # Tab bar
         self.tab_list = []
