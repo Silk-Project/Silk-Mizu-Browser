@@ -4,31 +4,31 @@
 <context>
     <name>AI_Extension</name>
     <message>
-        <location filename="../main.py" line="1565"/>
-        <location filename="../main.py" line="1484"/>
+        <location filename="../main.py" line="1740"/>
+        <location filename="../main.py" line="1659"/>
         <source>AI Summary</source>
         <translation>KI Zusammenfassung</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1566"/>
-        <location filename="../main.py" line="1491"/>
+        <location filename="../main.py" line="1741"/>
+        <location filename="../main.py" line="1666"/>
         <source>Summarization output will appear here...</source>
         <translation>Zusammenfassung von Webseites erscheinen hier...</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1567"/>
-        <location filename="../main.py" line="1495"/>
+        <location filename="../main.py" line="1742"/>
+        <location filename="../main.py" line="1670"/>
         <source>Download</source>
         <translation>Herunterladen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1568"/>
-        <location filename="../main.py" line="1500"/>
+        <location filename="../main.py" line="1743"/>
+        <location filename="../main.py" line="1675"/>
         <source>Clear</source>
         <translation>Löschen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1555"/>
+        <location filename="../main.py" line="1730"/>
         <source>Select a Directory</source>
         <translation>Wählen sie einen Ordner aus</translation>
     </message>
@@ -36,12 +36,12 @@
 <context>
     <name>BetterWebEngine</name>
     <message>
-        <location filename="../main.py" line="1040"/>
+        <location filename="../main.py" line="1041"/>
         <source>Summarize selected text with AI</source>
         <translation>Makierten Text zusammenfassen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1043"/>
+        <location filename="../main.py" line="1044"/>
         <source>Summarize page with AI</source>
         <translation>Aktuelle Webseite zusammenfassen</translation>
     </message>
@@ -49,319 +49,319 @@
 <context>
     <name>BrowserWindow</name>
     <message>
-        <location filename="../main.py" line="1605"/>
+        <location filename="../main.py" line="1781"/>
         <source>Start page not found</source>
         <translation>Die Startseite wurde nicht gefunden</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1605"/>
+        <location filename="../main.py" line="1781"/>
         <source>The Silk Start submodule was not found. Make sure you follow the cloning instructions carefully.</source>
         <translation>Das Silk Start Submodul wurde nicht gefunden. Bitte befolgen sie die Anleitung zum Klonen dieses Repositorys sorgfältig.</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1834"/>
-        <location filename="../main.py" line="1611"/>
+        <location filename="../main.py" line="2012"/>
+        <location filename="../main.py" line="1787"/>
         <source>&amp;File</source>
         <translation>&amp;Datei</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1835"/>
-        <location filename="../main.py" line="1612"/>
+        <location filename="../main.py" line="2013"/>
+        <location filename="../main.py" line="1788"/>
         <source>&amp;Edit</source>
         <translation>&amp;Bearbeiten</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1836"/>
-        <location filename="../main.py" line="1613"/>
+        <location filename="../main.py" line="2014"/>
+        <location filename="../main.py" line="1789"/>
         <source>&amp;View</source>
         <translation>&amp;Ansicht</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1837"/>
-        <location filename="../main.py" line="1614"/>
+        <location filename="../main.py" line="2015"/>
+        <location filename="../main.py" line="1790"/>
         <source>&amp;Bookmarks</source>
         <translation>&amp;Lesezeichen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1838"/>
-        <location filename="../main.py" line="1615"/>
+        <location filename="../main.py" line="2016"/>
+        <location filename="../main.py" line="1791"/>
         <source>&amp;Help</source>
         <translation>&amp;Hilfe</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1841"/>
-        <location filename="../main.py" line="1618"/>
+        <location filename="../main.py" line="2019"/>
+        <location filename="../main.py" line="1794"/>
         <source>Program Settings</source>
         <translation>Programmeinstellungen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1842"/>
-        <location filename="../main.py" line="1623"/>
+        <location filename="../main.py" line="2020"/>
+        <location filename="../main.py" line="1799"/>
         <source>Quit</source>
         <translation>Beenden</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1981"/>
-        <location filename="../main.py" line="1845"/>
-        <location filename="../main.py" line="1629"/>
+        <location filename="../main.py" line="2188"/>
+        <location filename="../main.py" line="2023"/>
+        <location filename="../main.py" line="1805"/>
         <source>New Tab</source>
         <translation>Neuer Tab</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1846"/>
-        <location filename="../main.py" line="1634"/>
+        <location filename="../main.py" line="2024"/>
+        <location filename="../main.py" line="1810"/>
         <source>Back</source>
         <translation>Zurück</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1847"/>
-        <location filename="../main.py" line="1639"/>
+        <location filename="../main.py" line="2025"/>
+        <location filename="../main.py" line="1815"/>
         <source>Next</source>
         <translation>Weiter</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1850"/>
-        <location filename="../main.py" line="1645"/>
+        <location filename="../main.py" line="2028"/>
+        <location filename="../main.py" line="1821"/>
         <source>Increase page zoom by 10%</source>
         <translation>Webseiten Zoom um 10% erhöhen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1851"/>
-        <location filename="../main.py" line="1650"/>
+        <location filename="../main.py" line="2029"/>
+        <location filename="../main.py" line="1826"/>
         <source>Decrease page zoom by 10%</source>
         <translation>Webseiten Zoom um 10% verringern</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1852"/>
-        <location filename="../main.py" line="1655"/>
+        <location filename="../main.py" line="2030"/>
+        <location filename="../main.py" line="1831"/>
         <source>Set page zoom to 100%</source>
         <translation>Webseiten Zoom auf 100% setzen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1855"/>
-        <location filename="../main.py" line="1660"/>
+        <location filename="../main.py" line="2033"/>
+        <location filename="../main.py" line="1836"/>
         <source>Manage bookmarks</source>
         <translation>Lesezeichen verwalten</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1856"/>
-        <location filename="../main.py" line="1665"/>
+        <location filename="../main.py" line="2034"/>
+        <location filename="../main.py" line="1841"/>
         <source>Add current page to bookmarks</source>
         <translation>Aktuelle Seite zu Lesezeichen hinzufügen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1859"/>
-        <location filename="../main.py" line="1671"/>
+        <location filename="../main.py" line="2037"/>
+        <location filename="../main.py" line="1847"/>
         <source>Project Page</source>
         <translation>Projektseite</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2465"/>
-        <location filename="../main.py" line="1860"/>
-        <location filename="../main.py" line="1675"/>
+        <location filename="../main.py" line="2694"/>
+        <location filename="../main.py" line="2038"/>
+        <location filename="../main.py" line="1851"/>
         <source>About</source>
         <translation>Über</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1863"/>
-        <location filename="../main.py" line="1739"/>
+        <location filename="../main.py" line="2041"/>
+        <location filename="../main.py" line="1915"/>
         <source>Go</source>
         <translation>Los</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2003"/>
+        <location filename="../main.py" line="2210"/>
         <source>Download Request</source>
         <translation>Downloadanfrage</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2004"/>
+        <location filename="../main.py" line="2211"/>
         <source>Do you really want to download</source>
         <translation>Wollen sie wirklich diese Datei herunterladen:</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2053"/>
+        <location filename="../main.py" line="2272"/>
         <source>Extension updates: </source>
         <translation>Erweiterungsaktualisierungen: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2165"/>
+        <location filename="../main.py" line="2393"/>
         <source>Add to Bookmarks</source>
         <translation>Zu Lesezeichen hinzufügen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2171"/>
+        <location filename="../main.py" line="2399"/>
         <source>Add Current Page to Bookmarks</source>
         <translation>Aktuelle Webseite zu Lesezeichen hinzufügen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2179"/>
+        <location filename="../main.py" line="2408"/>
         <source>Bookmark name: </source>
         <translation>Name des Lesezeichens: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2184"/>
+        <location filename="../main.py" line="2413"/>
         <source>Bookmark URL: </source>
         <translation>URL des Lesezeichens: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2228"/>
+        <location filename="../main.py" line="2457"/>
         <source>Settings</source>
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2241"/>
+        <location filename="../main.py" line="2470"/>
         <source>Browser Settings</source>
         <translation>Browsereinstellungen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2249"/>
+        <location filename="../main.py" line="2478"/>
         <source>Silk Start (local)</source>
         <translation>Silk Start (lokal)</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2254"/>
+        <location filename="../main.py" line="2483"/>
         <source>URL</source>
         <translation>URL</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2262"/>
+        <location filename="../main.py" line="2491"/>
         <source>Start page type: </source>
         <translation>Startseite: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2268"/>
+        <location filename="../main.py" line="2497"/>
         <source>Start page URL: </source>
         <translation>URL: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2273"/>
+        <location filename="../main.py" line="2502"/>
         <source>Search engine: </source>
         <translation>Suchmaschine: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2281"/>
+        <location filename="../main.py" line="2510"/>
         <source>Light</source>
         <translation>Hell</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2281"/>
+        <location filename="../main.py" line="2510"/>
         <source>Dark</source>
         <translation>Dunkel</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2281"/>
+        <location filename="../main.py" line="2510"/>
         <source>Automatic</source>
         <translation>Automatisch</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2281"/>
+        <location filename="../main.py" line="2510"/>
         <source>Legacy (Native)</source>
         <translation>Legacy (Nativ)</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2283"/>
+        <location filename="../main.py" line="2512"/>
         <source>Theme: </source>
         <translation>Thema: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2287"/>
+        <location filename="../main.py" line="2516"/>
         <source>Show bottom bar: </source>
         <translation>Unterleiste anzeigen: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2291"/>
+        <location filename="../main.py" line="2520"/>
         <source>Show &apos;Go&apos; button in URL bar: </source>
         <translation>&quot;Los&quot; Knopf in Navigationsleiste anzeigen: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2300"/>
+        <location filename="../main.py" line="2529"/>
         <source>Display warning when download is requested: </source>
         <translation>Warnung bei Downloadanfrage anzeigen: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2314"/>
+        <location filename="../main.py" line="2543"/>
         <source>Program Language: </source>
         <translation>Programmsprache: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2324"/>
+        <location filename="../main.py" line="2553"/>
         <source>Default font size: </source>
         <translation>Standard Schriftgröße: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2328"/>
+        <location filename="../main.py" line="2557"/>
         <source>Javascript enabled: </source>
         <translation>JavaScript aktivieren: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2332"/>
+        <location filename="../main.py" line="2561"/>
         <source>Scrollbars enabled: </source>
         <translation>Scrollleisten anzeigen: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2347"/>
+        <location filename="../main.py" line="2576"/>
         <source>Install</source>
         <translation>Installieren</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2454"/>
-        <location filename="../main.py" line="2451"/>
-        <location filename="../main.py" line="2350"/>
+        <location filename="../main.py" line="2683"/>
+        <location filename="../main.py" line="2680"/>
+        <location filename="../main.py" line="2579"/>
         <source>Model Installed</source>
         <translation>Modell installiert</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2357"/>
+        <location filename="../main.py" line="2586"/>
         <source>Ollama not running</source>
         <translation>Ollama Service ist inaktiv</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2363"/>
+        <location filename="../main.py" line="2592"/>
         <source>Install AI Page Summarization Model: </source>
         <translation>KI Modell herunterladen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2368"/>
+        <location filename="../main.py" line="2597"/>
         <source>Enable AI Page Summarization: </source>
         <translation>KI Zusammenfassung einschalten: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="2371"/>
+        <location filename="../main.py" line="2600"/>
         <source>General</source>
         <translation>Allgemein</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2372"/>
+        <location filename="../main.py" line="2601"/>
         <source>Display</source>
         <translation>Erscheinungsbild</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2373"/>
+        <location filename="../main.py" line="2602"/>
         <source>Security</source>
         <translation>Sicherheit</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2374"/>
+        <location filename="../main.py" line="2603"/>
         <source>Language</source>
         <translation>Sprache</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2375"/>
+        <location filename="../main.py" line="2604"/>
         <source>Engine</source>
         <translation>Engine</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2376"/>
+        <location filename="../main.py" line="2605"/>
         <source>AI Features</source>
         <translation>KI Funktionen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2441"/>
+        <location filename="../main.py" line="2670"/>
         <source>Installing...</source>
         <translation>Installieren...</translation>
     </message>
     <message>
-        <location filename="../main.py" line="2454"/>
+        <location filename="../main.py" line="2683"/>
         <source>The AI page summarization model has been installed successfully. You can now enable AI page summarization in the settings.</source>
         <translation>Das KI Modell wurde erfolgreich installiert. Sie können die KI Zusammenfassung in den Einstellungen einschalten.</translation>
     </message>
@@ -379,30 +379,78 @@
     </message>
 </context>
 <context>
-    <name>DownloadManager</name>
+    <name>DownloadItemWidget</name>
     <message>
-        <location filename="../main.py" line="1133"/>
+        <location filename="../main.py" line="1161"/>
         <source>Downloading:</source>
         <translation>Herunteraden:</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1186"/>
+        <location filename="../main.py" line="1196"/>
         <source>Finished:</source>
         <translation>Abgeschlossen:</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1189"/>
+        <location filename="../main.py" line="1199"/>
         <source>Canceled:</source>
         <translation>Abgebrochen:</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1193"/>
+        <location filename="../main.py" line="1203"/>
+        <source>Error:</source>
+        <translation>Fehlgeschlagen:</translation>
+    </message>
+</context>
+<context>
+    <name>DownloadManagerWidget</name>
+    <message>
+        <location filename="../main.py" line="1221"/>
+        <location filename="../main.py" line="1210"/>
+        <source>Manage Downloads</source>
+        <translation>Downloads verwalten</translation>
+    </message>
+    <message>
+        <location filename="../main.py" line="1244"/>
+        <source>Refresh</source>
+        <translation>Aktualisieren</translation>
+    </message>
+    <message>
+        <location filename="../main.py" line="1263"/>
+        <source>No active downloads.</source>
+        <translation>Keine aktiven Downloads.</translation>
+    </message>
+</context>
+<context>
+    <name>DownloadMenu</name>
+    <message>
+        <location filename="../main.py" line="1303"/>
+        <source>Downloading:</source>
+        <translation>Herunteraden:</translation>
+    </message>
+    <message>
+        <location filename="../main.py" line="1357"/>
+        <source>Finished:</source>
+        <translation>Abgeschlossen:</translation>
+    </message>
+    <message>
+        <location filename="../main.py" line="1360"/>
+        <source>Canceled:</source>
+        <translation>Abgebrochen:</translation>
+    </message>
+    <message>
+        <location filename="../main.py" line="1364"/>
         <source>Error:</source>
         <translation>Fehlgeschlagen:</translation>
     </message>
 </context>
 <context>
     <name>ExtensionItemWidget</name>
+    <message>
+        <location filename="../main.py" line="351"/>
+        <location filename="../main.py" line="279"/>
+        <source>by</source>
+        <translation>von</translation>
+    </message>
     <message>
         <location filename="../main.py" line="289"/>
         <source>Required libraries: </source>
@@ -417,11 +465,6 @@
         <location filename="../main.py" line="351"/>
         <source>Version: </source>
         <translation>Version: </translation>
-    </message>
-    <message>
-        <location filename="../main.py" line="351"/>
-        <source>by</source>
-        <translation>von</translation>
     </message>
     <message>
         <location filename="../main.py" line="356"/>
@@ -448,33 +491,33 @@
 <context>
     <name>ManageBookmarksDialog</name>
     <message>
-        <location filename="../main.py" line="1221"/>
-        <location filename="../main.py" line="1199"/>
+        <location filename="../main.py" line="1396"/>
+        <location filename="../main.py" line="1374"/>
         <source>Manage Bookmarks</source>
         <translation>Lesezeichen verwalten</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1238"/>
+        <location filename="../main.py" line="1413"/>
         <source>Add New</source>
         <translation>Neu</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1244"/>
+        <location filename="../main.py" line="1419"/>
         <source>Delete</source>
         <translation>Löschen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1258"/>
+        <location filename="../main.py" line="1433"/>
         <source>Bookmark Name: </source>
         <translation>Name des Lesezeichens: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="1262"/>
+        <location filename="../main.py" line="1437"/>
         <source>Bookmark URL: </source>
         <translation>URL des Lesezeichens: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="1311"/>
+        <location filename="../main.py" line="1486"/>
         <source>New Bookmark</source>
         <translation>Neues Lesezeichen</translation>
     </message>
@@ -482,23 +525,23 @@
 <context>
     <name>ManageExtensionRepositories</name>
     <message>
-        <location filename="../main.py" line="1343"/>
-        <location filename="../main.py" line="1326"/>
+        <location filename="../main.py" line="1518"/>
+        <location filename="../main.py" line="1501"/>
         <source>Manage Repositories</source>
         <translation>Repositories verwalten</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1358"/>
+        <location filename="../main.py" line="1533"/>
         <source>Add New</source>
         <translation>Neu</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1364"/>
+        <location filename="../main.py" line="1539"/>
         <source>Delete</source>
         <translation>Löschen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="1378"/>
+        <location filename="../main.py" line="1553"/>
         <source>Repository URL: </source>
         <translation>Repository URL: </translation>
     </message>

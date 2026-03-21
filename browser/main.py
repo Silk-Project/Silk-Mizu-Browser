@@ -64,7 +64,7 @@ EXTENSIONS_PATH = os.path.join(SCRIPT_DIR, "extensions")
 EXTENSIONS_SETTINGS_PATH = os.path.join(SCRIPT_DIR, "config", "extensions.json")
 ADDITIONAL_QSS_PATH = os.path.join(SCRIPT_DIR, "assets", "style.qss")
 SUM_AI_MODEL = {"name":"lfm2.5-thinking:1.2b", "size":"700MB"}
-VERSION_NUMBER = "0.3 Public Preview"
+VERSION_NUMBER = "0.3.1 Public Preview"
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
     "DuckDuckGo":"https://duckduckgo.com/?q=",
@@ -1112,11 +1112,13 @@ class BetterWebEngine(QWebEngineView):
         settings.setAttribute(QWebEngineSettings.WebAttribute.ShowScrollBars,
                                 current_settings["scrollbars_enabled"])
 
-class DownloadManager(QMenu):
+class DownloadManager(QObject):
+    download_added = pyqtSignal(QWebEngineDownloadRequest)
+
     def __init__(self):
         super().__init__()
-        self.downloads = {}  # Store active download objects
-
+        self.downloads = []
+    
     def add_download(self, download: QWebEngineDownloadRequest):
         # Download info
         download_filename = download.suggestedFileName()
@@ -1126,6 +1128,172 @@ class DownloadManager(QMenu):
 
         download.setDownloadDirectory(DOWNLOAD_PATH)
         download.setDownloadFileName(download_filename)
+
+        download.accept()
+        self.downloads.append(download)
+        self.download_added.emit(download)
+
+class DownloadItemWidget(QFrame):
+    def __init__(self, download: QWebEngineDownloadRequest, parent=None):
+        super().__init__(parent)
+
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        self.download = download
+
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.init_ui()
+        self.connect_signals()
+
+        # Check if download is already finished
+        if self.download.isFinished():
+            self.download_finished()
+        
+        self.update_progress()
+    
+    def init_ui(self):
+        # Download info
+        download_filename = self.download.suggestedFileName()
+
+        # Download UI elements
+        self.label = QLabel(f"{self.tr("Downloading:")} {download_filename}")
+        self.label.setWordWrap(True)
+        self.label.setToolTip(download_filename)
+
+        self.progress = QProgressBar()
+
+        self.stop_btn = QPushButton()
+        self.stop_btn.setIcon(qta.icon("ei.remove"))
+        self.stop_btn.clicked.connect(lambda: self.download.cancel())
+        
+        self.layout.addWidget(self.label)
+
+        # Bottom layout (progress bar, button)
+        bottom_layout = QHBoxLayout()
+        self.layout.addLayout(bottom_layout)
+
+        bottom_layout.addWidget(self.progress)
+        bottom_layout.addWidget(self.stop_btn)
+    
+    def connect_signals(self):
+        self.download.receivedBytesChanged.connect(self.update_progress)
+        self.download.isFinishedChanged.connect(self.download_finished)
+    
+    def update_progress(self):
+        if self.download.totalBytes() > 0:
+            percent = int((self.download.receivedBytes() / self.download.totalBytes()) * 100)
+            self.progress.setValue(percent)
+    
+    def download_finished(self):
+        download_filename = self.download.suggestedFileName()
+        state = self.download.state()
+        self.stop_btn.setEnabled(False)
+    
+        if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
+            self.progress.setValue(100)
+            self.label.setText(f"{self.tr("Finished:")} {download_filename}")
+        
+        elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
+            self.label.setText(f"{self.tr("Canceled:")} {download_filename}")
+            self.progress.setEnabled(False)
+        
+        elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
+            self.label.setText(f"{self.tr("Error:")} {download_filename}")
+            self.progress.setStyleSheet("QProgressBar::chunk { background-color: red; }")
+
+class DownloadManagerWidget(QDialog):
+    def __init__(self, downloads):
+        super().__init__()
+
+        self.setWindowTitle(self.tr("Manage Downloads"))
+        self.setFixedSize(624, 468)
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.downloads = downloads
+
+        self.init_ui()
+        self.refresh_downloads()
+    
+    def init_ui(self):
+        title_label = QLabel(self.tr("Manage Downloads"))
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px;")
+        self.layout.addWidget(title_label)
+
+        # Downloads list
+        self.downloads_content = QScrollArea()
+
+        self.downloads_widget = QWidget()
+        self.downloads_layout = QVBoxLayout()
+        self.downloads_controls_layout = QHBoxLayout()
+        self.downloads_main_layout = QVBoxLayout()
+
+        self.downloads_layout.addLayout(self.downloads_controls_layout)
+        self.downloads_layout.addLayout(self.downloads_main_layout)
+
+        self.downloads_content.setWidget(self.downloads_widget)
+        self.downloads_widget.setLayout(self.downloads_layout)
+        self.layout.addWidget(self.downloads_content)
+
+        self.downloads_layout.addStretch()
+
+        # Control Buttons
+        self.store_tab_refresh_btn = QPushButton(self.tr("Refresh"))
+        self.store_tab_refresh_btn.setIcon(qta.icon("ei.refresh"))
+        self.store_tab_refresh_btn.setStyleSheet("border: 1px solid #414242; border-radius: 3px; padding: 8px;")
+        self.store_tab_refresh_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.store_tab_refresh_btn.clicked.connect(self.refresh_downloads)
+        self.downloads_controls_layout.addWidget(self.store_tab_refresh_btn)
+
+        self.downloads_controls_layout.addStretch()
+
+        self.downloads_content.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.downloads_content.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.downloads_content.setWidgetResizable(True)
+
+    def refresh_downloads(self):
+        self.clear_layout(self.downloads_main_layout)
+
+        if len(self.downloads) == 0:
+            self.downloads_main_layout.addStretch()
+
+            info_label = QLabel(self.tr("No active downloads."))
+            info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            info_label.setStyleSheet("color: grey;")
+            self.downloads_main_layout.addWidget(info_label)
+
+            self.downloads_main_layout.addStretch()
+
+            return
+        
+        for download in self.downloads:
+            item = DownloadItemWidget(download, self)
+            self.downloads_main_layout.addWidget(item)
+
+    def clear_layout(self, layout):
+        if layout is not None:
+            while layout.count():
+                item = layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
+                else:
+                    self.clear_layout(item.layout())
+
+
+class DownloadMenu(QMenu):
+    def __init__(self):
+        super().__init__()
+        self.manage_downloads_action = QAction("Manage Downloads")
+        self.manage_downloads_action.triggered.connect(self.open_manage_downloads)
+        self.addAction(self.manage_downloads_action)
+
+    def add_download(self, download: QWebEngineDownloadRequest):
+        # Download info
+        download_filename = download.suggestedFileName()
         
         # Create layouts for the menu entry
         layout = QVBoxLayout()
@@ -1153,7 +1321,12 @@ class DownloadManager(QMenu):
         widget_action = QWidgetAction(self)
         widget_action.setDefaultWidget(container)
 
-        self.addAction(widget_action)
+        # Insert the new action at the top of the menu
+        self.insertAction(self.actions()[0], widget_action)
+
+        # Remove downloads if download amount exceeds 3
+        if len(self.actions()) > 4:
+            self.removeAction(self.actions()[3])
         
         # 3. Connect signals to track progress and completion
         download.receivedBytesChanged.connect(
@@ -1162,10 +1335,6 @@ class DownloadManager(QMenu):
         download.isFinishedChanged.connect(
             lambda: self.download_finished(download, label, progress, stop_btn)
         )
-        
-        # 4. Start the download
-        download.accept()
-        self.downloads[download.id()] = download
 
     def update_progress(self, download, progress_bar):
         if download.totalBytes() > 0:
@@ -1185,15 +1354,19 @@ class DownloadManager(QMenu):
     
         if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
             progress_bar.setValue(100)
-            label.setText(f"{self.tr("Finished:")} {self.short_if_needed(download_filename)}")
+            label.setText(f"{self.tr("Finished:")} {self.shorten_if_needed(download_filename)}")
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
-            label.setText(f"{self.tr("Canceled:")} {self.short_if_needed(download_filename)}")
+            label.setText(f"{self.tr("Canceled:")} {self.shorten_if_needed(download_filename)}")
             progress_bar.setEnabled(False)
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
-            label.setText(f"{self.tr("Error:")} {self.short_if_needed(download_filename)}")
+            label.setText(f"{self.tr("Error:")} {self.shorten_if_needed(download_filename)}")
             progress_bar.setStyleSheet("QProgressBar::chunk { background-color: red; }")
+    
+    def open_manage_downloads(self):
+        dlg = DownloadManagerWidget(window.download_manager.downloads)
+        dlg.exec()
 
 class ManageBookmarksDialog(QDialog):
     def __init__(self, parent, passed_bookmarks):
@@ -1754,7 +1927,9 @@ class BrowserWindow(QMainWindow):
         self.add_tab_btn.clicked.connect(self.create_new_tab)
         controls_layout.addWidget(self.add_tab_btn)
 
-        self.download_menu = DownloadManager()
+        self.download_manager = DownloadManager()
+        self.download_menu = DownloadMenu()
+        self.download_manager.download_added.connect(self.download_menu.add_download)
         self.downloads_btn = QPushButton()
         self.downloads_btn.setIcon(qta.icon("ei.download", color=icon_color))
         self.downloads_btn.setStyleSheet("padding: 8px;")
@@ -1931,15 +2106,13 @@ class BrowserWindow(QMainWindow):
     def closeEvent(self, a0):
         self.web_tabs.blockSignals(True)
         for tab in range(0, self.web_tabs.count()):
-            print(tab)
-            tab_widget = self.tab_list[tab]
+            tab_widget = self.tab_list[0]
             profile = tab_widget.page().profile()
             profile.clearHttpCache()
-            profile.cookieStore().deleteAllCookies()
 
-            # self.tab_list.pop(tab)
             self.web_tabs.removeTab(0)
             tab_widget.deleteLater()
+            self.tab_list.pop(0)
 
 
     def init_web_engine(self):
@@ -2040,12 +2213,12 @@ class BrowserWindow(QMainWindow):
             warning_dlg.setIcon(QMessageBox.Icon.Warning)
 
             if warning_dlg.exec() == QMessageBox.StandardButton.Ok:
-                self.download_menu.add_download(download)
+                self.download_manager.add_download(download)
                 self.downloads_btn.setVisible(True)
                 self.show_download_menu()
     
         else:
-            self.download_menu.add_download(download)
+            self.download_manager.add_download(download)
             self.downloads_btn.setVisible(True)
             self.show_download_menu()
 

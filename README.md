@@ -52,7 +52,7 @@ python3 main.py
 - [ ] ~~Improve website tab system and tab bar positioning at the top~~ (Unchanged because of performance reasons)
 - [x] ~~"Explain selected text with AI"~~
 - [ ] Reader view
-- [ ] Better overview of current downloads so it can't infinitely stack up in the download menu
+- [x] Better overview of current downloads so it can't infinitely stack up in the download menu
 - [x] ~~Multi-language support~~
 - [x] ~~Custom extension store (for the browser itself)~~
   - [x] Widgets ~~(e. g. Notes and additional widgets from the store)~~
