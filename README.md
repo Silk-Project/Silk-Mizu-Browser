@@ -49,7 +49,7 @@ To use this program, simply execute the main.py file directly via python3.
 python3 main.py
 ```
 ## 💻 To-do
-- [ ] ~~Improve website tab system and tab bar positioning at the top~~ (Unchanged because of performance reasons)
+- [x] ~~Improve website tab system and tab bar positioning at the top~~ (Unchanged because of performance reasons)
 - [x] ~~"Explain selected text with AI"~~
 - [ ] Reader view
 - [x] Better overview of current downloads so it can't infinitely stack up in the download menu
