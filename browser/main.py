@@ -43,7 +43,7 @@ from PyQt6.QtWidgets import (
     QStackedWidget,
     QFrame,
 )
-from PyQt6.QtCore import Qt, QUrl, QSize, pyqtSlot, pyqtSignal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths
+from PyQt6.QtCore import Qt, QUrl, QSize, pyqtSlot, pyqtSignal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths, QTimer
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEngineDownloadRequest, QWebEngineProfile, QWebEnginePage
 from PyQt6.QtGui import QPixmap, QAction, QKeySequence, QIcon, QColor
@@ -64,7 +64,7 @@ EXTENSIONS_PATH = os.path.join(SCRIPT_DIR, "extensions")
 EXTENSIONS_SETTINGS_PATH = os.path.join(SCRIPT_DIR, "config", "extensions.json")
 ADDITIONAL_QSS_PATH = os.path.join(SCRIPT_DIR, "assets", "style.qss")
 SUM_AI_MODEL = {"name":"lfm2.5-thinking:1.2b", "size":"700MB"}
-VERSION_NUMBER = "0.3.1 Public Preview"
+VERSION_NUMBER = "0.3.11 Public Preview"
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
     "DuckDuckGo":"https://duckduckgo.com/?q=",
@@ -318,6 +318,10 @@ class ExtensionItemWidget(QFrame):
             self.download_extension_btn.setStyleSheet("padding: 8px;")
             self.download_extension_btn.clicked.connect(self.install_extension)
             self.layout.addWidget(self.download_extension_btn, alignment=Qt.AlignmentFlag.AlignRight)
+
+            self.check_icons_timer = QTimer()
+            self.check_icons_timer.setInterval(1000)
+            self.check_icons_timer.timeout.connect(self.switch_to_download_icon)
     
     def show_extension_info(self):
         dlg = QDialog(self)
@@ -385,12 +389,24 @@ class ExtensionItemWidget(QFrame):
 
         if warning_dlg.exec() == QMessageBox.StandardButton.Ok:
             install_dialog = ExtensionInstallDialog(self.metadata, self)
-            install_dialog.exec()
+            
+            if install_dialog.exec():
+                self.download_extension_btn.setEnabled(True)
+                self.download_extension_btn.setIcon(qta.icon("fa6s.check"))
+
             self.refresh_local_extensions.emit()
             window.extension_sidebar.load_extensions()
+
+            self.check_icons_timer.start()
+
+            return
         
         self.download_extension_btn.setEnabled(True)
         self.download_extension_btn.setIcon(qta.icon("fa6s.download"))
+    
+    def switch_to_download_icon(self):
+        self.download_extension_btn.setIcon(qta.icon("fa6s.download"))
+        self.check_icons_timer.stop()
     
     def delete_extension(self):
         warning_dlg = QMessageBox(self)
@@ -470,7 +486,7 @@ class ExtensionInstallDialog(QDialog):
         self.accept()
     
     def install_failed(self, message):
-        self.show_status(f"Install failed: {message}")
+        QMessageBox.critical(self, self.tr("Installation Failed"), f"{self.tr("Failed to install extension: ")}{message}")
         self.reject()
     
     def show_status(self, string):
@@ -532,7 +548,7 @@ class DependencyWorker(QRunnable):
     def run(self):
         for dep in self.required_dependencies:
             self.signals.dependency_install_started.emit(dep)
-            print(f"Installing: {dep}")
+            # print(f"Installing: {dep}")
             subprocess.check_call([sys.executable, "-m", "pip", "install", dep])
             self.signals.dependency_installed.emit()
         
@@ -749,7 +765,6 @@ class WebExtensionsDialog(QDialog):
             self.installed_widgets_repeatable_layout.addWidget(item)
 
     def load_store_extensions(self):
-        print("Loading store")
         self.clear_layout(self.store_widgets_repeatable_layout)
 
         self.store_widgets_repeatable_layout.addStretch()
