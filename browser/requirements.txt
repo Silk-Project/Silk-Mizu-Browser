@@ -1,7 +1,6 @@
-pyqt6
-pyqt6-webengine
+pyside6
 qtawesome
-pyqtdarktheme
+pyqtdarktheme-fork
 darkdetect
 ollama
 requests

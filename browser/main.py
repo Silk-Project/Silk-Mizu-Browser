@@ -12,7 +12,7 @@ import shutil
 import zipfile
 import importlib.util
 from pathlib import Path
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QWidget,
@@ -42,11 +42,12 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QStackedWidget,
     QFrame,
+    QColorDialog,
 )
-from PyQt6.QtCore import Qt, QUrl, QSize, pyqtSlot, pyqtSignal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths, QTimer
-from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEngineDownloadRequest, QWebEngineProfile, QWebEnginePage
-from PyQt6.QtGui import QPixmap, QAction, QKeySequence, QIcon, QColor
+from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths, QTimer
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineDownloadRequest, QWebEngineProfile, QWebEnginePage
+from PySide6.QtGui import QPixmap, QAction, QKeySequence, QIcon, QColor
 import qtawesome as qta
 import qdarktheme
 import darkdetect
@@ -86,6 +87,7 @@ default_settings = {
     "start_page_url":START_PAGE_PATH,
     "search_engine":"Google",
     "theme":"Dark",
+    "accent_color":"#8370EB",
     "bottom_bar_visible":False,
     "go_button_visible":False,
     "download_warnings":True,
@@ -153,10 +155,13 @@ class ThemeManager():
     def __init__(self, applic, theme="dark"):
         self.applic = applic
         self.theme = theme
+        self.custom_colors = {
+            "primary": QColor(current_settings["accent_color"]).name() if current_settings["accent_color"] else QColor("#8370EB")
+        }
         self.available_themes = [
             "light",
             "dark",
-            "automatic",
+            "auto",
             "legacy"
         ]
         self.load_theme(theme)
@@ -165,12 +170,11 @@ class ThemeManager():
         theme_input = theme_input.strip().lower()
 
         if theme_input in self.available_themes:
-            if theme_input != "automatic" and theme_input != "legacy":
-                self.applic.setStyleSheet(qdarktheme.load_stylesheet(theme_input) + additional_qss)
+            if theme_input != "auto" and theme_input != "legacy":
+                qdarktheme.setup_theme(theme_input, custom_colors=self.custom_colors, additional_qss=additional_qss)
 
-            elif theme_input == "automatic":
-                system_theme = "dark" if darkdetect.isDark() else "light"
-                self.applic.setStyleSheet(qdarktheme.load_stylesheet(system_theme) + additional_qss)
+            elif theme_input == "auto":
+                qdarktheme.setup_theme("auto", custom_colors=self.custom_colors, additional_qss=additional_qss)
             
             elif theme_input == "legacy":
                 self.applic.setStyleSheet(additional_qss)
@@ -183,9 +187,16 @@ class ThemeManager():
     def load_theme_from_index(self, index):
         theme = self.available_themes[index]
         self.load_theme(theme)
+
+    def set_accent_color(self, color: QColor):
+        if self.theme == "legacy":
+            return
+
+        self.custom_colors["primary"] = color
+        qdarktheme.setup_theme(self.theme, custom_colors=self.custom_colors, additional_qss=additional_qss)
     
     def get_plain_theme(self):
-        if self.theme != "automatic" and self.theme != "legacy":
+        if self.theme != "auto" and self.theme != "legacy":
             return self.theme
         
         else:
@@ -236,7 +247,7 @@ class ExtensionMetadata:
     index_source: str = None
 
 class ExtensionItemWidget(QFrame):
-    refresh_local_extensions = pyqtSignal()
+    refresh_local_extensions = Signal()
 
     def __init__(self, metadata: ExtensionMetadata, installable=False, parent=None):
         super().__init__(parent)
@@ -497,9 +508,9 @@ class ExtensionInstallDialog(QDialog):
         self.install_progress.setValue(current_progress + 1)
 
 class ZipInstallerObject(QObject):
-    zip_fetched = pyqtSignal()
-    zip_fetch_failed = pyqtSignal(str)
-    zip_extracted = pyqtSignal()
+    zip_fetched = Signal()
+    zip_fetch_failed = Signal(str)
+    zip_extracted = Signal()
 
 class ZipInstaller(QRunnable):
     def __init__(self, url, app_id):
@@ -509,7 +520,7 @@ class ZipInstaller(QRunnable):
         self.download_url = url
         self.singals = ZipInstallerObject()
 
-    @pyqtSlot()
+    @Slot()
     def run(self):
         install_dir = os.path.join(EXTENSIONS_PATH, self.app_id)
 
@@ -532,10 +543,10 @@ class ZipInstaller(QRunnable):
             self.singals.zip_fetch_failed.emit(str(e))
 
 class DependencyWorkerSignals(QObject):
-    dependencies_installed = pyqtSignal()
-    dependency_install_started = pyqtSignal(str)
-    dependency_installed = pyqtSignal()
-    task_failed = pyqtSignal(str)
+    dependencies_installed = Signal()
+    dependency_install_started = Signal(str)
+    dependency_installed = Signal()
+    task_failed = Signal(str)
 
 class DependencyWorker(QRunnable):
     def __init__(self, required_dependencies: list):
@@ -544,7 +555,7 @@ class DependencyWorker(QRunnable):
         self.required_dependencies = required_dependencies
         self.signals = DependencyWorkerSignals()
 
-    @pyqtSlot()
+    @Slot()
     def run(self):
         for dep in self.required_dependencies:
             self.signals.dependency_install_started.emit(dep)
@@ -555,8 +566,8 @@ class DependencyWorker(QRunnable):
         self.signals.dependencies_installed.emit()
 
 class WebExtensionFetcherSignals(QObject):
-    response_received = pyqtSignal(list)
-    task_failed = pyqtSignal(str)
+    response_received = Signal(list)
+    task_failed = Signal(str)
 
 class WebExtensionFetcher(QRunnable):
     def __init__(self, index_urls):
@@ -566,7 +577,7 @@ class WebExtensionFetcher(QRunnable):
         self.jsons = []
         self.signals = WebExtensionFetcherSignals()
 
-    @pyqtSlot()
+    @Slot()
     def run(self):
         try:
             for url in self.index_urls:
@@ -885,7 +896,7 @@ class WebExtensionsDialog(QDialog):
 
 
 class WebExtensionsMenuSignals(QObject):
-    request_manage_extensions = pyqtSignal()
+    request_manage_extensions = Signal()
 
 class WebExtensionsMenu(QMenu):
     def __init__(self):
@@ -937,7 +948,7 @@ class Extension_Sidebar(QWidget):
         self.extension_bar_layout = QVBoxLayout()
         self.extension_content = QStackedWidget()
         
-        self.extension_content.setObjectName("extension_content")
+        self.extension_content.setStyleSheet("border-radius: 3px;")
         self.extension_content.hide()
 
         self.sidebar_layout.addLayout(self.extension_bar_layout)
@@ -1028,8 +1039,8 @@ class Extension_Sidebar(QWidget):
                     self.clear_layout(item.layout())
 
 class BetterWebEngineSignals(QObject):
-    sum_selected_with_ai = pyqtSignal(str)
-    sum_page_with_ai = pyqtSignal()
+    sum_selected_with_ai = Signal(str)
+    sum_page_with_ai = Signal()
 
 class BetterWebEngine(QWebEngineView):
     def __init__(self, parent):
@@ -1128,7 +1139,7 @@ class BetterWebEngine(QWebEngineView):
                                 current_settings["scrollbars_enabled"])
 
 class DownloadManager(QObject):
-    download_added = pyqtSignal(QWebEngineDownloadRequest)
+    download_added = Signal(QWebEngineDownloadRequest)
 
     def __init__(self):
         super().__init__()
@@ -1618,7 +1629,7 @@ class ManageExtensionRepositories(QDialog):
             self.list_widget.takeItem(row)
 
 class InstallWorkerSignals(QObject):
-    installation_complete = pyqtSignal()
+    installation_complete = Signal()
 
 class InstallWorker(QRunnable):
     def __init__(self, model_name):
@@ -1626,7 +1637,7 @@ class InstallWorker(QRunnable):
         self.signals = InstallWorkerSignals()
         self.model_name = model_name
     
-    @pyqtSlot()
+    @Slot()
     def run(self):
         print(f"Installing model: {self.model_name}...")
         ollama.pull(self.model_name)
@@ -1634,8 +1645,8 @@ class InstallWorker(QRunnable):
         self.signals.installation_complete.emit()
 
 class AI_SummarizationWorkerSignals(QObject):
-    chunk_received = pyqtSignal(str)
-    finished = pyqtSignal()
+    chunk_received = Signal(str)
+    finished = Signal()
 
 class AI_SummarizationWorker(QRunnable):
     def __init__(self, text):
@@ -1643,7 +1654,7 @@ class AI_SummarizationWorker(QRunnable):
         self.text = text
         self.signals = AI_SummarizationWorkerSignals()
     
-    @pyqtSlot()
+    @Slot()
     def run(self):
         print("Summarizing page content...")
         stream = ollama.chat(
@@ -1756,6 +1767,146 @@ class AI_Extension(QWidget):
         self.output_textedit.setPlaceholderText(self.tr("Summarization output will appear here..."))
         self.download_chat_btn.setText(self.tr("Download"))
         self.clear_btn.setText(self.tr("Clear"))
+
+class QColorButton(QPushButton):
+    colorChanged = Signal(object)
+
+    def __init__(self, *args, color=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._color = None
+        self._default = color if color else "#ffffff"
+        self._static_styles = "border-radius: 6px"
+        self.setStyleSheet(f"background-color: {self._default}; {self._static_styles}")
+        self.pressed.connect(self.onColorPicker)
+        self.installEventFilter(self)
+
+        # Set the initial/default state.
+        self.setColor(self._default)
+
+    def setColor(self, color):
+        if color != self._color:
+            self._color = color
+            self.colorChanged.emit(color)
+
+        if self._color:
+            self.setStyleSheet(f"background-color: {self._color}; {self._static_styles}")
+        else:
+            self.setStyleSheet("")
+
+    def color(self):
+        return self._color
+
+    def onColorPicker(self):
+        dlg = QColorDialog(self)
+        if self._color:
+            dlg.setCurrentColor(QColor(self._color))
+
+        if dlg.exec():
+            self.setColor(dlg.currentColor().name())
+
+    def mousePressEvent(self, e):
+        if e.button() == Qt.MouseButton.RightButton:
+            self.setColor(self._default)
+
+        return super().mousePressEvent(e)
+
+class AboutDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setFixedSize(240, 325)
+        self.setWindowTitle(self.tr("About"))
+        self.dlg_layout = QVBoxLayout()
+        self.setLayout(self.dlg_layout)
+
+        self.init_ui()
+
+    def init_ui(self):
+        top_layout = QHBoxLayout()
+        top_info_layout = QVBoxLayout()
+
+        logoLabel = QLabel(self)
+        logoLabel.setFixedSize(80, 80)
+        logoLabel.setScaledContents(True)
+        
+        if os.path.exists(LOGO_PATH):
+            logoLabel.setPixmap(QPixmap(LOGO_PATH))
+
+        top_layout.addWidget(logoLabel, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        about_title = QLabel("RSS MGR")
+        about_title.setStyleSheet("font-size: 17px; font-weight: bold;")
+        top_info_layout.addWidget(about_title)
+
+        about_label = QLabel(f"Version: {VERSION_NUMBER}")
+        about_label.setWordWrap(True)
+        top_info_layout.addWidget(about_label)
+
+        top_info_layout.addWidget(QLabel())
+
+        self.dlg_layout.addLayout(top_layout)
+        top_layout.addLayout(top_info_layout)
+        top_layout.addStretch()
+
+        # Add tab widget
+        tab_widget = QTabWidget()
+        self.dlg_layout.addWidget(tab_widget)
+
+        # About tab
+        about_tab = QWidget()
+        about_layout = QVBoxLayout()
+        about_tab.setLayout(about_layout)
+
+        about_description = QLabel("A simple PySide6 browser for Silk and Linux devices.\nSilk Project 2025-2026")
+        about_description.setWordWrap(True)
+        about_layout.addWidget(about_description)
+
+        about_layout.addStretch()
+
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        button_box.setContentsMargins(0, 8, 0, 8)
+        button_box.accepted.connect(self.accept)
+
+        tab_widget.addTab(about_tab, "About")
+
+        self.dlg_layout.addWidget(button_box, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Components tab
+        components_tab = QWidget()
+        components_layout = QVBoxLayout()
+        components_tab.setLayout(components_layout)
+
+        components = [{
+            "name": "PySide6 (Qt)",
+            "version":"6.11.0",
+            "license":"LGPL-3.0"
+        }]
+
+        for component in components:
+            item = QWidget()
+            item.setStyleSheet("border: 1px solid #3f4042; border-radius: 3px;")
+            item_layout = QVBoxLayout()
+            item.setLayout(item_layout)
+
+            name = QLabel(component.get("name", "No name"))
+            name.setStyleSheet("font-weight: bold; border: none;")
+
+            version = QLabel(component.get("version", "No version"))
+            version.setStyleSheet("color: grey; border: none;")
+
+            license = QLabel(component.get("license", "No license"))
+            license.setStyleSheet("color: grey; border: none;")
+
+            item_layout.addWidget(name)
+            item_layout.addWidget(version)
+            item_layout.addWidget(license)
+
+            components_layout.addWidget(item)
+
+        components_layout.addStretch()
+        
+        tab_widget.addTab(components_tab, "Components")
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
@@ -2526,6 +2677,9 @@ class BrowserWindow(QMainWindow):
         theme_combobox.setCurrentIndex(theme_manager.available_themes.index(theme_manager.theme))
         display_settings_layout.addRow(self.tr("Theme: "), theme_combobox)
 
+        accent_color_btn = QColorButton(color=current_settings["accent_color"])
+        display_settings_layout.addRow(self.tr("Accent color: "), accent_color_btn)
+
         bottom_bar_visability_checkbox = QCheckBox()
         bottom_bar_visability_checkbox.setChecked(current_settings["bottom_bar_visible"])
         display_settings_layout.addRow(self.tr("Show bottom bar: "), bottom_bar_visability_checkbox)
@@ -2633,6 +2787,7 @@ class BrowserWindow(QMainWindow):
             start_page = start_page_urledit.text() if start_page_url_radio_button.isChecked() else START_PAGE_PATH
             search_engine = search_engine_combobox.currentText()
             theme_index = theme_combobox.currentIndex()
+            accent_color = accent_color_btn.color()
             go_button_visible = go_button_visibility_checkbox.isChecked()
             bottom_bar_visible = bottom_bar_visability_checkbox.isChecked()
             download_warnings = download_warnings_checkbox.isChecked()
@@ -2656,12 +2811,15 @@ class BrowserWindow(QMainWindow):
             if summarize_ai_enabled != current_settings["ai_summarization_enabled"]:
                 current_settings["ai_summarization_enabled"] = not current_settings["ai_summarization_enabled"]
                 self.extension_sidebar.load_extensions()
+            
+            theme_manager.set_accent_color(accent_color)
 
             # Prepare settings.json
             updated_settings = {
                 "start_page_url":start_page,
                 "search_engine":search_engine,
                 "theme":theme_manager.available_themes[theme_index],
+                "accent_color":accent_color,
                 "bottom_bar_visible":bottom_bar_visible,
                 "go_button_visible":go_button_visible,
                 "download_warnings":download_warnings,
@@ -2705,38 +2863,7 @@ class BrowserWindow(QMainWindow):
             tab.update_engine_config()
         
     def about_dialog(self):
-        dlg = QDialog(self)
-        dlg.setWindowTitle(self.tr("About"))
-        dlg_layout = QVBoxLayout()
-        dlg.setFixedSize(240, 325)
-
-        logoLabel = QLabel(self)
-        logoLabel.setFixedSize(170, 170)
-        logoLabel.setScaledContents(True)
-        
-        if os.path.exists(LOGO_PATH):
-            logoLabel.setPixmap(QPixmap(LOGO_PATH))
-
-        about_title = QLabel("Silk Mizu")
-        about_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        about_title.setStyleSheet("font-size: 20px; font-weight: bold;")
-        about_description = QLabel("A simple PyQT6 browser for Silk and Linux devices.")
-        about_description.setWordWrap(True)
-        about_description.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        about_label = QLabel(f"Version: {VERSION_NUMBER}\nSilk Project 2025-2026")
-        about_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
-        button_box.setContentsMargins(0, 8, 0, 8)
-        button_box.accepted.connect(dlg.accept)
-
-        dlg_layout.addWidget(logoLabel, alignment=Qt.AlignmentFlag.AlignCenter)
-        dlg_layout.addWidget(about_title)
-        dlg_layout.addWidget(about_description)
-        dlg_layout.addWidget(about_label)
-        dlg_layout.addWidget(button_box, alignment=Qt.AlignmentFlag.AlignCenter)
-        dlg.setLayout(dlg_layout)
-        
+        dlg = AboutDialog(self)
         dlg.exec()
 
 if __name__ == "__main__":
