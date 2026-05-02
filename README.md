@@ -6,7 +6,7 @@
 ![Static Badge](https://img.shields.io/badge/Python-3.14-e9f23d?logo=python&logoColor=white)
 ![Static Badge](https://img.shields.io/badge/PyQt-6.9-41cd52?logo=Qt&labelColor=black)
 <br>
-Simple and lightweight PyQT6 browser for Silk and Linux / Windows / Mac computers. Made possible through the QWebEngineView Widget for rendering webpages. Mizu (水) translates to "water" in japanese, which makes sense because you are "surfing" the web.
+Simple and lightweight PySide6 browser for Silk and Linux / Windows / Mac computers. Made possible through the QWebEngineView Widget for rendering webpages. Mizu (水) translates to "water" in japanese, which makes sense because you are "surfing" the web.
 
 ![Browser Preview](/assets/preview.png)
 ![Extensions Preview](/assets/preview_extensions.png)
@@ -25,8 +25,7 @@ Simple and lightweight PyQT6 browser for Silk and Linux / Windows / Mac computer
 - Custom browser extension manager / engine
 
 ## ⚙️ Requirements
-- `pyqt6` (pip)
-- `pyqt6-webengine` (pip)
+- `pyside6` (pip)
 - `qtawesome` (pip)
 - `pyqtdarktheme` (pip)
 - `darkdetect` (pip)
@@ -52,7 +51,7 @@ python3 main.py
 - [x] ~~Improve website tab system and tab bar positioning at the top~~ (Unchanged because of performance reasons)
 - [x] ~~"Explain selected text with AI"~~
 - [ ] Reader view
-- [x] Better overview of current downloads so it can't infinitely stack up in the download menu
+- [x] ~~Better overview of current downloads so it can't infinitely stack up in the download menu~~
 - [x] ~~Multi-language support~~
 - [x] ~~Custom extension store (for the browser itself)~~
   - [x] Widgets ~~(e. g. Notes and additional widgets from the store)~~
