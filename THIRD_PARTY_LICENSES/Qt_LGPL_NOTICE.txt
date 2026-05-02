@@ -1,0 +1,5 @@
+This browser uses Qt (via PySide6), licensed under the GNU Lesser General Public License (LGPL) version 3.
+It dynamically links against Qt libraries.
+
+You can obtain the source code of Qt from:
+https://www.qt.io
