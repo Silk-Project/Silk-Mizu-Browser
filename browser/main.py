@@ -128,6 +128,18 @@ def load_config(path, settings_dict, fallback_dict):
         try:
             for key, val in d.items():
                 settings_dict[key] = val
+
+            key_added = False
+
+            for key, val in fallback_dict.items():
+                if not key in settings_dict:
+                    settings_dict[key] = val
+                    key_added = True
+            
+            if key_added:
+                with open(path, "w") as f:
+                    json.dump(settings_dict, f, indent=4)
+        
         except KeyError:
             settings_dict.clear()
             settings_dict.update(fallback_dict)
@@ -1835,7 +1847,7 @@ class AboutDialog(QDialog):
 
         top_layout.addWidget(logoLabel, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        about_title = QLabel("RSS MGR")
+        about_title = QLabel("Mizu Browser")
         about_title.setStyleSheet("font-size: 17px; font-weight: bold;")
         top_info_layout.addWidget(about_title)
 
