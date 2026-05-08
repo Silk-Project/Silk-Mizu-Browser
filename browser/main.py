@@ -1,5 +1,6 @@
 import sys
 import os
+import platform
 import json
 import re
 import copy
@@ -66,6 +67,7 @@ EXTENSIONS_SETTINGS_PATH = os.path.join(SCRIPT_DIR, "config", "extensions.json")
 ADDITIONAL_QSS_PATH = os.path.join(SCRIPT_DIR, "assets", "style.qss")
 SUM_AI_MODEL = {"name":"lfm2.5-thinking:1.2b", "size":"700MB"}
 VERSION_NUMBER = "0.3.11 Public Preview"
+OS_TYPE = platform.system()
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
     "DuckDuckGo":"https://duckduckgo.com/?q=",
@@ -91,6 +93,7 @@ default_settings = {
     "bottom_bar_visible":False,
     "go_button_visible":False,
     "download_warnings":True,
+    "downloads_path":str(Path.home()) + "/Downloads",
     "language":"en_US",
     "javascript_enabled":True,
     "default_font_size":16,
@@ -1160,11 +1163,9 @@ class DownloadManager(QObject):
     def add_download(self, download: QWebEngineDownloadRequest):
         # Download info
         download_filename = download.suggestedFileName()
+        os.makedirs(current_settings.get("downloads_path", DOWNLOAD_PATH), exist_ok=True)
 
-        if not os.path.exists(DOWNLOAD_PATH):
-            os.makedirs(DOWNLOAD_PATH)
-
-        download.setDownloadDirectory(DOWNLOAD_PATH)
+        download.setDownloadDirectory(current_settings.get("downloads_path", DOWNLOAD_PATH))
         download.setDownloadFileName(download_filename)
 
         download.accept()
@@ -1822,6 +1823,41 @@ class QColorButton(QPushButton):
             self.setColor(self._default)
 
         return super().mousePressEvent(e)
+
+class QDirDialogBtn(QWidget):
+    def __init__(self, default_path:str=None):
+        super().__init__()
+
+        self.current_path = default_path
+
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+
+        self.path_select_btn = QPushButton("Select file...")
+        self.path_select_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.path_select_btn.clicked.connect(self.select_file)
+        layout.addWidget(self.path_select_btn)
+
+        self.path_label = QLabel(self.current_path if self.current_path else "No file selected")
+        layout.addWidget(self.path_label)
+    
+    def select_file(self):
+        directory = QFileDialog.getExistingDirectory(self, self.tr("Select a directory"))
+        
+        if directory:
+            self.current_path = directory
+
+            if len(self.current_path) > 40:
+                self.path_label.setText(self.current_path[:40] + "...")
+
+            else:
+                self.path_label.setText(self.current_path)
+
+            self.path_label.setToolTip(self.current_path)
 
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
@@ -2709,6 +2745,14 @@ class BrowserWindow(QMainWindow):
         download_warnings_checkbox.setChecked(current_settings["download_warnings"])
         security_settings_layout.addRow(self.tr("Display warning when download is requested: "), download_warnings_checkbox)
 
+        # Download settings
+        downloads_settings = QWidget()
+        downloads_settings_layout = QFormLayout()
+        downloads_settings.setLayout(downloads_settings_layout)
+
+        downloads_path_selector = QDirDialogBtn(current_settings["downloads_path"])
+        downloads_settings_layout.addRow(self.tr("Downloads path: "), downloads_path_selector)
+
         # Language Tab
         language_settings = QWidget()
         language_settings_layout = QFormLayout()
@@ -2781,6 +2825,7 @@ class BrowserWindow(QMainWindow):
         tabs.addTab(general_settings, self.tr("General"))
         tabs.addTab(display_settings, self.tr("Display"))
         tabs.addTab(security_settings, self.tr("Security"))
+        tabs.addTab(downloads_settings, self.tr("Downloads"))
         tabs.addTab(language_settings, self.tr("Language"))
         tabs.addTab(engine_settings, self.tr("Engine"))
         tabs.addTab(ai_settings, self.tr("AI Features"))
@@ -2803,6 +2848,7 @@ class BrowserWindow(QMainWindow):
             go_button_visible = go_button_visibility_checkbox.isChecked()
             bottom_bar_visible = bottom_bar_visability_checkbox.isChecked()
             download_warnings = download_warnings_checkbox.isChecked()
+            downloads_path = downloads_path_selector.current_path
             language = language_select_combobox.currentText()
             javascript_enabled = javascript_checkbox.isChecked()
             default_font_size = font_size_spinbox.value()
@@ -2835,6 +2881,7 @@ class BrowserWindow(QMainWindow):
                 "bottom_bar_visible":bottom_bar_visible,
                 "go_button_visible":go_button_visible,
                 "download_warnings":download_warnings,
+                "downloads_path":downloads_path,
                 "language":NAME_TO_LANGUAGE[language],
                 "javascript_enabled":javascript_enabled,
                 "default_font_size":default_font_size,
