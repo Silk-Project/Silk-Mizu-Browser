@@ -302,7 +302,7 @@ class ExtensionItemWidget(QFrame):
         extension_title.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         title_layout.addWidget(extension_title, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        extension_author = QLabel(f"{self.tr("by")} {self.metadata.author}")
+        extension_author = QLabel(f"{self.tr('by')} {self.metadata.author}")
         extension_author.setStyleSheet("font-size: 10px; color: #808080; border: none;")
         title_layout.addWidget(extension_author, alignment=Qt.AlignmentFlag.AlignLeft)
 
@@ -312,7 +312,7 @@ class ExtensionItemWidget(QFrame):
             required_dependencies = check_dependencies(self.metadata.dependencies)
 
             if len(required_dependencies) > 0:
-                extension_deps = QLabel(f"{self.tr("Required libraries: ")}{", ".join(required_dependencies)}")
+                extension_deps = QLabel(f"{self.tr('Required libraries: ')}{', '.join(required_dependencies)}")
                 extension_deps.setWordWrap(True)
                 extension_deps.setStyleSheet("color: #808080; border: none;")
                 extension_deps.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
@@ -351,7 +351,7 @@ class ExtensionItemWidget(QFrame):
     
     def show_extension_info(self):
         dlg = QDialog(self)
-        dlg.setWindowTitle(f"{self.tr("About")} {self.metadata.name}")
+        dlg.setWindowTitle(f"{self.tr('About')} {self.metadata.name}")
         dlg_layout = QVBoxLayout()
 
         dlg_layout.addStretch()
@@ -378,12 +378,12 @@ class ExtensionItemWidget(QFrame):
         about_description.setAlignment(Qt.AlignmentFlag.AlignCenter)
         dlg_layout.addWidget(about_description)
 
-        about_label = QLabel(f"{self.tr("Version: ")}{self.metadata.version}\n{self.tr("by")} {self.metadata.author}")
+        about_label = QLabel(f"{self.tr('Version: ')}{self.metadata.version}\n{self.tr('by')} {self.metadata.author}")
         about_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         dlg_layout.addWidget(about_label)
 
         if self.installable:
-            source_label = QTextEdit(f"{self.tr("Source: ")}{self.metadata.index_source}")
+            source_label = QTextEdit(f"{self.tr('Source: ')}{self.metadata.index_source}")
             source_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             source_label.setFixedHeight(90)
             source_label.setReadOnly(True)
@@ -409,7 +409,7 @@ class ExtensionItemWidget(QFrame):
 
         warning_dlg = QMessageBox(self)
         warning_dlg.setWindowTitle(self.tr("Download Request"))
-        warning_dlg.setText(f"{self.tr("Do you really want to download")} \"{self.metadata.name}\"?")
+        warning_dlg.setText(f"{self.tr('Do you really want to download')} \"{self.metadata.name}\"?")
         warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
         warning_dlg.setIcon(QMessageBox.Icon.Warning)
 
@@ -437,7 +437,7 @@ class ExtensionItemWidget(QFrame):
     def delete_extension(self):
         warning_dlg = QMessageBox(self)
         warning_dlg.setWindowTitle(self.tr("Download Request"))
-        warning_dlg.setText(f"{self.tr("Do you really want to delete")} \"{self.metadata.name}\"?")
+        warning_dlg.setText(f"{self.tr('Do you really want to delete')} \"{self.metadata.name}\"?")
         warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
         warning_dlg.setIcon(QMessageBox.Icon.Warning)
 
@@ -512,7 +512,7 @@ class ExtensionInstallDialog(QDialog):
         self.accept()
     
     def install_failed(self, message):
-        QMessageBox.critical(self, self.tr("Installation Failed"), f"{self.tr("Failed to install extension: ")}{message}")
+        QMessageBox.critical(self, self.tr("Installation Failed"), f"{self.tr('Failed to install extension: ')}{message}")
         self.reject()
     
     def show_status(self, string):
@@ -714,7 +714,7 @@ class WebExtensionsDialog(QDialog):
         self.store_repository_btn = QPushButton(self.tr("Repositories"))
         self.store_repository_btn.setIcon(qta.icon("mdi.source-repository"))
         self.store_repository_btn.setStyleSheet("border: 1px solid #414242; border-radius: 3px; padding: 8px;")
-        self.store_repository_btn.setToolTip(f"{self.tr("Repositories: ")}{str(len(extensions_settings["index_urls"]))}")
+        self.store_repository_btn.setToolTip(f"{self.tr('Repositories: ')}{str(len(extensions_settings["index_urls"]))}")
         self.store_repository_btn.clicked.connect(self.change_repo_url)
         self.store_widgets_controls.addWidget(self.store_repository_btn)
         
@@ -820,7 +820,7 @@ class WebExtensionsDialog(QDialog):
 
         self.store_widgets_repeatable_layout.addStretch()
 
-        info_label = QLabel(f"{self.tr("Error when trying to load store items: ")}{error}")
+        info_label = QLabel(f"{self.tr('Error when trying to load store items: ')}{error}")
         info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         info_label.setStyleSheet("color: grey;")
         self.store_widgets_repeatable_layout.addWidget(info_label)
@@ -1070,10 +1070,14 @@ class BetterWebEngine(QWebEngineView):
     
     def init_engine(self):
         # Check if start page exists
-        if os.path.exists(START_PAGE_PATH):
-            self.load_page(current_settings["start_page_url"])
+        if current_settings.get("start_page_url"):
+            self.setUrl(current_settings.get("start_page_url"))
+
         else:
-            self.load_page(SEARCH_ENGINE_SEARCH_QUERIES.get(current_settings["search_engine"]))
+            if os.path.exists(START_PAGE_PATH):
+                self.setUrl(QUrl("file://" + START_PAGE_PATH))
+            else:
+                self.load_page(SEARCH_ENGINE_SEARCH_QUERIES.get(current_settings["search_engine"]))
         
     def contextMenuEvent(self, event):
         menu = self.createStandardContextMenu()
@@ -1197,7 +1201,7 @@ class DownloadItemWidget(QFrame):
         download_filename = self.download.suggestedFileName()
 
         # Download UI elements
-        self.label = QLabel(f"{self.tr("Downloading:")} {download_filename}")
+        self.label = QLabel(f"{self.tr('Downloading:')} {download_filename}")
         self.label.setWordWrap(True)
         self.label.setToolTip(download_filename)
 
@@ -1232,14 +1236,14 @@ class DownloadItemWidget(QFrame):
     
         if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
             self.progress.setValue(100)
-            self.label.setText(f"{self.tr("Finished:")} {download_filename}")
+            self.label.setText(f"{self.tr('Finished:')} {download_filename}")
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
-            self.label.setText(f"{self.tr("Canceled:")} {download_filename}")
+            self.label.setText(f"{self.tr('Canceled:')} {download_filename}")
             self.progress.setEnabled(False)
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
-            self.label.setText(f"{self.tr("Error:")} {download_filename}")
+            self.label.setText(f"{self.tr('Error:')} {download_filename}")
             self.progress.setStyleSheet("QProgressBar::chunk { background-color: red; }")
 
 class DownloadManagerWidget(QDialog):
@@ -1339,7 +1343,7 @@ class DownloadMenu(QMenu):
         container = QWidget()
 
         # Download UI elements
-        label = QLabel(f"{self.tr("Downloading:")} {self.shorten_if_needed(download_filename)}")
+        label = QLabel(f"{self.tr('Downloading:')} {self.shorten_if_needed(download_filename)}")
         label.setToolTip(download_filename)
         progress = QProgressBar()
         stop_btn = QPushButton()
@@ -1393,14 +1397,14 @@ class DownloadMenu(QMenu):
     
         if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
             progress_bar.setValue(100)
-            label.setText(f"{self.tr("Finished:")} {self.shorten_if_needed(download_filename)}")
+            label.setText(f"{self.tr('Finished:')} {self.shorten_if_needed(download_filename)}")
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
-            label.setText(f"{self.tr("Canceled:")} {self.shorten_if_needed(download_filename)}")
+            label.setText(f"{self.tr('Canceled:')} {self.shorten_if_needed(download_filename)}")
             progress_bar.setEnabled(False)
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
-            label.setText(f"{self.tr("Error:")} {self.shorten_if_needed(download_filename)}")
+            label.setText(f"{self.tr('Error:')} {self.shorten_if_needed(download_filename)}")
             progress_bar.setStyleSheet("QProgressBar::chunk { background-color: red; }")
     
     def open_manage_downloads(self):
@@ -2400,7 +2404,7 @@ class BrowserWindow(QMainWindow):
         for tab_index in range(self.web_tabs.count()):
             web_engine = self.tab_list[tab_index]
             title = web_engine.title() if web_engine.title() else self.tr("New Tab")
-            self.web_tabs.setTabText(tab_index, f"{" "*3}{title[:10]+"..." if len(title) > 10 else title}{" "*3}")
+            self.web_tabs.setTabText(tab_index, f"{' '*3}{title[:10]+'...' if len(title) > 10 else title}{' '*3}")
             self.web_tabs.setTabToolTip(tab_index, web_engine.title())
 
             if web_engine.iconUrl().isEmpty():
@@ -2422,7 +2426,7 @@ class BrowserWindow(QMainWindow):
         if current_settings["download_warnings"]:
             warning_dlg = QMessageBox(self)
             warning_dlg.setWindowTitle(self.tr("Download Request"))
-            warning_dlg.setText(f"{self.tr("Do you really want to download")} \"{download.suggestedFileName()}\"?")
+            warning_dlg.setText(f"{self.tr('Do you really want to download')} \"{download.suggestedFileName()}\"?")
             warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
             warning_dlg.setIcon(QMessageBox.Icon.Warning)
 
@@ -2483,7 +2487,7 @@ class BrowserWindow(QMainWindow):
                         self.extension_updates = True
             
             if self.extension_updates:
-                self.web_extensions_btn.setToolTip(f"{self.tr("Extension updates: ")}{updateable_extensions}")
+                self.web_extensions_btn.setToolTip(f"{self.tr('Extension updates: ')}{updateable_extensions}")
             
             else:
                 self.web_extensions_btn.setToolTip("")
@@ -2494,7 +2498,6 @@ class BrowserWindow(QMainWindow):
             print(f"Error when checking extensions for updates: {e}")
     
     def version_parser(self, version_string):
-        # Simple version parser that converts a version string like "1.2.3" into a tuple of integers (1, 2, 3)
         try:
             version_tuple = tuple(map(int, version_string.split(".")))
             return version_tuple
@@ -2798,7 +2801,7 @@ class BrowserWindow(QMainWindow):
             sum_model_installed = SUM_AI_MODEL["name"] in ollama_model_names
 
             if not sum_model_installed:
-                install_model_btn.setText(f"{self.tr("Install")} ({SUM_AI_MODEL["size"]})")
+                install_model_btn.setText(f"{self.tr('Install')} ({SUM_AI_MODEL["size"]})")
                 install_model_btn.setIcon(qta.icon("fa6s.download", color=theme_manager.get_contrast_color_from_theme()))
             else:
                 install_model_btn.setText(self.tr("Model Installed"))
