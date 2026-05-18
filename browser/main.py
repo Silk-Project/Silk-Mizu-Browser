@@ -488,6 +488,7 @@ class ExtensionInstallDialog(QDialog):
             self.threadpool = QThreadPool()
             worker = DependencyWorker(required_dependencies=required_dependencies)
             worker.signals.dependencies_installed.connect(self.install_extension)
+            worker.signals.task_failed.connect(self.install_failed)
             worker.signals.dependency_install_started.connect(lambda dep: self.show_status(f"Installing dependencies: {dep}"))
             worker.signals.dependency_installed.connect(self.update_dep_progress)
             self.threadpool.start(worker)
@@ -553,6 +554,8 @@ class ZipInstaller(QRunnable):
                     z.extractall(install_dir)
             
                     self.singals.zip_extracted.emit()
+            else:
+                self.singals.zip_fetch_failed.emit(f"HTTP {response.status_code}")
         
         except Exception as e:
             self.singals.zip_fetch_failed.emit(str(e))
@@ -572,13 +575,15 @@ class DependencyWorker(QRunnable):
 
     @Slot()
     def run(self):
-        for dep in self.required_dependencies:
-            self.signals.dependency_install_started.emit(dep)
-            # print(f"Installing: {dep}")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", dep])
-            self.signals.dependency_installed.emit()
-        
-        self.signals.dependencies_installed.emit()
+        try:
+            for dep in self.required_dependencies:
+                self.signals.dependency_install_started.emit(dep)
+                subprocess.check_call([sys.executable, "-m", "pip", "install", dep])
+                self.signals.dependency_installed.emit()
+            
+            self.signals.dependencies_installed.emit()
+        except Exception as e:
+            self.signals.task_failed.emit(str(e))
 
 class WebExtensionFetcherSignals(QObject):
     response_received = Signal(list)
@@ -608,7 +613,7 @@ class WebExtensionFetcher(QRunnable):
                     self.jsons.extend(extensions)
 
                 except Exception as e:
-                    self.task_failed.emit(str(e))
+                    self.signals.task_failed.emit(str(e))
 
             self.signals.response_received.emit(self.jsons)
 
@@ -827,7 +832,10 @@ class WebExtensionsDialog(QDialog):
 
         self.store_widgets_repeatable_layout.addStretch()
     
-    def show_store_extensions(self, data=[]):
+    def show_store_extensions(self, data=None):
+        if data is None:
+            data = []
+
         self.clear_layout(self.store_widgets_repeatable_layout)
 
         if len(data) == 0 and len(self.loaded_store_extensions) == 0:
@@ -836,9 +844,9 @@ class WebExtensionsDialog(QDialog):
             info_label = QLabel(self.tr("No extensions found."))
             info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             info_label.setStyleSheet("color: grey;")
-            self.installed_widgets_repeatable_layout.addWidget(info_label)
+            self.store_widgets_repeatable_layout.addWidget(info_label)
 
-            self.installed_widgets_repeatable_layout.addStretch()
+            self.store_widgets_repeatable_layout.addStretch()
 
             return
         
