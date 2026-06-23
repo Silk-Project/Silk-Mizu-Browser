@@ -66,7 +66,7 @@ EXTENSIONS_PATH = os.path.join(SCRIPT_DIR, "extensions")
 EXTENSIONS_SETTINGS_PATH = os.path.join(SCRIPT_DIR, "config", "extensions.json")
 ADDITIONAL_QSS_PATH = os.path.join(SCRIPT_DIR, "assets", "style.qss")
 SUM_AI_MODEL = {"name":"lfm2.5-thinking:1.2b", "size":"700MB"}
-VERSION_NUMBER = "0.3.11 Public Preview"
+VERSION_NUMBER = "0.3.11"
 OS_TYPE = platform.system()
 SEARCH_ENGINE_SEARCH_QUERIES = {
     "Google":"https://www.google.com/search?q=",
@@ -1067,15 +1067,39 @@ class BetterWebEngine(QWebEngineView):
 
         self.init_engine()
         self.update_engine_config()
+
+    def createWindow(self, window_type):
+        if window_type == QWebEnginePage.WebWindowType.WebBrowserTab:
+            window.create_new_tab()
+            return window.web_tabs.widget(window.web_tabs.count() - 1)
+        return super().createWindow(window_type)
     
     def init_engine(self):
         # Check if start page exists
-        if current_settings.get("start_page_url"):
-            self.setUrl(current_settings.get("start_page_url"))
+        start_page_url: str = current_settings.get("start_page_url")
+        if start_page_url:
+            # Check if start page is a file
+            formatted_start_page = (start_page_url.strip()).split("file:///")
+
+            if len(formatted_start_page) > 1:
+                start_page_url_no_protocol = formatted_start_page[1]
+
+                if os.path.exists(start_page_url_no_protocol):
+                    self.setUrl(QUrl("file://" + start_page_url))
+
+            elif os.path.exists(start_page_url):
+                self.setUrl(QUrl("file://" + start_page_url))
+
+            elif start_page_url.startswith("https://") or start_page_url.startswith("http://"):
+                self.setUrl(start_page_url)
+
+            else:
+                self.load_page(start_page_url)
 
         else:
             if os.path.exists(START_PAGE_PATH):
                 self.setUrl(QUrl("file://" + START_PAGE_PATH))
+                print(self.url)
             else:
                 self.load_page(SEARCH_ENGINE_SEARCH_QUERIES.get(current_settings["search_engine"]))
         
@@ -2020,6 +2044,23 @@ class BrowserWindow(QMainWindow):
         self.fileMenu.addAction(self.exitAction)
 
         # Edit Menu
+        self.cutAction = QAction(self.tr("Cut"), self)
+        self.cutAction.triggered.connect(lambda: self.web_tabs.currentWidget().page().triggerAction(QWebEnginePage.WebAction.Cut))
+        self.cutAction.setShortcut(QKeySequence.Cut)
+        self.editMenu.addAction(self.cutAction)
+
+        self.copyAction = QAction(self.tr("Copy"), self)
+        self.copyAction.triggered.connect(lambda: self.web_tabs.currentWidget().page().triggerAction(QWebEnginePage.WebAction.Copy))
+        self.copyAction.setShortcut(QKeySequence.Copy)
+        self.editMenu.addAction(self.copyAction)
+
+        self.pasteAction = QAction(self.tr("Paste"), self)
+        self.pasteAction.triggered.connect(lambda: self.web_tabs.currentWidget().page().triggerAction(QWebEnginePage.WebAction.Paste))
+        self.pasteAction.setShortcut(QKeySequence.Paste)
+        self.editMenu.addAction(self.pasteAction)
+
+        self.editMenu.addSeparator()
+
         self.createNewTabAction = QAction(self.tr("New Tab"), self)
         self.createNewTabAction.triggered.connect(self.create_new_tab)
         self.createNewTabAction.setShortcut(QKeySequence("Ctrl + t"))
@@ -2238,6 +2279,9 @@ class BrowserWindow(QMainWindow):
         self.exitAction.setText(self.tr("Quit"))
         
         # Edit Menu
+        self.cutAction.setText(self.tr("Cut"))
+        self.copyAction.setText(self.tr("Copy"))
+        self.pasteAction.setText(self.tr("Paste"))
         self.createNewTabAction.setText(self.tr("New Tab"))
         self.backAction.setText(self.tr("Back"))
         self.nextAction.setText(self.tr("Next"))
@@ -2323,23 +2367,22 @@ class BrowserWindow(QMainWindow):
     # Website Tabs
     def closeEvent(self, a0):
         self.web_tabs.blockSignals(True)
-        for tab in range(0, self.web_tabs.count()):
-            tab_widget = self.tab_list[0]
+        while self.web_tabs.count() > 0:
+            tab_widget = self.web_tabs.widget(0)
             profile = tab_widget.page().profile()
             profile.clearHttpCache()
 
             self.web_tabs.removeTab(0)
             tab_widget.deleteLater()
-            self.tab_list.pop(0)
 
 
     def init_web_engine(self):
         # Tab bar
-        self.tab_list = []
         self.web_tabs = QTabWidget()
         self.web_tabs.setTabsClosable(True)
         self.web_tabs.setIconSize(QSize(16, 16))
         self.web_tabs.setTabShape(QTabWidget.TabShape.Rounded)
+        self.web_tabs.tabBar().setUsesScrollButtons(True)
         self.web_tabs.currentChanged.connect(self.update_tab_info)
         self.web_tabs.tabCloseRequested.connect(self.remove_web_tab)
         self.middle_layout.addWidget(self.web_tabs, 1)
@@ -2357,6 +2400,7 @@ class BrowserWindow(QMainWindow):
         self.profile.setCachePath(STORAGE_PATH)
         self.profile.setPersistentStoragePath(STORAGE_PATH)
         self.profile.setParent(self)
+        self.profile.downloadRequested.connect(self.request_download)
 
     def update_tab_info(self):
         self.update_urlbar_content()
@@ -2371,40 +2415,35 @@ class BrowserWindow(QMainWindow):
 
         # Setup localstorage for the new tab
         web_tab.settings().setAttribute(QWebEngineSettings.WebAttribute.LocalStorageEnabled, True)
-
-        self.tab_list.append(web_tab)
         
         if url:
-            self.tab_list[-1].setUrl(QUrl(url))
+            web_tab.setUrl(QUrl(url))
 
-        self.tab_list[-1].loadProgress.connect(self.update_progressbar)
-        self.tab_list[-1].loadFinished.connect(self.page_load_finished)
-        self.tab_list[-1].loadFinished.connect(self.tab_list[-1].page_load_finished)
-        self.tab_list[-1].loadStarted.connect(self.page_load_started)
-        self.tab_list[-1].urlChanged.connect(self.update_urlbar_content)
-        self.tab_list[-1].iconChanged.connect(self.update_tab_info)
-        self.tab_list[-1].page().profile().downloadRequested.connect(self.request_download)
-        self.tab_list[-1].signals.sum_selected_with_ai.connect(self.summarize_selected_with_ai)
-        self.tab_list[-1].signals.sum_page_with_ai.connect(self.summarize_current_page_ai)
+        web_tab.loadProgress.connect(self.update_progressbar)
+        web_tab.loadFinished.connect(self.page_load_finished)
+        web_tab.loadFinished.connect(web_tab.page_load_finished)
+        web_tab.loadStarted.connect(self.page_load_started)
+        web_tab.urlChanged.connect(self.update_urlbar_content)
+        web_tab.iconChanged.connect(self.update_tab_info)
+        web_tab.signals.sum_selected_with_ai.connect(self.summarize_selected_with_ai)
+        web_tab.signals.sum_page_with_ai.connect(self.summarize_current_page_ai)
 
-        self.web_tabs.addTab(self.tab_list[-1], None)
-        self.web_tabs.setCurrentIndex(len(self.tab_list) - 1)
+        self.web_tabs.addTab(web_tab, None)
+        self.web_tabs.setCurrentIndex(self.web_tabs.count() - 1)
         self.update_tab_info()
     
     def remove_web_tab(self, index):
-        tab_amount = self.web_tabs.count()
-        if index >= 0 and tab_amount > 1:
+        if index >= 0 and self.web_tabs.count() > 1:
+            widget = self.web_tabs.widget(index)
             self.web_tabs.removeTab(index)
-            self.tab_list[index].deleteLater()
-            del self.tab_list[index]
-            
+            widget.deleteLater()
             self.update_tab_info()
     
     def update_tab_titles(self):
         for tab_index in range(self.web_tabs.count()):
-            web_engine = self.tab_list[tab_index]
+            web_engine = self.web_tabs.widget(tab_index)
             title = web_engine.title() if web_engine.title() else self.tr("New Tab")
-            self.web_tabs.setTabText(tab_index, f"{' '*3}{title[:10]+'...' if len(title) > 10 else title}{' '*3}")
+            self.web_tabs.setTabText(tab_index, f"{' '*3}{title[:20]+'...' if len(title) > 20 else title}{' '*3}")
             self.web_tabs.setTabToolTip(tab_index, web_engine.title())
 
             if web_engine.iconUrl().isEmpty():
@@ -2515,9 +2554,8 @@ class BrowserWindow(QMainWindow):
         self.url_bar.setText(current_url)
     
     def update_progressbar(self, prog):
-        if self.web_tabs.currentWidget() == self.tab_list[self.web_tabs.currentIndex()]:
-            self.page_progressbar.setVisible(True)
-            self.page_progressbar.setValue(prog)
+        self.page_progressbar.setVisible(True)
+        self.page_progressbar.setValue(prog)
 
     def page_load_finished(self):
         self.web_tabs.currentWidget().page_is_loading = False
@@ -2921,8 +2959,8 @@ class BrowserWindow(QMainWindow):
         urledit.setEnabled(enable)
     
     def update_web_engine(self):
-        for tab in self.tab_list:
-            tab.update_engine_config()
+        for i in range(self.web_tabs.count()):
+            self.web_tabs.widget(i).update_engine_config()
         
     def about_dialog(self):
         dlg = AboutDialog(self)
