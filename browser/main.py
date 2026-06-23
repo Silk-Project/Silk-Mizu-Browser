@@ -1100,7 +1100,6 @@ class BetterWebEngine(QWebEngineView):
             if os.path.exists(START_PAGE_PATH):
                 self.setUrl(QUrl("file://" + START_PAGE_PATH))
                 print(self.url)
-                print("s")
             else:
                 self.load_page(SEARCH_ENGINE_SEARCH_QUERIES.get(current_settings["search_engine"]))
         
