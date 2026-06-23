@@ -50,6 +50,7 @@ python3 main.py
 ## 💻 To-do
 - [x] ~~Improve website tab system and tab bar positioning at the top~~ (Unchanged because of performance reasons)
 - [x] ~~"Explain selected text with AI"~~
+- [ ] Rearrangable browser interface
 - [ ] Reader view
 - [x] ~~Better overview of current downloads so it can't infinitely stack up in the download menu~~
 - [x] ~~Multi-language support~~
