@@ -2076,6 +2076,21 @@ class BrowserWindow(QMainWindow):
         self.nextAction.setShortcut(QKeySequence("Alt + right"))
         self.editMenu.addAction(self.nextAction)
 
+        self.removeTabAction = QAction(self.tr("Remove current tab"), self)
+        self.removeTabAction.triggered.connect(self.remove_tab_shortcut)
+        self.removeTabAction.setShortcut(QKeySequence("Ctrl + w"))
+        self.editMenu.addAction(self.removeTabAction)
+
+        self.moveToNextTabAction = QAction(self.tr("Next tab"), self)
+        self.moveToNextTabAction.triggered.connect(self.move_to_next_tab)
+        self.moveToNextTabAction.setShortcut(QKeySequence("Ctrl + Tab"))
+        self.editMenu.addAction(self.moveToNextTabAction)
+
+        self.moveToPreviousTabAction = QAction(self.tr("Previous tab"), self)
+        self.moveToPreviousTabAction.triggered.connect(self.move_to_previous_tab)
+        self.moveToPreviousTabAction.setShortcut(QKeySequence("Ctrl + shift + Tab"))
+        self.editMenu.addAction(self.moveToPreviousTabAction)
+
         # View Menu
         self.scaleUpAction = QAction(self.tr("Increase page zoom by 10%"), self)
         self.scaleUpAction.triggered.connect(self.request_scale_page_up)
@@ -2265,7 +2280,6 @@ class BrowserWindow(QMainWindow):
             
             self.retranslate_ui()
 
-
     def retranslate_ui(self):
         # Menu bar
         self.fileMenu.setTitle(self.tr("&File"))
@@ -2285,6 +2299,9 @@ class BrowserWindow(QMainWindow):
         self.createNewTabAction.setText(self.tr("New Tab"))
         self.backAction.setText(self.tr("Back"))
         self.nextAction.setText(self.tr("Next"))
+        self.removeTabAction.setText(self.tr("Remove current tab"))
+        self.moveToNextTabAction.setText(self.tr("Next tab"))
+        self.moveToPreviousTabAction.setText(self.tr("Previous tab"))
 
         # View menu
         self.scaleUpAction.setText(self.tr("Increase page zoom by 10%"))
@@ -2380,6 +2397,7 @@ class BrowserWindow(QMainWindow):
         # Tab bar
         self.web_tabs = QTabWidget()
         self.web_tabs.setTabsClosable(True)
+        self.web_tabs.setMovable(True)
         self.web_tabs.setIconSize(QSize(16, 16))
         self.web_tabs.setTabShape(QTabWidget.TabShape.Rounded)
         self.web_tabs.tabBar().setUsesScrollButtons(True)
@@ -2455,6 +2473,28 @@ class BrowserWindow(QMainWindow):
 
             else:
                 self.web_tabs.setTabIcon(tab_index, QIcon(web_engine.icon()))
+
+    def move_to_next_tab(self):
+        current_tab_index = self.web_tabs.currentIndex()
+
+        if current_tab_index >= 0 and current_tab_index < self.web_tabs.count() - 1:
+            self.web_tabs.setCurrentIndex(current_tab_index + 1)
+
+        else:
+            self.web_tabs.setCurrentIndex(0)
+    
+    def move_to_previous_tab(self):
+        current_tab_index = self.web_tabs.currentIndex()
+
+        if not current_tab_index == 0:
+            self.web_tabs.setCurrentIndex(current_tab_index - 1)
+
+        else:
+            self.web_tabs.setCurrentIndex(self.web_tabs.count() - 1)
+    
+    def remove_tab_shortcut(self):
+        current_tab_index = self.web_tabs.currentIndex()
+        self.remove_web_tab(current_tab_index)
 
     # Download System
     def show_download_menu(self):
