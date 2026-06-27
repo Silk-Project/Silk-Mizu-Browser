@@ -1,0 +1,35 @@
+{
+    "navigation_ui_elements": [
+        {
+            "type": "button",
+            "action": "back"
+        },
+        {
+            "type": "button",
+            "action": "forward"
+        },
+        {
+            "type": "button",
+            "action": "reload"
+        },
+        {
+            "type": "urlbar"
+        },
+        {
+            "type": "button",
+            "action": "new_tab"
+        },
+        {
+            "type": "button",
+            "action": "add_bookmark"
+        },
+        {
+            "type": "button",
+            "action": "extensions"
+        },
+        {
+            "type": "button",
+            "action": "settings"
+        }
+    ]
+}
