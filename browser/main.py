@@ -44,8 +44,11 @@ from interface.dialogs.extensions_dialog import WebExtensionsDialog, WebExtensio
 from interface.dialogs.manage_navbar_dialog import ManageNavigationUIDialog
 from interface.dialogs.settings_dialog import SettingsDialog
 
+# Widgets
+from interface.widgets.better_webengine import BetterWebEngine
+
 # Navigation
-from interface.navigation.navbar import AddressBar
+from interface.navigation.navbar import AddressBar, BackBtn
 
 # Services
 from services.theme_mgr import ThemeManager
@@ -281,134 +284,6 @@ class Extension_Sidebar(QWidget):
                     widget.deleteLater()
                 else:
                     self.clear_layout(item.layout())
-
-class BetterWebEngineSignals(QObject):
-    sum_selected_with_ai = Signal(str)
-    sum_page_with_ai = Signal()
-
-class BetterWebEngine(QWebEngineView):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.page_is_loading = False
-        self.signals = BetterWebEngineSignals()
-        self.page().setBackgroundColor(QColor("#101011"))
-        self.urlChanged.connect(lambda: self.page().setBackgroundColor(QColor("#101011")))
-
-        self.init_engine()
-        self.update_engine_config()
-
-    def createWindow(self, window_type):
-        if window_type == QWebEnginePage.WebWindowType.WebBrowserTab:
-            window.create_new_tab()
-            return window.web_tabs.widget(window.web_tabs.count() - 1)
-        return super().createWindow(window_type)
-    
-    def init_engine(self):
-        # Check if start page exists
-        start_page_url: str = current_settings.get("start_page_url")
-        if start_page_url:
-            # Check if start page is a file
-            formatted_start_page = (start_page_url.strip()).split("file:///")
-
-            if len(formatted_start_page) > 1:
-                start_page_url_no_protocol = formatted_start_page[1]
-
-                if os.path.exists(start_page_url_no_protocol):
-                    self.setUrl(QUrl("file://" + start_page_url))
-
-            elif os.path.exists(start_page_url):
-                self.setUrl(QUrl("file://" + start_page_url))
-
-            elif start_page_url.startswith("https://") or start_page_url.startswith("http://"):
-                self.setUrl(start_page_url)
-
-            else:
-                self.load_page(start_page_url)
-
-        else:
-            if os.path.exists(START_PAGE_PATH):
-                self.setUrl(QUrl("file://" + START_PAGE_PATH))
-                print(self.url)
-            else:
-                self.load_page(SEARCH_ENGINE_SEARCH_QUERIES.get(current_settings["search_engine"]))
-        
-    def contextMenuEvent(self, event):
-        menu = self.createStandardContextMenu()
-        menu.addSeparator()
-
-        sum_selected_with_ai_action = menu.addAction(self.tr("Summarize selected text with AI"))
-        sum_selected_with_ai_action.triggered.connect(self.prepare_sum_selected_with_ai)
-
-        sum_page_with_ai_action = menu.addAction(self.tr("Summarize page with AI"))
-        sum_page_with_ai_action.triggered.connect(lambda: self.signals.sum_page_with_ai.emit())
-
-        menu.exec(event.globalPos())
-
-    def load_page(self, url):
-        # Load URL if valid, else use the default search engine
-        processed_url = QUrl.fromUserInput(url).toString()
-        if self.valid_url(processed_url) or self.valid_url(url):
-            self.setUrl(QUrl(processed_url))
-        else:
-            # Get url for search engine
-            search_url = SEARCH_ENGINE_SEARCH_QUERIES.get(current_settings["search_engine"]) + url
-            self.setUrl(QUrl(search_url))
-        
-        self.page_is_loading = True
-    
-    def reload_page(self):
-        self.page_is_loading = True
-        self.reload()
-    
-    def stop_page(self):
-        self.page_is_loading = False
-        self.stop()
-    
-    def page_load_finished(self):
-        self.page_is_loading = False
-        self.page().setBackgroundColor(QColor("#ffffff"))
-    
-    def valid_url(self, url):
-        # Regex for standard http/https URLs and file paths
-        regex = re.compile(
-            r'^(?:(?:http|ftp)s?|file)://'  # file
-            r'(?:'
-                r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' # domain
-                r'localhost|' # localhost
-                r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # or ip
-            r'|' # OR 
-                r'/[^\s]+' # Absolute path for file:/// schemes
-            r')'
-            r'(?::\d+)?' # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-
-        return re.match(regex, url) is not None
-    
-    def scale_page_up(self):
-        zoom_factor = self.zoomFactor()
-        self.setZoomFactor(zoom_factor + 0.1)
-
-    def scale_page_down(self):
-        zoom_factor = self.zoomFactor()
-        self.setZoomFactor(zoom_factor - 0.1)
-
-    def scale_page_reset(self):
-        self.setZoomFactor(1)
-
-    def prepare_sum_selected_with_ai(self):
-        selected_text = self.selectedText().strip()
-        
-        if selected_text:
-            self.signals.sum_selected_with_ai.emit(selected_text)
-    
-    def update_engine_config(self):
-        settings = self.settings()
-        settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled,
-                             current_settings["javascript_enabled"])
-        settings.setFontSize(QWebEngineSettings.FontSize.DefaultFontSize,
-                             current_settings["default_font_size"])
-        settings.setAttribute(QWebEngineSettings.WebAttribute.ShowScrollBars,
-                                current_settings["scrollbars_enabled"])
 
 class DownloadManager(QObject):
     download_added = Signal(QWebEngineDownloadRequest)
@@ -804,8 +679,22 @@ class AI_Extension(QWidget):
         self.download_chat_btn.setText(self.tr("Download"))
         self.clear_btn.setText(self.tr("Clear"))
 
+class BrowserController(QObject):
+    currentBrowserChanged = Signal(QWebEngineView)
+
+    def __init__(self, tabs):
+        super().__init__()
+        self.tabs = tabs
+        tabs.currentChanged.connect(self.on_tab_changed)
+
+    def current_browser(self):
+        return self.tabs.currentWidget()
+
+    def on_tab_changed(self):
+        self.currentBrowserChanged.emit(self.current_browser())
+
 class BrowserWindowSignals(QObject):
-    update_url_bar_content = Signal(str)
+    update_nav_btn_status = Signal(str)
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
@@ -1060,12 +949,6 @@ class BrowserWindow(QMainWindow):
         self.settings_btn.clicked.connect(self.settings_dialog)
         self.controls_layout.addWidget(self.settings_btn)
 
-        print(default_navbar_layout)
-
-        for item in default_navbar_layout["navigation_ui_elements"]:
-            widget = self.create_navbtn(item)
-            self.controls_layout.addWidget(widget)
-
         # Bottom bar
         self.page_progressbar = QProgressBar()
         self.page_progressbar.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -1103,7 +986,11 @@ class BrowserWindow(QMainWindow):
             button.setProperty("class", "navbtns")
 
             if item["action"] == "back":
-                button.setIcon(qta.icon("fa6s.arrow-left", color=icon_color))
+                backbtn = BackBtn(self.browser_controller)
+                backbtn.setStyleSheet("padding: 8px;")
+                backbtn.setIcon(qta.icon("fa6s.arrow-left", color=icon_color))
+
+                return backbtn
 
             elif item["action"] == "forward":
                 button.setIcon(qta.icon("fa6s.arrow-right", color=icon_color))
@@ -1120,14 +1007,27 @@ class BrowserWindow(QMainWindow):
             
             elif item["action"] == "downloads":
                 button.setIcon(qta.icon("ei.download", color=icon_color))
+                button.clicked.connect(self.show_download_menu)
             
             elif item["action"] == "add_bookmark":
+                button.clicked.connect(self.add_current_to_bookmarks_dialog)
                 button.setIcon(qta.icon("fa5s.bookmark", color=icon_color))
+            
+            elif item["action"] == "extensions":
+                button.clicked.connect(self.add_current_to_bookmarks_dialog)
+                button.setIcon(qta.icon("mdi6.puzzle", color=icon_color))
+            
+            elif item["action"] == "settings":
+                button.clicked.connect(self.settings_dialog)
+                button.setIcon(qta.icon("fa5s.cog", color=icon_color))
+            
+            else:
+                button.setIcon(qta.icon("fa6s.question", color=icon_color))
 
             return button
 
         elif item["type"] == "urlbar":
-            line = AddressBar(self)
+            line = AddressBar(self.browser_controller)
             line.setStyleSheet("padding: 8px;")
             line.setPlaceholderText("https://")
 
@@ -1162,6 +1062,9 @@ class BrowserWindow(QMainWindow):
                     print(f"Language file at {lang_path} not found.")
             
             self.retranslate_ui()
+        
+        else:
+            print(f"Failed to load language: {lang}")
 
     def retranslate_ui(self):
         # Menu bar
@@ -1286,6 +1189,12 @@ class BrowserWindow(QMainWindow):
         self.web_tabs.currentChanged.connect(self.update_tab_info)
         self.web_tabs.tabCloseRequested.connect(self.remove_web_tab)
         self.middle_layout.addWidget(self.web_tabs, 1)
+
+        self.browser_controller = BrowserController(self.web_tabs)
+
+        for item in default_navbar_layout["navigation_ui_elements"]:
+            widget = self.create_navbtn(item)
+            self.controls_layout.addWidget(widget)
         
         # Add start tab
         self.create_new_tab()
@@ -1309,7 +1218,7 @@ class BrowserWindow(QMainWindow):
     
     def create_new_tab(self, url=None):
         # Web Engine
-        web_tab = BetterWebEngine(self)
+        web_tab = BetterWebEngine(self, current_settings)
         web_tab.setPage(QWebEnginePage(self.profile, web_tab))
         web_tab.init_engine()
 
@@ -1470,7 +1379,6 @@ class BrowserWindow(QMainWindow):
 
     def update_urlbar_content(self):
         current_url = self.web_tabs.currentWidget().url().toString()
-        self.signals.update_url_bar_content.emit(current_url)
     
     def update_progressbar(self, prog):
         self.page_progressbar.setVisible(True)

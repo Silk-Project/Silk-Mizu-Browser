@@ -21,6 +21,10 @@
         },
         {
             "type": "button",
+            "action": "downloads"
+        },
+        {
+            "type": "button",
             "action": "add_bookmark"
         },
         {
