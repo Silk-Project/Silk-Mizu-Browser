@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QSize
 import copy
 import qtawesome as qta
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 @dataclass
 class NavigationUIElement:
@@ -40,6 +40,7 @@ class ManageNavigationUIDialog(QDialog):
         self.setFixedSize(480, 360)
 
         self.passed_layout = passed_layout
+
         self.available_ui_elements = [
             NavigationUIElement("Back Button", "button", "fa6s.arrow-left", "back"),
             NavigationUIElement("Forward Button", "button", "fa6s.arrow-right", "forward"),
@@ -51,7 +52,20 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Extensions Button", "button", "fa6s.puzzle-piece", "extensions"),
             NavigationUIElement("Stretch Space", "spacer", None, "stretch")
         ]
+
         self.init_ui()
+        self._populate_from_layout()
+
+    def _populate_from_layout(self):
+        for elem in self.passed_layout:
+            item = NavigationUIListItem(NavigationUIElement(
+                name=elem.get("name", ""),
+                type=elem.get("type", ""),
+                icon=elem.get("icon"),
+                action=elem.get("action", "")
+            ))
+            self.current_ui_elements_list.addItem(item)
+        self.update_preview()
 
     def init_ui(self):
         self.layout = QVBoxLayout(self)
@@ -205,5 +219,8 @@ class ManageNavigationUIDialog(QDialog):
             label.setStyleSheet("padding: 8px;")
             return label
     
-    def get_current_ui_elements(self):
-        return [self.current_ui_elements_list.item(i) for i in range(self.current_ui_elements_list.count())]
+    def get_current_ui_elements(self) -> list[NavigationUIElement]:
+        return [self.current_ui_elements_list.item(i)._element for i in range(self.current_ui_elements_list.count())]
+    
+    def get_current_ui_elements_dict(self) -> list[dict]:
+        return [asdict(self.current_ui_elements_list.item(i)._element) for i in range(self.current_ui_elements_list.count())]

@@ -208,7 +208,7 @@ class SettingsDialog(QDialog):
     def open_manage_navigation_ui_dialog(self):
         dialog = ManageNavigationUIDialog(self, self.current_settings["navigation_ui_elements"])
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.current_settings["navigation_ui_elements"] = dialog.get_current_ui_elements()
+            self.current_settings["navigation_ui_elements"] = dialog.get_current_ui_elements_dict()
 
     def get_settings(self):
         return {

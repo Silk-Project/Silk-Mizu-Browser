@@ -19,6 +19,8 @@ class BetterWebEngine(QWebEngineView):
         self.signals = BetterWebEngineSignals()
         self.page().setBackgroundColor(QColor("#101011"))
         self.urlChanged.connect(lambda: self.page().setBackgroundColor(QColor("#101011")))
+        self.loadStarted.connect(lambda: setattr(self, "page_is_loading", True))
+        self.loadFinished.connect(self.page_load_finished)
 
         self.init_engine()
         self.update_engine_config()
@@ -71,6 +73,8 @@ class BetterWebEngine(QWebEngineView):
         menu.exec(event.globalPos())
 
     def load_page(self, url):
+        self.page_is_loading = True
+
         # Load URL if valid, else use the default search engine
         processed_url = QUrl.fromUserInput(url).toString()
         if self.valid_url(processed_url) or self.valid_url(url):
@@ -79,8 +83,6 @@ class BetterWebEngine(QWebEngineView):
             # Get url for search engine
             search_url = SEARCH_ENGINE_SEARCH_QUERIES.get(self.user_settings["search_engine"]) + url
             self.setUrl(QUrl(search_url))
-        
-        self.page_is_loading = True
     
     def reload_page(self):
         self.page_is_loading = True
