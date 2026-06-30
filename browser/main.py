@@ -48,7 +48,7 @@ from interface.dialogs.settings_dialog import SettingsDialog
 from interface.widgets.better_webengine import BetterWebEngine
 
 # Navigation
-from interface.navigation.navbar import AddressBar, BackBtn, ForwardBtn, ReloadBtn
+from interface.navigation.navbar import AddressBar, BackBtn, ForwardBtn, ReloadBtn, ExtSidebarBtn
 
 # Services
 from services.theme_mgr import ThemeManager
@@ -679,23 +679,6 @@ class AI_Extension(QWidget):
         self.download_chat_btn.setText(self.tr("Download"))
         self.clear_btn.setText(self.tr("Clear"))
 
-class BrowserController(QObject):
-    currentBrowserChanged = Signal(QWebEngineView)
-
-    def __init__(self, tabs):
-        super().__init__()
-        self.tabs = tabs
-        tabs.currentChanged.connect(self.on_tab_changed)
-
-    def current_browser(self):
-        return self.tabs.currentWidget()
-
-    def on_tab_changed(self):
-        self.currentBrowserChanged.emit(self.current_browser())
-
-class BrowserWindowSignals(QObject):
-    update_nav_btn_status = Signal(str)
-
 class BrowserWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -710,9 +693,6 @@ class BrowserWindow(QMainWindow):
 
         # Threadpool
         self.threadpool = QThreadPool()
-
-        # Signals
-        self.signals = BrowserWindowSignals()
 
         # Initialize whole UI
         self.init_menu_bar()
@@ -861,93 +841,33 @@ class BrowserWindow(QMainWindow):
         self.layout.addWidget(self.bottom_bar, 3, 0)
 
         # Browser main controls
-        icon_color = theme_manager.get_contrast_color_from_theme()
 
-        # Left side: Basic navigation (Back, Forward page)
-        self.extension_sidebar_btn = QPushButton()
-        self.extension_sidebar_btn.setIcon(qta.icon("msc.layout-sidebar-left", color=icon_color))
-        self.extension_sidebar_btn.setProperty("class", "navbtns")
-        self.extension_sidebar_btn.setStyleSheet("padding: 8px;")
-        self.extension_sidebar_btn.clicked.connect(self.toggle_extension_sidebar)
-        self.controls_layout.addWidget(self.extension_sidebar_btn)
+        # self.load_btn = QPushButton(self.tr("Go"))
+        # self.load_btn.setIcon(qta.icon("mdi.arrow-right-bold-box", color=icon_color))
+        # self.load_btn.setProperty("class", "navbtns")
+        # self.load_btn.setStyleSheet("padding: 8px;")
+        # self.load_btn.setVisible(current_settings["go_button_visible"])
+        # self.load_btn.clicked.connect(self.request_load_page_from_urlbar)
+        # self.controls_layout.addWidget(self.load_btn)
 
-        self.prev_page_btn = QPushButton()
-        self.prev_page_btn.setIcon(qta.icon("fa6s.arrow-left", color=icon_color))
-        self.prev_page_btn.setProperty("class", "navbtns")
-        self.prev_page_btn.setStyleSheet("padding: 8px;")
-        self.prev_page_btn.clicked.connect(self.request_back_page)
-        self.controls_layout.addWidget(self.prev_page_btn)
+        # self.download_manager = DownloadManager()
+        # self.download_menu = DownloadMenu()
+        # self.download_manager.download_added.connect(self.download_menu.add_download)
+        # self.downloads_btn = QPushButton()
+        # self.downloads_btn.setIcon(qta.icon("ei.download", color=icon_color))
+        # self.downloads_btn.setStyleSheet("padding: 8px;")
+        # self.downloads_btn.setVisible(False)
+        # self.downloads_btn.clicked.connect(self.show_download_menu)
+        # self.controls_layout.addWidget(self.downloads_btn)
 
-        self.next_page_btn = QPushButton()
-        self.next_page_btn.setIcon(qta.icon("fa6s.arrow-right", color=icon_color))
-        self.next_page_btn.setProperty("class", "navbtns")
-        self.next_page_btn.setStyleSheet("padding: 8px;")
-        self.next_page_btn.clicked.connect(self.request_next_page)
-        self.controls_layout.addWidget(self.next_page_btn)
-
-        self.reload_page_btn = QPushButton()
-        self.reload_page_btn.setIcon(qta.icon("fa6s.arrow-rotate-right", color=icon_color))
-        self.reload_page_btn.setProperty("class", "navbtns")
-        self.reload_page_btn.setStyleSheet("padding: 8px;")
-        self.reload_page_btn.clicked.connect(self.request_reload_stop_page)
-        self.controls_layout.addWidget(self.reload_page_btn)
-
-        # Middle: URL Bar
-        self.url_bar = QLineEdit()
-        self.url_bar.setObjectName("url_bar")
-        self.url_bar.setStyleSheet("padding: 8px;")
-        self.url_bar.clearFocus()
-        self.url_bar.returnPressed.connect(self.request_load_page_from_urlbar)
-        self.controls_layout.addWidget(self.url_bar)
-
-        # Right: Everything else
-        self.load_btn = QPushButton(self.tr("Go"))
-        self.load_btn.setIcon(qta.icon("mdi.arrow-right-bold-box", color=icon_color))
-        self.load_btn.setProperty("class", "navbtns")
-        self.load_btn.setStyleSheet("padding: 8px;")
-        self.load_btn.setVisible(current_settings["go_button_visible"])
-        self.load_btn.clicked.connect(self.request_load_page_from_urlbar)
-        self.controls_layout.addWidget(self.load_btn)
-
-        self.add_tab_btn = QPushButton()
-        self.add_tab_btn.setIcon(qta.icon("fa6s.plus", color=icon_color))
-        self.add_tab_btn.setProperty("class", "navbtns")
-        self.add_tab_btn.setStyleSheet("padding: 8px;")
-        self.add_tab_btn.clicked.connect(self.create_new_tab)
-        self.controls_layout.addWidget(self.add_tab_btn)
-
-        self.download_manager = DownloadManager()
-        self.download_menu = DownloadMenu()
-        self.download_manager.download_added.connect(self.download_menu.add_download)
-        self.downloads_btn = QPushButton()
-        self.downloads_btn.setIcon(qta.icon("ei.download", color=icon_color))
-        self.downloads_btn.setStyleSheet("padding: 8px;")
-        self.downloads_btn.setVisible(False)
-        self.downloads_btn.clicked.connect(self.show_download_menu)
-        self.controls_layout.addWidget(self.downloads_btn)
-
-        self.add_to_bookmarks_btn = QPushButton()
-        self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.bookmark", color=icon_color))
-        self.add_to_bookmarks_btn.setProperty("class", "navbtns")
-        self.add_to_bookmarks_btn.setStyleSheet("padding: 8px;")
-        self.add_to_bookmarks_btn.clicked.connect(self.add_current_to_bookmarks_dialog)
-        self.controls_layout.addWidget(self.add_to_bookmarks_btn)
-
-        self.web_extensions_menu = WebExtensionsMenu()
-        self.web_extensions_menu.signals.request_manage_extensions.connect(self.web_extension_dialog)
-        self.web_extensions_btn = QPushButton()
-        self.web_extensions_btn.setIcon(qta.icon("mdi6.puzzle", color=icon_color))
-        self.web_extensions_btn.setProperty("class", "navbtns")
-        self.web_extensions_btn.setStyleSheet("padding: 8px;")
-        self.web_extensions_btn.clicked.connect(self.show_extension_menu)
-        self.controls_layout.addWidget(self.web_extensions_btn)
-
-        self.settings_btn = QPushButton()
-        self.settings_btn.setIcon(qta.icon("fa5s.cog", color=icon_color))
-        self.settings_btn.setProperty("class", "navbtns")
-        self.settings_btn.setStyleSheet("padding: 8px;")
-        self.settings_btn.clicked.connect(self.settings_dialog)
-        self.controls_layout.addWidget(self.settings_btn)
+        # self.web_extensions_menu = WebExtensionsMenu()
+        # self.web_extensions_menu.signals.request_manage_extensions.connect(self.web_extension_dialog)
+        # self.web_extensions_btn = QPushButton()
+        # self.web_extensions_btn.setIcon(qta.icon("mdi6.puzzle", color=icon_color))
+        # self.web_extensions_btn.setProperty("class", "navbtns")
+        # self.web_extensions_btn.setStyleSheet("padding: 8px;")
+        # self.web_extensions_btn.clicked.connect(self.show_extension_menu)
+        # self.controls_layout.addWidget(self.web_extensions_btn)
 
         self.web_tabs = QTabWidget()
         self.web_tabs.setTabsClosable(True)
@@ -959,7 +879,9 @@ class BrowserWindow(QMainWindow):
         self.web_tabs.tabCloseRequested.connect(self.remove_web_tab)
         self.middle_layout.addWidget(self.web_tabs, 1)
 
-        self.browser_controller = BrowserController(self.web_tabs)
+        self.browser_controller = BrowserTabController(self.web_tabs)
+        self.browser_ui_controller = BrowserUIController(self)
+        self.rebuild_navbar()
 
         # Bottom bar
         self.page_progressbar = QProgressBar()
@@ -970,6 +892,8 @@ class BrowserWindow(QMainWindow):
         bottom_bar_layout.addWidget(self.page_progressbar)
 
         bottom_bar_layout.addStretch(1)
+
+        icon_color = theme_manager.get_contrast_color_from_theme()
 
         self.scale_down_btn = QPushButton()
         self.scale_down_btn.setIcon(qta.icon("ph.magnifying-glass-minus", color=icon_color))
@@ -988,8 +912,6 @@ class BrowserWindow(QMainWindow):
         self.scale_up_btn.clicked.connect(self.request_scale_page_up)
 
         bottom_bar_layout.addWidget(self.scale_up_btn)
-
-        self.rebuild_navbar()
     
     def rebuild_navbar(self):
         while self.controls_layout.count():
@@ -998,7 +920,6 @@ class BrowserWindow(QMainWindow):
                 item.widget().deleteLater()
         
         for item in current_settings["navigation_ui_elements"]:
-            print(item)
             widget = self.create_navbtn(item)
             self.controls_layout.addWidget(widget)
     
@@ -1059,8 +980,15 @@ class BrowserWindow(QMainWindow):
                 button.clicked.connect(self.settings_dialog)
                 button.setIcon(qta.icon("fa5s.cog", color=icon_color))
             
+            elif item["action"] == "extensions_sidebar":
+                button = ExtSidebarBtn(self.browser_ui_controller)
+                button.update_icon_color(icon_color)
+            
             else:
                 button = QPushButton()
+                button.setToolTip(item["action"])
+                button.setStyleSheet("padding: 8px;")
+                button.setProperty("class", "navbtns")
                 button.setIcon(qta.icon("fa6s.question", color=icon_color))
 
             return button
@@ -1142,7 +1070,7 @@ class BrowserWindow(QMainWindow):
         self.aboutAction.setText(self.tr("About"))
 
         # Main UI
-        self.load_btn.setText(self.tr("Go"))
+        # self.load_btn.setText(self.tr("Go"))
 
     def init_bookmark_bar(self):
         # Bookmark bar
@@ -1233,8 +1161,6 @@ class BrowserWindow(QMainWindow):
         self.profile.downloadRequested.connect(self.request_download)
 
     def update_tab_info(self):
-        self.update_urlbar_content()
-        self.update_nav_btn_status()
         self.update_tab_titles()
     
     def create_new_tab(self, url=None):
@@ -1253,7 +1179,6 @@ class BrowserWindow(QMainWindow):
         web_tab.loadFinished.connect(self.page_load_finished)
         web_tab.loadFinished.connect(web_tab.page_load_finished)
         web_tab.loadStarted.connect(self.page_load_started)
-        web_tab.urlChanged.connect(self.update_urlbar_content)
         web_tab.iconChanged.connect(self.update_tab_info)
         web_tab.signals.sum_selected_with_ai.connect(self.summarize_selected_with_ai)
         web_tab.signals.sum_page_with_ai.connect(self.summarize_current_page_ai)
@@ -1380,8 +1305,6 @@ class BrowserWindow(QMainWindow):
             else:
                 # No updates
                 pass
-            
-            self.update_icon_colors()
 
         except Exception as e:
             print(f"Error when checking extensions for updates: {e}")
@@ -1398,9 +1321,6 @@ class BrowserWindow(QMainWindow):
     def request_load_page_from_urlbar(self):
         url = self.url_bar.text()
         self.web_tabs.currentWidget().load_page(url)
-
-    def update_urlbar_content(self):
-        current_url = self.web_tabs.currentWidget().url().toString()
     
     def update_progressbar(self, prog):
         self.page_progressbar.setVisible(True)
@@ -1414,25 +1334,8 @@ class BrowserWindow(QMainWindow):
     def page_load_started(self):
         self.update_progressbar(0)
         self.update_tab_info()
-
-    def update_nav_btn_status(self):
-        pass
-        # # Enable / Disable back and forward buttons
-        # self.prev_page_btn.setEnabled(self.web_tabs.currentWidget().history().canGoBack())
-        # self.next_page_btn.setEnabled(self.web_tabs.currentWidget().history().canGoForward())
-
-        # # Update reload / stop button
-        # icon_color = theme_manager.get_contrast_color_from_theme()
-
-        # if self.web_tabs.currentWidget().page_is_loading:
-        #     self.reload_page_btn.setIcon(qta.icon("ei.remove", color=icon_color))
-        # else:
-        #     self.reload_page_btn.setIcon(qta.icon("fa6s.arrow-rotate-right", color=icon_color))
     
     # Website navigation
-    def current_tab(self):
-        return self.web_tabs.currentWidget()
-
     def request_back_page(self):
         self.web_tabs.currentWidget().history().back()
         self.update_tab_info()
@@ -1467,33 +1370,6 @@ class BrowserWindow(QMainWindow):
         self.web_tabs.currentWidget().scale_page_reset()
         zoom_string = str(round(self.web_tabs.currentWidget().zoomFactor() * 100)) + "%"
         self.zoom_factor_label.setText(zoom_string)
-    
-    # Theme specific functions
-    def update_icon_colors(self):
-        icon_color = theme_manager.get_contrast_color_from_theme()
-
-        self.extension_sidebar_btn.setIcon(qta.icon("msc.layout-sidebar-left", color=icon_color))
-        self.prev_page_btn.setIcon(qta.icon("fa6s.arrow-left", color=icon_color))
-        self.next_page_btn.setIcon(qta.icon("fa6s.arrow-right", color=icon_color))
-
-        if self.web_tabs.currentWidget().page_is_loading:
-            self.reload_page_btn.setIcon(qta.icon("ei.remove", color=icon_color))
-        else:
-            self.reload_page_btn.setIcon(qta.icon("fa6s.arrow-rotate-right", color=icon_color))
-        
-        self.load_btn.setIcon(qta.icon("mdi.arrow-right-bold-box", color=icon_color))
-        self.add_tab_btn.setIcon(qta.icon("fa6s.plus", color=icon_color))
-        self.add_to_bookmarks_btn.setIcon(qta.icon("fa5s.bookmark", color=icon_color))
-
-        if self.extension_updates:
-            self.web_extensions_btn.setIcon(qta.icon("mdi6.puzzle-plus", color=icon_color))
-        
-        else:
-            self.web_extensions_btn.setIcon(qta.icon("mdi6.puzzle", color=icon_color))
-        
-        self.settings_btn.setIcon(qta.icon("fa5s.cog", color=icon_color))
-        self.scale_down_btn.setIcon(qta.icon("ph.magnifying-glass-minus", color=icon_color))
-        self.scale_up_btn.setIcon(qta.icon("ph.magnifying-glass-plus", color=icon_color))
     
     # Rebuild navigation UI
     def rebuild_navigation_ui(self):
@@ -1571,13 +1447,13 @@ class BrowserWindow(QMainWindow):
 
             theme_manager.load_theme_from_index(settings["theme_index"])
             self.bottom_bar.setVisible(settings["bottom_bar_visible"])
-            # self.load_btn.setVisible(settings["go_button_visible"])
 
-            # if settings["language"] != current_settings["language"]:
-            #     self.load_language(NAME_TO_LANGUAGE[settings["language"]])
+            if settings["language"] != current_settings["language"]:
+                self.load_language(NAME_TO_LANGUAGE[settings["language"]])
 
             self.update_web_engine()
             self.rebuild_navbar()
+            self.browser_controller.on_tab_changed()
 
             # if settings["ai_summarization_enabled"] != current_settings["ai_summarization_enabled"]:
             #     current_settings["ai_summarization_enabled"] = settings["ai_summarization_enabled"]
@@ -1603,8 +1479,6 @@ class BrowserWindow(QMainWindow):
             }
 
             current_settings = updated_settings
-            print(current_settings)
-            # self.update_icon_colors()
 
             with open(CONFIG_PATH, "w") as f:
                 json.dump(updated_settings, f, indent=4)
@@ -1633,6 +1507,27 @@ class BrowserWindow(QMainWindow):
     def about_dialog(self):
         dlg = AboutDialog(self)
         dlg.exec()
+
+class BrowserTabController(QObject):
+    currentBrowserChanged = Signal(QWebEngineView)
+
+    def __init__(self, tabs):
+        super().__init__()
+        self.tabs = tabs
+        tabs.currentChanged.connect(self.on_tab_changed)
+
+    def current_browser(self):
+        return self.tabs.currentWidget()
+
+    def on_tab_changed(self):
+        self.currentBrowserChanged.emit(self.current_browser())
+
+class BrowserUIController(QObject):
+    def __init__(self, window: BrowserWindow):
+        self.window: BrowserWindow = window
+    
+    def toggle_sidebar(self):
+        self.window.toggle_extension_sidebar()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -21,8 +21,8 @@ from dataclasses import dataclass, asdict
 class NavigationUIElement:
     name: str
     type: str
-    icon: str
-    action: str
+    icon: str | None = None
+    action: str = ""
 
 class NavigationUIListItem(QListWidgetItem):
     def __init__(self, data: NavigationUIElement):
@@ -47,22 +47,38 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Reload Button", "button", "fa6s.rotate-right", "reload"),
             NavigationUIElement("Bookmark Button", "button", "fa6s.bookmark", "bookmark"),
             NavigationUIElement("Address Bar", "urlbar", None, "address_bar"),
+            NavigationUIElement("Search Bar", "searchbar", None, "search_bar"),
             NavigationUIElement("New Tab Button", "button", "fa6s.plus", "new_tab"),
             NavigationUIElement("Settings Button", "button", "fa6s.gear", "settings"),
             NavigationUIElement("Extensions Button", "button", "fa6s.puzzle-piece", "extensions"),
+            NavigationUIElement("Extensions Sidebar Button", "button", "msc.layout-sidebar-left", "extensions_sidebar"),
+            NavigationUIElement("Go Button", "button", "mdi.arrow-right-bold-box", "go"),
+            NavigationUIElement("Download Manager Button", "button", "ei.download", "download_manager"),
             NavigationUIElement("Stretch Space", "spacer", None, "stretch")
         ]
 
         self.init_ui()
         self._populate_from_layout()
 
+    def _resolve_icon(self, action: str, icon: str | None) -> str | None:
+        if icon:
+            return icon
+        
+        for available in self.available_ui_elements:
+            if available.action == action:
+                return available.icon
+            
+        return None
+
     def _populate_from_layout(self):
         for elem in self.passed_layout:
+            action = elem.get("action", "")
+            icon = self._resolve_icon(action, elem.get("icon"))
             item = NavigationUIListItem(NavigationUIElement(
                 name=elem.get("name", ""),
                 type=elem.get("type", ""),
-                icon=elem.get("icon"),
-                action=elem.get("action", "")
+                icon=icon,
+                action=action
             ))
             self.current_ui_elements_list.addItem(item)
         self.update_preview()
@@ -195,7 +211,10 @@ class ManageNavigationUIDialog(QDialog):
         if item.type == "button":
             button = QPushButton()
             button.setStyleSheet("padding: 8px;")
-            button.setIcon(qta.icon(item.icon))
+            resolved_icon = self._resolve_icon(item.action, item.icon)
+
+            if resolved_icon:
+                button.setIcon(qta.icon(resolved_icon))
 
             return button
 
@@ -204,6 +223,14 @@ class ManageNavigationUIDialog(QDialog):
             line.setStyleSheet("padding: 8px;")
             line.setReadOnly(True)
             line.setPlaceholderText("https://")
+
+            return line
+        
+        elif item.type == "searchbar":
+            line = QLineEdit()
+            line.setStyleSheet("padding: 8px;")
+            line.setReadOnly(True)
+            line.setPlaceholderText("Search...")
 
             return line
         

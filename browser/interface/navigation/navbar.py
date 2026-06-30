@@ -171,3 +171,25 @@ class ReloadBtn(QPushButton):
                 self.browser.reload_page()
         
             self.update_status()
+
+class ExtSidebarBtn(QPushButton):
+    def __init__(self, ui_controller):
+        super().__init__()
+        
+        self.ui_controller = ui_controller
+
+        self.icon_id = "msc.layout-sidebar-left"
+        self.icon_color = "white"
+        
+        self.setIcon(qta.icon(self.icon_id))
+        self.setStyleSheet("padding: 8px;")
+        self.setProperty("class", "navbtns")
+
+        self.clicked.connect(self.toggle_sidebar)
+    
+    def toggle_sidebar(self):
+        self.ui_controller.toggle_sidebar()
+    
+    def update_icon_color(self, icon_color: str):
+        self.icon_color = icon_color
+        self.setIcon(qta.icon(self.icon_id, color=icon_color))
