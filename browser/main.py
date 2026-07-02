@@ -41,7 +41,7 @@ from PySide6.QtGui import QPixmap, QAction, QKeySequence, QIcon, QColor
 from interface.dialogs.about_dialog import AboutDialog
 from interface.dialogs.bookmarks_mgr_dialog import ManageBookmarksDialog
 from interface.dialogs.extensions_dialog import WebExtensionsDialog, WebExtensionFetcher
-from interface.dialogs.manage_navbar_dialog import ManageNavigationUIDialog
+from interface.dialogs.manage_navbar_dialog import NavigationUIElement, NavigationUIAdditionalStyling
 from interface.dialogs.settings_dialog import SettingsDialog
 
 # Widgets
@@ -73,7 +73,6 @@ default_settings = {
     "theme":"Dark",
     "accent_color":"#8370EB",
     "bottom_bar_visible":False,
-    "go_button_visible":False,
     "navigation_ui_elements":default_navbar_layout["navigation_ui_elements"],
     "download_warnings":True,
     "downloads_path":str(Path.home()) + "/Downloads",
@@ -924,6 +923,15 @@ class BrowserWindow(QMainWindow):
             self.controls_layout.addWidget(widget)
     
     def create_navbtn(self, item: list[dict]):
+        # Get style for UI element if available
+        styling = item.get("styling", None)
+
+        if styling:
+            styling = NavigationUIAdditionalStyling(**styling)
+
+        else:
+            styling = NavigationUIAdditionalStyling()
+        
         if item["type"] == "button":
             icon_color = theme_manager.get_contrast_color_from_theme()
 
@@ -991,12 +999,16 @@ class BrowserWindow(QMainWindow):
                 button.setProperty("class", "navbtns")
                 button.setIcon(qta.icon("fa6s.question", color=icon_color))
 
+            self.apply_styling_to_widget(button, styling)
+
             return button
 
         elif item["type"] == "urlbar":
             line = AddressBar(self.browser_controller)
             line.setStyleSheet("padding: 8px;")
             line.setPlaceholderText("https://")
+
+            self.apply_styling_to_widget(line, styling)
 
             return line
         
@@ -1011,6 +1023,23 @@ class BrowserWindow(QMainWindow):
             label = QLabel(item["type"])
             label.setStyleSheet("padding: 5px;")
             return label
+    
+    def apply_styling_to_widget(self, widget, styling: NavigationUIAdditionalStyling):
+        if styling.background_color:
+            widget.setStyleSheet(f"background-color: {styling.background_color}; padding: 8px;")
+        if styling.border_radius:
+            widget.setStyleSheet(widget.styleSheet() + f"border-radius: {styling.border_radius}px;")
+        if styling.stretch_factor:
+            widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            self.preview_frame_layout.addStretch(styling.stretch_factor)
+
+        # Check if the widget is a QPushButton QLineEdit or QLabel to add label
+        if isinstance(widget, QPushButton) and styling.label:
+            widget.setText(styling.label)
+        elif isinstance(widget, QLineEdit) and styling.label:
+            widget.setPlaceholderText(styling.label)
+        elif isinstance(widget, QLabel) and styling.label:
+            widget.setText(styling.label)
 
     # Translation system
     def load_language(self, lang):
@@ -1468,7 +1497,6 @@ class BrowserWindow(QMainWindow):
                 "accent_color": settings["accent_color"],
                 "bottom_bar_visible": settings["bottom_bar_visible"],
                 "navigation_ui_elements": settings["navigation_ui_elements"],
-                "go_button_visible": settings["go_button_visible"],
                 "download_warnings": settings["download_warnings"],
                 "downloads_path": settings["downloads_path"],
                 "language": NAME_TO_LANGUAGE[settings["language"]],

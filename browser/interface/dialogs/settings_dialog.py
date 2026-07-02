@@ -94,10 +94,6 @@ class SettingsDialog(QDialog):
         self.bottom_bar_visability_checkbox.setChecked(current_settings["bottom_bar_visible"])
         display_settings_layout.addRow(self.tr("Show bottom bar: "), self.bottom_bar_visability_checkbox)
 
-        self.go_button_visibility_checkbox = QCheckBox()
-        self.go_button_visibility_checkbox.setChecked(current_settings["go_button_visible"])
-        display_settings_layout.addRow(self.tr("Show 'Go' button in URL bar: "), self.go_button_visibility_checkbox)
-
         manage_navigation_ui_btn = QPushButton(self.tr("Manage Navigation UI"))
         manage_navigation_ui_btn.clicked.connect(self.open_manage_navigation_ui_dialog)
         display_settings_layout.addRow(self.tr("Navigation UI: "), manage_navigation_ui_btn)
@@ -216,7 +212,6 @@ class SettingsDialog(QDialog):
             "search_engine": self.search_engine_combobox.currentText(),
             "theme_index": self.theme_combobox.currentIndex(),
             "accent_color": self.accent_color_btn.color(),
-            "go_button_visible": self.go_button_visibility_checkbox.isChecked(),
             "bottom_bar_visible": self.bottom_bar_visability_checkbox.isChecked(),
             "navigation_ui_elements": self.current_settings["navigation_ui_elements"],
             "download_warnings": self.download_warnings_checkbox.isChecked(),

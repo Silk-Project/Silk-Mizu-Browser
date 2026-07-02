@@ -10,12 +10,21 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QLineEdit,
     QListWidgetItem,
-    QFrame
+    QFormLayout,
+    QSpinBox,
 )
 from PySide6.QtCore import Qt, QSize
 import copy
 import qtawesome as qta
+from interface.widgets.color_button import QColorButton
 from dataclasses import dataclass, asdict
+
+@dataclass
+class NavigationUIAdditionalStyling:
+    background_color: str | None = None
+    border_radius: int | None = None
+    stretch_factor: int | None = None
+    label: str | None = None
 
 @dataclass
 class NavigationUIElement:
@@ -23,6 +32,7 @@ class NavigationUIElement:
     type: str
     icon: str | None = None
     action: str = ""
+    styling: NavigationUIAdditionalStyling = None
 
 class NavigationUIListItem(QListWidgetItem):
     def __init__(self, data: NavigationUIElement):
@@ -33,13 +43,13 @@ class NavigationUIListItem(QListWidgetItem):
         self.setText(self._element.name)
 
 class ManageNavigationUIDialog(QDialog):
-    def __init__(self, parent, passed_layout):
+    def __init__(self, parent, passed_layout: dict):
         super().__init__(parent)
 
         self.setWindowFilePath(self.tr("Manage Navigation UI"))
-        self.setFixedSize(480, 360)
+        self.setFixedSize(500, 400)
 
-        self.passed_layout = passed_layout
+        self.passed_layout: dict = passed_layout
 
         self.available_ui_elements = [
             NavigationUIElement("Back Button", "button", "fa6s.arrow-left", "back"),
@@ -54,7 +64,8 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Extensions Sidebar Button", "button", "msc.layout-sidebar-left", "extensions_sidebar"),
             NavigationUIElement("Go Button", "button", "mdi.arrow-right-bold-box", "go"),
             NavigationUIElement("Download Manager Button", "button", "ei.download", "download_manager"),
-            NavigationUIElement("Stretch Space", "spacer", None, "stretch")
+            NavigationUIElement("Stretch Space", "spacer", None, "stretch"),
+            NavigationUIElement("Test styled button", "button", "mdi.test-tube", "test", NavigationUIAdditionalStyling(background_color="#ff0000", border_radius=3, label="Test"))
         ]
 
         self.init_ui()
@@ -74,11 +85,20 @@ class ManageNavigationUIDialog(QDialog):
         for elem in self.passed_layout:
             action = elem.get("action", "")
             icon = self._resolve_icon(action, elem.get("icon"))
+            styling = elem.get("styling", None)
+            
+            if styling is not None:
+                styling = NavigationUIAdditionalStyling(**styling)
+            
+            else:
+                styling = NavigationUIAdditionalStyling()
+
             item = NavigationUIListItem(NavigationUIElement(
                 name=elem.get("name", ""),
                 type=elem.get("type", ""),
                 icon=icon,
-                action=action
+                action=action,
+                styling=styling
             ))
             self.current_ui_elements_list.addItem(item)
         self.update_preview()
@@ -126,20 +146,29 @@ class ManageNavigationUIDialog(QDialog):
         self.action_layout.addLayout(controls_layout)
 
         self.add_element_btn = QPushButton(self.tr("Add"))
+        self.add_element_btn.setIcon(qta.icon("fa6s.plus"))
         self.add_element_btn.clicked.connect(self.add_ui_element)
         controls_layout.addWidget(self.add_element_btn)
 
         self.remove_element_btn = QPushButton(self.tr("Remove"))
+        self.remove_element_btn.setIcon(qta.icon("fa6s.minus"))
         self.remove_element_btn.clicked.connect(self.remove_ui_element)
         controls_layout.addWidget(self.remove_element_btn)
 
         self.move_up_btn = QPushButton(self.tr("Move Up"))
+        self.move_up_btn.setIcon(qta.icon("fa6s.arrow-up"))
         self.move_up_btn.clicked.connect(self.move_element_up)
         controls_layout.addWidget(self.move_up_btn)
 
         self.move_down_btn = QPushButton(self.tr("Move Down"))
+        self.move_down_btn.setIcon(qta.icon("fa6s.arrow-down"))
         self.move_down_btn.clicked.connect(self.move_element_down)
         controls_layout.addWidget(self.move_down_btn)
+
+        self.customise_styling_btn = QPushButton(self.tr("Customize Styling"))
+        self.customise_styling_btn.setIcon(qta.icon("fa6s.palette"))
+        self.customise_styling_btn.clicked.connect(self.customise_styling)
+        controls_layout.addWidget(self.customise_styling_btn)
 
         controls_layout.addStretch()
 
@@ -187,6 +216,17 @@ class ManageNavigationUIDialog(QDialog):
             self.current_ui_elements_list.setCurrentRow(current_row + 1)
 
             self.update_preview()
+        
+    def customise_styling(self):
+        selected_item = self.current_ui_elements_list.currentItem()
+
+        if selected_item:
+            current_styling = selected_item._element.styling or NavigationUIAdditionalStyling()
+            dialog = CustomiseStylingDialog(self, styling=current_styling)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                # Update the styling of the selected item
+                selected_item._element.styling = dialog.styling
+                self.update_preview()
 
     def clear_layout(self, layout):
         if layout is not None:
@@ -216,6 +256,10 @@ class ManageNavigationUIDialog(QDialog):
             if resolved_icon:
                 button.setIcon(qta.icon(resolved_icon))
 
+            # Apply additional styling if available
+            if item.styling:
+                self.apply_styling_to_widget(button, item.styling)
+
             return button
 
         elif item.type == "urlbar":
@@ -224,6 +268,10 @@ class ManageNavigationUIDialog(QDialog):
             line.setReadOnly(True)
             line.setPlaceholderText("https://")
 
+            # Apply additional styling if available
+            if item.styling:
+                self.apply_styling_to_widget(line, item.styling)
+
             return line
         
         elif item.type == "searchbar":
@@ -231,6 +279,10 @@ class ManageNavigationUIDialog(QDialog):
             line.setStyleSheet("padding: 8px;")
             line.setReadOnly(True)
             line.setPlaceholderText("Search...")
+
+            # Apply additional styling if available
+            if item.styling:
+                self.apply_styling_to_widget(line, item.styling)
 
             return line
         
@@ -246,8 +298,86 @@ class ManageNavigationUIDialog(QDialog):
             label.setStyleSheet("padding: 8px;")
             return label
     
+    def apply_styling_to_widget(self, widget, styling: NavigationUIAdditionalStyling):
+        if styling.background_color:
+            widget.setStyleSheet(f"background-color: {styling.background_color}; padding: 8px;")
+        if styling.border_radius:
+            widget.setStyleSheet(widget.styleSheet() + f"border-radius: {styling.border_radius}px;")
+        if styling.stretch_factor:
+            widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            self.preview_frame_layout.addStretch(styling.stretch_factor)
+
+        # Check if the widget is a QPushButton QLineEdit or QLabel to add label
+        print(f"Applying styling to widget: {widget}, label: {styling.label}")
+        if isinstance(widget, QPushButton) and styling.label:
+            widget.setText(styling.label)
+        elif isinstance(widget, QLineEdit) and styling.label:
+            widget.setPlaceholderText(styling.label)
+        elif isinstance(widget, QLabel) and styling.label:
+            widget.setText(styling.label)
+    
     def get_current_ui_elements(self) -> list[NavigationUIElement]:
         return [self.current_ui_elements_list.item(i)._element for i in range(self.current_ui_elements_list.count())]
     
     def get_current_ui_elements_dict(self) -> list[dict]:
         return [asdict(self.current_ui_elements_list.item(i)._element) for i in range(self.current_ui_elements_list.count())]
+
+class CustomiseStylingDialog(QDialog):
+    def __init__(self, parent, styling: NavigationUIAdditionalStyling | None = None):
+        super().__init__(parent)
+
+        self.setWindowTitle(self.tr("Customize Styling"))
+        self.setFixedSize(400, 300)
+
+        self.styling = styling if styling else NavigationUIAdditionalStyling()
+
+        self.init_ui()
+    
+    def init_ui(self):
+        self.layout = QVBoxLayout(self)
+
+        # Title
+        self.title_label = QLabel(self.tr("Customize Styling"))
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; padding: 10px")
+        self.layout.addWidget(self.title_label)
+
+        # Form layout for styling options
+        self.form_layout = QFormLayout()
+        self.layout.addLayout(self.form_layout)
+
+        # Background color
+        self.bg_color_button = QColorButton(color=self.styling.background_color)
+        self.form_layout.addRow(self.tr("Background Color:"), self.bg_color_button)
+
+        # Border radius
+        self.border_radius_spinbox = QSpinBox()
+        self.border_radius_spinbox.setRange(0, 100)
+        self.border_radius_spinbox.setValue(self.styling.border_radius if self.styling.border_radius is not None else 0)
+        self.form_layout.addRow(self.tr("Border Radius:"), self.border_radius_spinbox)
+
+        # Stretch factor
+        self.stretch_factor_spinbox = QSpinBox()
+        self.stretch_factor_spinbox.setRange(0, 10)
+        self.stretch_factor_spinbox.setValue(self.styling.stretch_factor if self.styling.stretch_factor is not None else 0)
+        self.form_layout.addRow(self.tr("Stretch Factor:"), self.stretch_factor_spinbox)
+
+        # Label
+        self.label_lineedit = QLineEdit()
+        self.label_lineedit.setText(self.styling.label if self.styling.label is not None else "")
+        self.form_layout.addRow(self.tr("Label:"), self.label_lineedit)
+
+        # Dialog buttons
+        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.layout.addWidget(self.button_box)
+
+    def accept(self):
+        # Update the styling based on user input
+        self.styling.background_color = self.bg_color_button.color()
+        self.styling.border_radius = self.border_radius_spinbox.value()
+        self.styling.stretch_factor = self.stretch_factor_spinbox.value()
+        self.styling.label = self.label_lineedit.text()
+
+        super().accept()
