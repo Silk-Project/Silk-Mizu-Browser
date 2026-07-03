@@ -13,6 +13,7 @@ Simple and lightweight PySide6 browser for Silk and Linux / Windows / Mac comput
 
 ## ⭐️ Features
 - Simple but still modern UI elements using the Awesome 6 icons and PyQt Dark theme
+- Full navigation bar UI editor
 - Default search engine selection (Google, DuckDuckGo, Brave...)
 - Custom start page selection
 - Basic browser navigation features
@@ -50,7 +51,7 @@ python3 main.py
 ## 💻 To-do
 - [x] ~~Improve website tab system and tab bar positioning at the top~~ (Unchanged because of performance reasons)
 - [x] ~~"Explain selected text with AI"~~
-- [ ] Rearrangable browser interface
+- [ ] ~~Rearrangeable browser interface~~
   - [ ] Multiple bar customisation
   - [ ] Individual styling of navigation elements (color, icon, size, shape, text)
 - [ ] Reader view
