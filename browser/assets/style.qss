@@ -2,7 +2,7 @@
     border: none
 }
 
-#extension_content {
+#rounded_sec_border {
     border: 1px solid #414242;
     border-radius: 3px;
 }
