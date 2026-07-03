@@ -5,6 +5,7 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEnginePage
 from PySide6.QtGui import QColor
 from services.constants import START_PAGE_PATH, SEARCH_ENGINE_SEARCH_QUERIES
+from urllib.parse import urlparse, quote_plus
 
 class BetterWebEngineSignals(QObject):
     sum_selected_with_ai = Signal(str)
@@ -74,15 +75,8 @@ class BetterWebEngine(QWebEngineView):
 
     def load_page(self, url):
         self.page_is_loading = True
-
-        # Load URL if valid, else use the default search engine
-        processed_url = QUrl.fromUserInput(url).toString()
-        if self.valid_url(processed_url) or self.valid_url(url):
-            self.setUrl(QUrl(processed_url))
-        else:
-            # Get url for search engine
-            search_url = SEARCH_ENGINE_SEARCH_QUERIES.get(self.user_settings["search_engine"]) + url
-            self.setUrl(QUrl(search_url))
+        formatted_url = self.validate_and_format_url(url)
+        self.setUrl(QUrl(formatted_url))
     
     def reload_page(self):
         self.page_is_loading = True
@@ -96,21 +90,29 @@ class BetterWebEngine(QWebEngineView):
         self.page_is_loading = False
         self.page().setBackgroundColor(QColor("#ffffff"))
     
-    def valid_url(self, url):
-        # Regex for standard http/https URLs and file paths
-        regex = re.compile(
-            r'^(?:(?:http|ftp)s?|file)://'  # file
-            r'(?:'
-                r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' # domain
-                r'localhost|' # localhost
-                r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # or ip
-            r'|' # OR 
-                r'/[^\s]+' # Absolute path for file:/// schemes
-            r')'
-            r'(?::\d+)?' # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    def validate_and_format_url(self, url_string):
+        try:
+            # Parse the URL
+            result = urlparse(url_string.strip())
 
-        return re.match(regex, url) is not None
+            # Check if the URL has a valid scheme and netloc (domain)
+            if result.scheme in ['http', 'https']:
+                if result.netloc:
+                    return url_string
+            # Check if the URL is a file path
+            elif result.scheme == 'file':
+                if result.path:
+                    return url_string
+            elif result.scheme and result.netloc:
+                # Catch other schemes like ftp, mailto, etc.
+                return url_string
+
+        except Exception:
+            pass
+
+        # If the URL is not valid, use default search engine
+        search_url = SEARCH_ENGINE_SEARCH_QUERIES.get(self.user_settings["search_engine"]) + quote_plus(url_string)
+        return search_url
     
     def scale_page_up(self):
         zoom_factor = self.zoomFactor()

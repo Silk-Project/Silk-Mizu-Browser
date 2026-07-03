@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
     QSpinBox,
 )
 from PySide6.QtCore import Qt, QSize
-import copy
 import qtawesome as qta
 from interface.widgets.color_button import QColorButton
 from dataclasses import dataclass, asdict
@@ -47,7 +46,7 @@ class ManageNavigationUIDialog(QDialog):
         super().__init__(parent)
 
         self.setWindowFilePath(self.tr("Manage Navigation UI"))
-        self.setFixedSize(500, 400)
+        self.setFixedSize(600, 400)
 
         self.passed_layout: dict = passed_layout
 
@@ -65,7 +64,7 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Go Button", "button", "mdi.arrow-right-bold-box", "go"),
             NavigationUIElement("Download Manager Button", "button", "ei.download", "download_manager"),
             NavigationUIElement("Stretch Space", "spacer", None, "stretch"),
-            NavigationUIElement("Test styled button", "button", "mdi.test-tube", "test", NavigationUIAdditionalStyling(background_color="#ff0000", border_radius=3, label="Test"))
+            NavigationUIElement("Text label", "label", None, "label"),
         ]
 
         self.init_ui()
@@ -114,8 +113,7 @@ class ManageNavigationUIDialog(QDialog):
 
         # Top view (UI preview)
         self.preview_frame = QWidget()
-        self.preview_frame.setMinimumHeight(50)
-        self.preview_frame.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.preview_frame.setMinimumHeight(40)
         self.preview_frame.setStyleSheet("border: 1px solid #414242; border-radius: 3px;")
         self.layout.addWidget(self.preview_frame)
 
@@ -124,7 +122,7 @@ class ManageNavigationUIDialog(QDialog):
 
         self.preview_frame_layout.addStretch()
 
-        # Middle layout (UI controls) -> QHBoxLayout (Current UI elements, Available UI elements, Add/Remove buttons)
+        # Middle layout (UI controls)
         self.action_layout = QHBoxLayout()
         self.layout.addLayout(self.action_layout)
 
@@ -293,6 +291,12 @@ class ManageNavigationUIDialog(QDialog):
 
             return spacer
         
+        elif item.type == "label":
+            label = QLabel()
+            label.setStyleSheet("padding: 8px;")
+            label.setText(item.styling.label if item.styling and item.styling.label else "")
+            return label
+        
         else:
             label = QLabel(item.name)
             label.setStyleSheet("padding: 8px;")
@@ -308,7 +312,6 @@ class ManageNavigationUIDialog(QDialog):
             self.preview_frame_layout.addStretch(styling.stretch_factor)
 
         # Check if the widget is a QPushButton QLineEdit or QLabel to add label
-        print(f"Applying styling to widget: {widget}, label: {styling.label}")
         if isinstance(widget, QPushButton) and styling.label:
             widget.setText(styling.label)
         elif isinstance(widget, QLineEdit) and styling.label:
@@ -339,7 +342,7 @@ class CustomiseStylingDialog(QDialog):
         # Title
         self.title_label = QLabel(self.tr("Customize Styling"))
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; padding: 10px")
+        self.title_label.setStyleSheet("font-size: 20px; font-weight: bold;")
         self.layout.addWidget(self.title_label)
 
         # Form layout for styling options
@@ -371,7 +374,18 @@ class CustomiseStylingDialog(QDialog):
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
+
+        self.reset_button = QPushButton(self.tr("Reset"))
+        self.reset_button.clicked.connect(self.reset_styling)
+        self.button_box.addButton(self.reset_button, QDialogButtonBox.ButtonRole.ResetRole)
+
         self.layout.addWidget(self.button_box)
+
+    def reset_styling(self):
+        self.bg_color_button.setColor(None)
+        self.border_radius_spinbox.setValue(0)
+        self.stretch_factor_spinbox.setValue(0)
+        self.label_lineedit.setText("")
 
     def accept(self):
         # Update the styling based on user input

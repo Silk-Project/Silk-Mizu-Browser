@@ -27,37 +27,37 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QFileDialog,
     QMenu,
-    QWidgetAction,
-    QScrollArea,
     QStackedWidget,
-    QFrame,
 )
-from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths, QTimer
+from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineDownloadRequest, QWebEngineProfile, QWebEnginePage
-from PySide6.QtGui import QPixmap, QAction, QKeySequence, QIcon, QColor
+from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile, QWebEnginePage
+from PySide6.QtGui import QPixmap, QAction, QKeySequence, QIcon
 
 # Dialogs
 from interface.dialogs.about_dialog import AboutDialog
 from interface.dialogs.bookmarks_mgr_dialog import ManageBookmarksDialog
 from interface.dialogs.extensions_dialog import WebExtensionsDialog, WebExtensionFetcher
-from interface.dialogs.manage_navbar_dialog import NavigationUIElement, NavigationUIAdditionalStyling
 from interface.dialogs.settings_dialog import SettingsDialog
+from interface.dialogs.downloads_dialog import DownloadManagerDialog
 
 # Widgets
 from interface.widgets.better_webengine import BetterWebEngine
+from interface.downloads.download_menu import DownloadMenu
+from interface.navigation.nav_items import DownloadManagerBtn
 
 # Navigation
-from interface.navigation.navbar import AddressBar, BackBtn, ForwardBtn, ReloadBtn, ExtSidebarBtn
+from interface.navigation.nav_manager import NavBarManager
 
 # Services
 from services.theme_mgr import ThemeManager
 from services.extension_mgr import ExtensionManager, ExtensionMetadata
+from interface.downloads.download_mgr import DownloadManager
 from services.constants import (
     SCRIPT_DIR, CONFIG_PATH, BOOKMARKS_PATH, LOGO_PATH, START_PAGE_PATH,
     AI_SYSPROMPT_PATH, DOWNLOAD_PATH, EXTENSIONS_PATH, EXTENSIONS_SETTINGS_PATH,
     ADDITIONAL_QSS_PATH, DEFAULT_NAVBAR_LAYOUT_PATH, SUM_AI_MODEL, VERSION_NUMBER,
-    SEARCH_ENGINE_SEARCH_QUERIES, NAME_TO_LANGUAGE, LANGUAGE_TO_NAME,
+    NAME_TO_LANGUAGE, LANGUAGE_TO_NAME,
 )
 
 STORAGE_PATH = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), "Silk-Mizu-Browser")
@@ -283,260 +283,6 @@ class Extension_Sidebar(QWidget):
                     widget.deleteLater()
                 else:
                     self.clear_layout(item.layout())
-
-class DownloadManager(QObject):
-    download_added = Signal(QWebEngineDownloadRequest)
-
-    def __init__(self):
-        super().__init__()
-        self.downloads = []
-    
-    def add_download(self, download: QWebEngineDownloadRequest):
-        # Download info
-        download_filename = download.suggestedFileName()
-        os.makedirs(current_settings.get("downloads_path", DOWNLOAD_PATH), exist_ok=True)
-
-        download.setDownloadDirectory(current_settings.get("downloads_path", DOWNLOAD_PATH))
-        download.setDownloadFileName(download_filename)
-
-        download.accept()
-        self.downloads.append(download)
-        self.download_added.emit(download)
-
-class DownloadItemWidget(QFrame):
-    def __init__(self, download: QWebEngineDownloadRequest, parent=None):
-        super().__init__(parent)
-
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-        self.download = download
-
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
-
-        self.init_ui()
-        self.connect_signals()
-
-        # Check if download is already finished
-        if self.download.isFinished():
-            self.download_finished()
-        
-        self.update_progress()
-    
-    def init_ui(self):
-        # Download info
-        download_filename = self.download.suggestedFileName()
-
-        # Download UI elements
-        self.label = QLabel(f"{self.tr('Downloading:')} {download_filename}")
-        self.label.setWordWrap(True)
-        self.label.setToolTip(download_filename)
-
-        self.progress = QProgressBar()
-
-        self.stop_btn = QPushButton()
-        self.stop_btn.setIcon(qta.icon("ei.remove"))
-        self.stop_btn.clicked.connect(lambda: self.download.cancel())
-        
-        self.layout.addWidget(self.label)
-
-        # Bottom layout (progress bar, button)
-        bottom_layout = QHBoxLayout()
-        self.layout.addLayout(bottom_layout)
-
-        bottom_layout.addWidget(self.progress)
-        bottom_layout.addWidget(self.stop_btn)
-    
-    def connect_signals(self):
-        self.download.receivedBytesChanged.connect(self.update_progress)
-        self.download.isFinishedChanged.connect(self.download_finished)
-    
-    def update_progress(self):
-        if self.download.totalBytes() > 0:
-            percent = int((self.download.receivedBytes() / self.download.totalBytes()) * 100)
-            self.progress.setValue(percent)
-    
-    def download_finished(self):
-        download_filename = self.download.suggestedFileName()
-        state = self.download.state()
-        self.stop_btn.setEnabled(False)
-    
-        if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
-            self.progress.setValue(100)
-            self.label.setText(f"{self.tr('Finished:')} {download_filename}")
-        
-        elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
-            self.label.setText(f"{self.tr('Canceled:')} {download_filename}")
-            self.progress.setEnabled(False)
-        
-        elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
-            self.label.setText(f"{self.tr('Error:')} {download_filename}")
-            self.progress.setStyleSheet("QProgressBar::chunk { background-color: red; }")
-
-class DownloadManagerWidget(QDialog):
-    def __init__(self, downloads):
-        super().__init__()
-
-        self.setWindowTitle(self.tr("Manage Downloads"))
-        self.setFixedSize(624, 468)
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
-
-        self.downloads = downloads
-
-        self.init_ui()
-        self.refresh_downloads()
-    
-    def init_ui(self):
-        title_label = QLabel(self.tr("Manage Downloads"))
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px;")
-        self.layout.addWidget(title_label)
-
-        # Downloads list
-        self.downloads_content = QScrollArea()
-
-        self.downloads_widget = QWidget()
-        self.downloads_layout = QVBoxLayout()
-        self.downloads_controls_layout = QHBoxLayout()
-        self.downloads_main_layout = QVBoxLayout()
-
-        self.downloads_layout.addLayout(self.downloads_controls_layout)
-        self.downloads_layout.addLayout(self.downloads_main_layout)
-
-        self.downloads_content.setWidget(self.downloads_widget)
-        self.downloads_widget.setLayout(self.downloads_layout)
-        self.layout.addWidget(self.downloads_content)
-
-        self.downloads_layout.addStretch()
-
-        # Control Buttons
-        self.store_tab_refresh_btn = QPushButton(self.tr("Refresh"))
-        self.store_tab_refresh_btn.setIcon(qta.icon("ei.refresh"))
-        self.store_tab_refresh_btn.setStyleSheet("border: 1px solid #414242; border-radius: 3px; padding: 8px;")
-        self.store_tab_refresh_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.store_tab_refresh_btn.clicked.connect(self.refresh_downloads)
-        self.downloads_controls_layout.addWidget(self.store_tab_refresh_btn)
-
-        self.downloads_controls_layout.addStretch()
-
-        self.downloads_content.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.downloads_content.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.downloads_content.setWidgetResizable(True)
-
-    def refresh_downloads(self):
-        self.clear_layout(self.downloads_main_layout)
-
-        if len(self.downloads) == 0:
-            self.downloads_main_layout.addStretch()
-
-            info_label = QLabel(self.tr("No active downloads."))
-            info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            info_label.setStyleSheet("color: grey;")
-            self.downloads_main_layout.addWidget(info_label)
-
-            self.downloads_main_layout.addStretch()
-
-            return
-        
-        for download in self.downloads:
-            item = DownloadItemWidget(download, self)
-            self.downloads_main_layout.addWidget(item)
-
-    def clear_layout(self, layout):
-        if layout is not None:
-            while layout.count():
-                item = layout.takeAt(0)
-                widget = item.widget()
-                if widget is not None:
-                    widget.deleteLater()
-                else:
-                    self.clear_layout(item.layout())
-
-
-class DownloadMenu(QMenu):
-    def __init__(self):
-        super().__init__()
-        self.manage_downloads_action = QAction("Manage Downloads")
-        self.manage_downloads_action.triggered.connect(self.open_manage_downloads)
-        self.addAction(self.manage_downloads_action)
-
-    def add_download(self, download: QWebEngineDownloadRequest):
-        # Download info
-        download_filename = download.suggestedFileName()
-        
-        # Create layouts for the menu entry
-        layout = QVBoxLayout()
-        container = QWidget()
-
-        # Download UI elements
-        label = QLabel(f"{self.tr('Downloading:')} {self.shorten_if_needed(download_filename)}")
-        label.setToolTip(download_filename)
-        progress = QProgressBar()
-        stop_btn = QPushButton()
-        stop_btn.setIcon(qta.icon("ei.remove"))
-        stop_btn.clicked.connect(lambda: download.cancel())
-        
-        layout.addWidget(label)
-
-        # Bottom layout (progress bar, button)
-        bottom_layout = QHBoxLayout()
-        layout.addLayout(bottom_layout)
-
-        bottom_layout.addWidget(progress)
-        bottom_layout.addWidget(stop_btn)
-
-        container.setLayout(layout)
-
-        widget_action = QWidgetAction(self)
-        widget_action.setDefaultWidget(container)
-
-        # Insert the new action at the top of the menu
-        self.insertAction(self.actions()[0], widget_action)
-
-        # Remove downloads if download amount exceeds 3
-        if len(self.actions()) > 4:
-            self.removeAction(self.actions()[3])
-        
-        # 3. Connect signals to track progress and completion
-        download.receivedBytesChanged.connect(
-            lambda: self.update_progress(download, progress)
-        )
-        download.isFinishedChanged.connect(
-            lambda: self.download_finished(download, label, progress, stop_btn)
-        )
-
-    def update_progress(self, download, progress_bar):
-        if download.totalBytes() > 0:
-            percent = int((download.receivedBytes() / download.totalBytes()) * 100)
-            progress_bar.setValue(percent)
-    
-    def shorten_if_needed(self, download_name):
-        if len(download_name) > 15:
-            return f"{download_name[:15]}..."
-        else:
-            return download_name
-
-    def download_finished(self, download, label, progress_bar, stop_btn):
-        download_filename = download.suggestedFileName()
-        state = download.state()
-        stop_btn.setEnabled(False)
-    
-        if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
-            progress_bar.setValue(100)
-            label.setText(f"{self.tr('Finished:')} {self.shorten_if_needed(download_filename)}")
-        
-        elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
-            label.setText(f"{self.tr('Canceled:')} {self.shorten_if_needed(download_filename)}")
-            progress_bar.setEnabled(False)
-        
-        elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
-            label.setText(f"{self.tr('Error:')} {self.shorten_if_needed(download_filename)}")
-            progress_bar.setStyleSheet("QProgressBar::chunk { background-color: red; }")
-    
-    def open_manage_downloads(self):
-        dlg = DownloadManagerWidget(window.download_manager.downloads)
-        dlg.exec()
 
 class InstallWorkerSignals(QObject):
     installation_complete = Signal()
@@ -821,11 +567,6 @@ class BrowserWindow(QMainWindow):
         self.helpMenu.addAction(self.aboutAction)
 
     def init_control_ui(self):
-        # Add main control layouts
-        self.controls_layout = QHBoxLayout()
-        self.controls_layout.setContentsMargins(5, 5, 5, 5)
-        self.controls_layout.setSpacing(5)
-
         self.bottom_bar = QWidget()
         self.bottom_bar.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
@@ -835,38 +576,6 @@ class BrowserWindow(QMainWindow):
         bottom_bar_layout.setSpacing(5)
 
         self.bottom_bar.setLayout(bottom_bar_layout)
-
-        self.layout.addLayout(self.controls_layout, 0, 0)
-        self.layout.addWidget(self.bottom_bar, 3, 0)
-
-        # Browser main controls
-
-        # self.load_btn = QPushButton(self.tr("Go"))
-        # self.load_btn.setIcon(qta.icon("mdi.arrow-right-bold-box", color=icon_color))
-        # self.load_btn.setProperty("class", "navbtns")
-        # self.load_btn.setStyleSheet("padding: 8px;")
-        # self.load_btn.setVisible(current_settings["go_button_visible"])
-        # self.load_btn.clicked.connect(self.request_load_page_from_urlbar)
-        # self.controls_layout.addWidget(self.load_btn)
-
-        # self.download_manager = DownloadManager()
-        # self.download_menu = DownloadMenu()
-        # self.download_manager.download_added.connect(self.download_menu.add_download)
-        # self.downloads_btn = QPushButton()
-        # self.downloads_btn.setIcon(qta.icon("ei.download", color=icon_color))
-        # self.downloads_btn.setStyleSheet("padding: 8px;")
-        # self.downloads_btn.setVisible(False)
-        # self.downloads_btn.clicked.connect(self.show_download_menu)
-        # self.controls_layout.addWidget(self.downloads_btn)
-
-        # self.web_extensions_menu = WebExtensionsMenu()
-        # self.web_extensions_menu.signals.request_manage_extensions.connect(self.web_extension_dialog)
-        # self.web_extensions_btn = QPushButton()
-        # self.web_extensions_btn.setIcon(qta.icon("mdi6.puzzle", color=icon_color))
-        # self.web_extensions_btn.setProperty("class", "navbtns")
-        # self.web_extensions_btn.setStyleSheet("padding: 8px;")
-        # self.web_extensions_btn.clicked.connect(self.show_extension_menu)
-        # self.controls_layout.addWidget(self.web_extensions_btn)
 
         self.web_tabs = QTabWidget()
         self.web_tabs.setTabsClosable(True)
@@ -878,9 +587,25 @@ class BrowserWindow(QMainWindow):
         self.web_tabs.tabCloseRequested.connect(self.remove_web_tab)
         self.middle_layout.addWidget(self.web_tabs, 1)
 
-        self.browser_controller = BrowserTabController(self.web_tabs)
-        self.browser_ui_controller = BrowserUIController(self)
-        self.rebuild_navbar()
+        # Controls layout
+        self.controls_layout = QHBoxLayout()
+        self.layout.addLayout(self.controls_layout, 0, 0)
+
+        self.browser_controller = BrowserController(self, self.web_tabs)
+        self.navbar_manager = NavBarManager(self.browser_controller, theme_manager)
+        self.controls_layout.addWidget(self.navbar_manager, 1)
+
+        self.layout.addWidget(self.bottom_bar, 3, 0)
+        self.navbar_manager.rebuild_navbar(current_settings["navigation_ui_elements"])
+
+        self.download_manager = DownloadManager()
+        self._update_download_button_visibility()
+        self.download_menu = DownloadMenu()
+        self.download_manager.download_added.connect(lambda download: self.download_menu.add_download(
+            download=download
+        ))
+        self.download_manager.download_added.connect(self._on_download_added)
+        self.download_menu.signals.downloads_dialog_opened.connect(self.show_downloads_dialog)
 
         # Bottom bar
         self.page_progressbar = QProgressBar()
@@ -912,135 +637,6 @@ class BrowserWindow(QMainWindow):
 
         bottom_bar_layout.addWidget(self.scale_up_btn)
     
-    def rebuild_navbar(self):
-        while self.controls_layout.count():
-            item = self.controls_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-        
-        for item in current_settings["navigation_ui_elements"]:
-            widget = self.create_navbtn(item)
-            self.controls_layout.addWidget(widget)
-    
-    def create_navbtn(self, item: list[dict]):
-        # Get style for UI element if available
-        styling = item.get("styling", None)
-
-        if styling:
-            styling = NavigationUIAdditionalStyling(**styling)
-
-        else:
-            styling = NavigationUIAdditionalStyling()
-        
-        if item["type"] == "button":
-            icon_color = theme_manager.get_contrast_color_from_theme()
-
-            if item["action"] == "back":
-                button = BackBtn(self.browser_controller)
-                button.update_icon_color(icon_color)
-
-            elif item["action"] == "forward":
-                button = ForwardBtn(self.browser_controller)
-                button.update_icon_color(icon_color)
-
-            elif item["action"] == "reload":
-                button = ReloadBtn(self.browser_controller)
-                button.update_icon_color(icon_color)
-
-            elif item["action"] == "go":
-                button = QPushButton()
-                button.setStyleSheet("padding: 8px;")
-                button.setProperty("class", "navbtns")
-                button.setIcon(qta.icon("mdi.arrow-right-bold-box", color=icon_color))
-            
-            elif item["action"] == "new_tab":
-                button = QPushButton()
-                button.setStyleSheet("padding: 8px;")
-                button.setProperty("class", "navbtns")
-                button.setIcon(qta.icon("fa6s.plus", color=icon_color))
-                button.clicked.connect(self.create_new_tab)
-            
-            elif item["action"] == "downloads":
-                button = QPushButton()
-                button.setStyleSheet("padding: 8px;")
-                button.setProperty("class", "navbtns")
-                button.setIcon(qta.icon("ei.download", color=icon_color))
-                button.clicked.connect(self.show_download_menu)
-            
-            elif item["action"] == "add_bookmark":
-                button = QPushButton()
-                button.setStyleSheet("padding: 8px;")
-                button.setProperty("class", "navbtns")
-                button.clicked.connect(self.add_current_to_bookmarks_dialog)
-                button.setIcon(qta.icon("fa5s.bookmark", color=icon_color))
-            
-            elif item["action"] == "extensions":
-                button = QPushButton()
-                button.setStyleSheet("padding: 8px;")
-                button.setProperty("class", "navbtns")
-                button.clicked.connect(self.web_extension_dialog)
-                button.setIcon(qta.icon("mdi6.puzzle", color=icon_color))
-            
-            elif item["action"] == "settings":
-                button = QPushButton()
-                button.setStyleSheet("padding: 8px;")
-                button.setProperty("class", "navbtns")
-                button.clicked.connect(self.settings_dialog)
-                button.setIcon(qta.icon("fa5s.cog", color=icon_color))
-            
-            elif item["action"] == "extensions_sidebar":
-                button = ExtSidebarBtn(self.browser_ui_controller)
-                button.update_icon_color(icon_color)
-            
-            else:
-                button = QPushButton()
-                button.setToolTip(item["action"])
-                button.setStyleSheet("padding: 8px;")
-                button.setProperty("class", "navbtns")
-                button.setIcon(qta.icon("fa6s.question", color=icon_color))
-
-            self.apply_styling_to_widget(button, styling)
-
-            return button
-
-        elif item["type"] == "urlbar":
-            line = AddressBar(self.browser_controller)
-            line.setStyleSheet("padding: 8px;")
-            line.setPlaceholderText("https://")
-
-            self.apply_styling_to_widget(line, styling)
-
-            return line
-        
-        elif item["type"] == "spacer":
-            spacer = QWidget()
-            spacer.setStyleSheet("background: transparent; border: none;")
-            spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-
-            return spacer
-        
-        else:
-            label = QLabel(item["type"])
-            label.setStyleSheet("padding: 5px;")
-            return label
-    
-    def apply_styling_to_widget(self, widget, styling: NavigationUIAdditionalStyling):
-        if styling.background_color:
-            widget.setStyleSheet(f"background-color: {styling.background_color}; padding: 8px;")
-        if styling.border_radius:
-            widget.setStyleSheet(widget.styleSheet() + f"border-radius: {styling.border_radius}px;")
-        if styling.stretch_factor:
-            widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-            self.preview_frame_layout.addStretch(styling.stretch_factor)
-
-        # Check if the widget is a QPushButton QLineEdit or QLabel to add label
-        if isinstance(widget, QPushButton) and styling.label:
-            widget.setText(styling.label)
-        elif isinstance(widget, QLineEdit) and styling.label:
-            widget.setPlaceholderText(styling.label)
-        elif isinstance(widget, QLabel) and styling.label:
-            widget.setText(styling.label)
-
     # Translation system
     def load_language(self, lang):
         if lang in LANGUAGE_TO_NAME:
@@ -1097,9 +693,6 @@ class BrowserWindow(QMainWindow):
         # Help Menu
         self.documentationAction.setText(self.tr("Project Page"))
         self.aboutAction.setText(self.tr("About"))
-
-        # Main UI
-        # self.load_btn.setText(self.tr("Go"))
 
     def init_bookmark_bar(self):
         # Bookmark bar
@@ -1263,32 +856,62 @@ class BrowserWindow(QMainWindow):
         self.remove_web_tab(current_tab_index)
 
     # Download System
-    def show_download_menu(self):
-        button_pos = self.downloads_btn.mapToGlobal(self.downloads_btn.rect().bottomLeft())
+    def _update_download_button_visibility(self):
+        has_downloads = len(self.download_manager.downloads) > 0
+        for i in range(self.navbar_manager.controls_layout.count()):
+            item = self.navbar_manager.controls_layout.itemAt(i)
+            if item is not None:
+                widget = item.widget()
+                if isinstance(widget, DownloadManagerBtn):
+                    widget.setVisible(has_downloads)
+
+    def _on_download_added(self, download):
+        self._update_download_button_visibility()
+        download.isFinishedChanged.connect(self._on_download_state_changed)
+
+    def _on_download_state_changed(self):
+        self._update_download_button_visibility()
+
+    def show_nearest_download_menu(self):
+        button = self.browser_controller.get_first_widget_from_navbar(DownloadManagerBtn)
+        if button:
+            button_pos = button.mapToGlobal(button.rect().bottomLeft())
+        else:
+            navbar_pos = self.navbar_manager.mapToGlobal(
+                self.navbar_manager.rect().topRight()
+            )
+            button_pos = navbar_pos
         self.download_menu.exec(button_pos)
     
-    def request_download(self, download):
-        if current_settings["download_warnings"]:
-            warning_dlg = QMessageBox(self)
-            warning_dlg.setWindowTitle(self.tr("Download Request"))
-            warning_dlg.setText(f"{self.tr('Do you really want to download')} \"{download.suggestedFileName()}\"?")
-            warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-            warning_dlg.setIcon(QMessageBox.Icon.Warning)
+    def show_downloads_dialog(self):
+        dlg = DownloadManagerDialog(downloads=self.download_manager.downloads, parent=self)
+        dlg.exec()
 
-            if warning_dlg.exec() == QMessageBox.StandardButton.Ok:
-                self.download_manager.add_download(download)
-                self.downloads_btn.setVisible(True)
-                self.show_download_menu()
-    
-        else:
-            self.download_manager.add_download(download)
-            self.downloads_btn.setVisible(True)
-            self.show_download_menu()
+    def request_download(self, download):
+        try:
+            if current_settings["download_warnings"]:
+                warning_dlg = QMessageBox(self)
+                warning_dlg.setWindowTitle(self.tr("Download Request"))
+                warning_dlg.setText(f"{self.tr('Do you really want to download')} \"{download.suggestedFileName()}\"?")
+                warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+                warning_dlg.setIcon(QMessageBox.Icon.Warning)
+
+                if warning_dlg.exec() == QMessageBox.StandardButton.Ok:
+                    self.download_manager.add_download(download, current_settings.get("downloads_path", DOWNLOAD_PATH))
+                    self.show_nearest_download_menu()
+            else:
+                self.download_manager.add_download(download, current_settings.get("downloads_path", DOWNLOAD_PATH))
+                self.show_nearest_download_menu()
+        except AttributeError:
+            download.accept()
 
     # Extension system
     def show_extension_menu(self):
-        button_pos = self.web_extensions_btn.mapToGlobal(self.web_extensions_btn.rect().bottomLeft())
-        self.web_extensions_menu.exec(button_pos)
+        try:
+            button_pos = self.web_extensions_btn.mapToGlobal(self.web_extensions_btn.rect().bottomLeft())
+            self.web_extensions_menu.exec(button_pos)
+        except AttributeError:
+            pass
 
     def web_extension_dialog(self):
         dlg = WebExtensionsDialog(parent=self, extension_manager=extension_manager, index_urls=extensions_settings["index_urls"])
@@ -1347,16 +970,11 @@ class BrowserWindow(QMainWindow):
             return (0,)
 
     # Website content specific functions
-    def request_load_page_from_urlbar(self):
-        url = self.url_bar.text()
-        self.web_tabs.currentWidget().load_page(url)
-    
     def update_progressbar(self, prog):
         self.page_progressbar.setVisible(True)
         self.page_progressbar.setValue(prog)
 
     def page_load_finished(self):
-        self.web_tabs.currentWidget().page_is_loading = False
         self.page_progressbar.setVisible(False)
         self.update_tab_info()
     
@@ -1372,17 +990,6 @@ class BrowserWindow(QMainWindow):
     def request_next_page(self):
         self.web_tabs.currentWidget().history().forward()
         self.update_tab_info()
-    
-    def request_reload_stop_page(self):
-        if self.web_tabs.currentWidget().page_is_loading:
-            self.web_tabs.currentWidget().stop_page()
-        else:
-            self.web_tabs.currentWidget().reload_page()
-        
-        self.update_tab_info()
-
-    def request_load_page(self, url):
-        self.web_tabs.currentWidget().load_page(url)
     
     # Scaling
     def request_scale_page_up(self):
@@ -1400,10 +1007,6 @@ class BrowserWindow(QMainWindow):
         zoom_string = str(round(self.web_tabs.currentWidget().zoomFactor() * 100)) + "%"
         self.zoom_factor_label.setText(zoom_string)
     
-    # Rebuild navigation UI
-    def rebuild_navigation_ui(self):
-        pass  # Placeholder for future implementation of navigation UI rebuilding
-
     # Dialogs
     def add_current_to_bookmarks_dialog(self):
         dlg = QDialog(self)
@@ -1481,8 +1084,9 @@ class BrowserWindow(QMainWindow):
                 self.load_language(NAME_TO_LANGUAGE[settings["language"]])
 
             self.update_web_engine()
-            self.rebuild_navbar()
-            self.browser_controller.on_tab_changed()
+            self.navbar_manager.rebuild_navbar(current_settings["navigation_ui_elements"])
+            self._update_download_button_visibility()
+            self.browser_controller._on_tab_changed()
 
             # if settings["ai_summarization_enabled"] != current_settings["ai_summarization_enabled"]:
             #     current_settings["ai_summarization_enabled"] = settings["ai_summarization_enabled"]
@@ -1536,26 +1140,43 @@ class BrowserWindow(QMainWindow):
         dlg = AboutDialog(self)
         dlg.exec()
 
-class BrowserTabController(QObject):
+class BrowserController(QObject):
     currentBrowserChanged = Signal(QWebEngineView)
 
-    def __init__(self, tabs):
+    def __init__(self, window: BrowserWindow, tabs: QTabWidget):
         super().__init__()
+        self.window = window
         self.tabs = tabs
-        tabs.currentChanged.connect(self.on_tab_changed)
+        tabs.currentChanged.connect(self._on_tab_changed)
+
+    def _on_tab_changed(self):
+        self.currentBrowserChanged.emit(self.current_browser())
 
     def current_browser(self):
         return self.tabs.currentWidget()
-
-    def on_tab_changed(self):
-        self.currentBrowserChanged.emit(self.current_browser())
-
-class BrowserUIController(QObject):
-    def __init__(self, window: BrowserWindow):
-        self.window: BrowserWindow = window
     
+    def get_first_widget_from_navbar(self, widget_type):
+        for i in range(self.window.navbar_manager.controls_layout.count()):
+            item = self.window.navbar_manager.controls_layout.itemAt(i)
+
+            if item is not None:
+                widget = item.widget()
+
+                if isinstance(widget, widget_type):
+                    return widget
+        
+        return None
+
     def toggle_sidebar(self):
         self.window.toggle_extension_sidebar()
+    
+    def open_download_manager(self):
+        print("Opening download manager...")
+        self.window.show_downloads_dialog()
+
+    def open_download_menu(self, button):
+        button_pos = button.mapToGlobal(button.rect().bottomLeft())
+        self.window.download_menu.exec(button_pos)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

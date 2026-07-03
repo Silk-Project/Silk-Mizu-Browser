@@ -21,7 +21,7 @@
         },
         {
             "type": "button",
-            "action": "downloads"
+            "action": "download_manager"
         },
         {
             "type": "button",

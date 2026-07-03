@@ -193,3 +193,65 @@ class ExtSidebarBtn(QPushButton):
     def update_icon_color(self, icon_color: str):
         self.icon_color = icon_color
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
+
+class GoBtn(QPushButton):
+    def __init__(self, controller, parent = None):
+        super().__init__(parent)
+
+        self.browser: BetterWebEngine = None
+        self.icon_id = "mdi.arrow-right-bold-box"
+        self.icon_color = "white"
+        self.controller = controller
+
+        self.setIcon(qta.icon(self.icon_id))
+        self.setStyleSheet("padding: 8px;")
+        self.setProperty("class", "navbtns")
+
+        self.controller.currentBrowserChanged.connect(self.set_browser)
+    
+    def set_browser(self, browser):
+        if self.browser:
+            self.browser.urlChanged.disconnect(self.update_status)
+
+        self.browser = browser
+
+        self.browser.urlChanged.connect(self.update_status)
+        self.clicked.connect(self.go_to_url)
+
+        self.update_status()
+    
+    def update_status(self):
+        pass
+    
+    def update_icon_color(self, icon_color: str):
+        self.icon_color = icon_color
+        self.setIcon(qta.icon(self.icon_id, color=icon_color))
+    
+    def go_to_url(self):
+        if self.browser:
+            address_bar = self.controller.get_first_widget_from_navbar(AddressBar)
+            if address_bar:
+                url = address_bar.text()
+                self.browser.load_page(url)
+
+class DownloadManagerBtn(QPushButton):
+    def __init__(self, controller, parent = None):
+        super().__init__(parent)
+
+        self.controller = controller
+        self.icon_id = "fa6s.download"
+        self.icon_color = "white"
+
+        self.setIcon(qta.icon(self.icon_id))
+        self.setStyleSheet("padding: 8px;")
+        self.setProperty("class", "navbtns")
+
+        self.setVisible(False)
+        self.clicked.connect(self.open_download_menu)
+    
+    def open_download_menu(self):
+        self.controller.open_download_menu(self)
+    
+    def update_icon_color(self, icon_color: str):
+        self.icon_color = icon_color
+        self.setIcon(qta.icon(self.icon_id, color=icon_color))
