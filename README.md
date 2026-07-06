@@ -51,16 +51,18 @@ python3 browser/main.py
 ## 💻 To-do
 - [x] ~~Improve website tab system and tab bar positioning at the top~~ (Unchanged because of performance reasons)
 - [x] ~~"Explain selected text with AI"~~
-- [ ] ~~Rearrangeable browser interface~~
+- [x] ~~Rearrangeable browser interface~~
   - [ ] Multiple bar customisation
-  - [ ] Individual styling of navigation elements (color, icon, size, shape, text)
+  - [x] Individual styling of navigation elements (color, icon, size, shape, text)
+  - [ ] Theme import and export
 - [ ] Reader view
 - [x] ~~Better overview of current downloads so it can't infinitely stack up in the download menu~~
 - [x] ~~Multi-language support~~
 - [x] ~~Custom extension store (for the browser itself)~~
   - [x] ~~Widgets (e. g. Notes and additional widgets from the store)~~
     - [ ] Let widgets connect to a Browser Window API
-  - [ ] Custom theme editor (with theme import) 
+  - [ ] Custom theme editor (with theme import)
+- [ ] Website
 
 ## 👥 Contributing
 Feel free to open issues and create pull requests.
