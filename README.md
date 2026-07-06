@@ -6,13 +6,13 @@
 ![Static Badge](https://img.shields.io/badge/Python-3.14-e9f23d?logo=python&logoColor=white)
 ![Static Badge](https://img.shields.io/badge/PySide-6.11-41cd52?logo=Qt&labelColor=black)
 <br>
-Simple and lightweight PySide6 browser for Silk and Linux / Windows / Mac computers. Made possible through the QWebEngineView Widget for rendering webpages. Mizu (水) translates to "water" in japanese, which makes sense because you are "surfing" the web.
+Simple and lightweight PySide6 browser for Linux, Windows and Mac computers. Made possible through the QWebEngineView Widget for rendering webpages. Mizu (水) translates to "water" in japanese, which makes sense because you are "surfing" the web.
 
 ![Browser Preview](/assets/preview.png)
 ![Extensions Preview](/assets/preview_extensions.png)
 
 ## ⭐️ Features
-- Simple but still modern UI elements using the Awesome 6 icons and PyQt Dark theme
+- Simple but modern UI elements using the Awesome 6 icons and PyQt Dark theme
 - Full navigation bar UI editor
 - Default search engine selection (Google, DuckDuckGo, Brave...)
 - Custom start page selection
@@ -21,7 +21,7 @@ Simple and lightweight PySide6 browser for Silk and Linux / Windows / Mac comput
 - Bookmark management
 - Silk-Start support
 - Easy to use tab system
-- AI webpage summarization (optional and local, without data collection)
+- AI webpage summarization (optional, local and completely private)
 - Download manager
 - Custom browser extension manager / engine
 
@@ -37,7 +37,7 @@ A normal git clone will result into missing submodules. Instead use this command
 ```
 git clone --recursive https://github.com/Silk-Project/Silk-Mizu-Browser.git
 ```
-...or initialize the submodules later:
+...or initialize the submodules after you have already cloned the repository:
 ```
 git submodule update --init --recursive
 ```
@@ -46,7 +46,7 @@ git submodule update --init --recursive
 ## 🚀 Running the program
 To use this program, simply execute the main.py file directly via python3.
 ```
-python3 main.py
+python3 browser/main.py
 ```
 ## 💻 To-do
 - [x] ~~Improve website tab system and tab bar positioning at the top~~ (Unchanged because of performance reasons)
