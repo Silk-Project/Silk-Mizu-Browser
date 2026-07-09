@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QFormLayout,
     QSpinBox,
+    QComboBox
 )
 from PySide6.QtCore import Qt, QSize
 import qtawesome as qta
@@ -110,6 +111,11 @@ class ManageNavigationUIDialog(QDialog):
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px")
         self.layout.addWidget(self.title_label)
+
+        # Bar selector
+        self.bar_selector = QComboBox()
+        self.bar_selector.addItems(["Top bar", "Bottom bar", "Extension sidebar"])
+        self.layout.addWidget(self.bar_selector)
 
         # Top view (UI preview)
         self.preview_frame = QWidget()

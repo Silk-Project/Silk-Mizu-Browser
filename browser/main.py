@@ -592,11 +592,12 @@ class BrowserWindow(QMainWindow):
         self.layout.addLayout(self.controls_layout, 0, 0)
 
         self.browser_controller = BrowserController(self, self.web_tabs)
-        self.navbar_manager = NavBarManager(self.browser_controller, theme_manager)
-        self.controls_layout.addWidget(self.navbar_manager, 1)
+        self.top_navbar = NavBarManager(self.browser_controller, theme_manager)
+        self.controls_layout.addWidget(self.top_navbar, 1)
+
+        self.top_navbar.rebuild_navbar(current_settings.get("navigation_ui_elements").get("top"))
 
         self.layout.addWidget(self.bottom_bar, 3, 0)
-        self.navbar_manager.rebuild_navbar(current_settings["navigation_ui_elements"])
 
         self.download_manager = DownloadManager()
         self._update_download_button_visibility()
@@ -858,8 +859,8 @@ class BrowserWindow(QMainWindow):
     # Download System
     def _update_download_button_visibility(self):
         has_downloads = len(self.download_manager.downloads) > 0
-        for i in range(self.navbar_manager.controls_layout.count()):
-            item = self.navbar_manager.controls_layout.itemAt(i)
+        for i in range(self.top_navbar.controls_layout.count()):
+            item = self.top_navbar.controls_layout.itemAt(i)
             if item is not None:
                 widget = item.widget()
                 if isinstance(widget, DownloadManagerBtn):
@@ -877,8 +878,8 @@ class BrowserWindow(QMainWindow):
         if button:
             button_pos = button.mapToGlobal(button.rect().bottomLeft())
         else:
-            navbar_pos = self.navbar_manager.mapToGlobal(
-                self.navbar_manager.rect().topRight()
+            navbar_pos = self.top_navbar.mapToGlobal(
+                self.top_navbar.rect().topRight()
             )
             button_pos = navbar_pos
         self.download_menu.exec(button_pos)
@@ -1084,13 +1085,13 @@ class BrowserWindow(QMainWindow):
                 self.load_language(NAME_TO_LANGUAGE[settings["language"]])
 
             self.update_web_engine()
-            self.navbar_manager.rebuild_navbar(current_settings["navigation_ui_elements"])
+            self.top_navbar.rebuild_navbar(current_settings["navigation_ui_elements"])
             self._update_download_button_visibility()
             self.browser_controller._on_tab_changed()
 
-            # if settings["ai_summarization_enabled"] != current_settings["ai_summarization_enabled"]:
-            #     current_settings["ai_summarization_enabled"] = settings["ai_summarization_enabled"]
-            #     self.extension_sidebar.load_extensions()
+            if settings["ai_summarization_enabled"] != current_settings["ai_summarization_enabled"]:
+                current_settings["ai_summarization_enabled"] = settings["ai_summarization_enabled"]
+                self.extension_sidebar.load_extensions()
 
             theme_manager.set_accent_color(settings["accent_color"])
 
@@ -1156,8 +1157,8 @@ class BrowserController(QObject):
         return self.tabs.currentWidget()
     
     def get_first_widget_from_navbar(self, widget_type):
-        for i in range(self.window.navbar_manager.controls_layout.count()):
-            item = self.window.navbar_manager.controls_layout.itemAt(i)
+        for i in range(self.window.top_navbar.controls_layout.count()):
+            item = self.window.top_navbar.controls_layout.itemAt(i)
 
             if item is not None:
                 widget = item.widget()
