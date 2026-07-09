@@ -598,7 +598,7 @@
     </message>
     <message>
         <location filename="../main.py" line="811"/>
-        <source>Address Bar</source>
+        <source>Adress Bar</source>
         <translation>Adressleiste</translation>
     </message>
 </context>

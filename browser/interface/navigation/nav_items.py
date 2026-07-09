@@ -229,9 +229,9 @@ class GoBtn(QPushButton):
     
     def go_to_url(self):
         if self.browser:
-            address_bar = self.controller.get_first_widget_from_navbar(AddressBar)
-            if address_bar:
-                url = address_bar.text()
+            adress_bar = self.controller.get_first_widget_from_navbar(AddressBar)
+            if adress_bar:
+                url = adress_bar.text()
                 self.browser.load_page(url)
 
 class DownloadManagerBtn(QPushButton):

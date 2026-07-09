@@ -12,6 +12,7 @@ build/
 develop-eggs/
 dist/
 downloads/
+!browser/interface/downloads/
 eggs/
 .eggs/
 lib/
@@ -215,7 +216,7 @@ bookmarks.json
 extensions.json
 
 # Dirs
-Downloads/
+browser/Downloads/
 extensions/
 
 # Test Scripts

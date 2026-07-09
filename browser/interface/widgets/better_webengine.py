@@ -75,7 +75,7 @@ class BetterWebEngine(QWebEngineView):
 
     def load_page(self, url):
         self.page_is_loading = True
-        formatted_url = self.validate_and_format_url(url)
+        formatted_url = self.validate_and_fix_url(url)
         self.setUrl(QUrl(formatted_url))
     
     def reload_page(self):
@@ -90,27 +90,35 @@ class BetterWebEngine(QWebEngineView):
         self.page_is_loading = False
         self.page().setBackgroundColor(QColor("#ffffff"))
     
-    def validate_and_format_url(self, url_string):
-        try:
-            # Parse the URL
-            result = urlparse(url_string.strip())
+    def validate_and_fix_url(self, url_string):
+        clean_input = url_string.strip()
+        
+        domain_match = re.match(r'^([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?::\d+)?(?:\/.*)?$', clean_input, re.IGNORECASE)
+        
+        # Add scheme if it's missing
+        if domain_match and not clean_input.startswith(('http://', 'https://', 'file://', 'ftp://')):
+            clean_input = "https://" + clean_input
 
-            # Check if the URL has a valid scheme and netloc (domain)
+        try:
+            result = urlparse(clean_input)
+            
+            # Validate Web URLs
             if result.scheme in ['http', 'https']:
                 if result.netloc:
-                    return url_string
-            # Check if the URL is a file path
+                    return clean_input
+                    
+            # Validate Local File URLs
             elif result.scheme == 'file':
                 if result.path:
-                    return url_string
+                    return clean_input
+                    
+            # Validate other explicit schemes
             elif result.scheme and result.netloc:
-                # Catch other schemes like ftp, mailto, etc.
-                return url_string
+                return clean_input
 
         except Exception:
             pass
 
-        # If the URL is not valid, use default search engine
         search_url = SEARCH_ENGINE_SEARCH_QUERIES.get(self.user_settings["search_engine"]) + quote_plus(url_string)
         return search_url
     

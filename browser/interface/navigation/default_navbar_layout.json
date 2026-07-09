@@ -13,7 +13,8 @@
             "action": "reload"
         },
         {
-            "type": "urlbar"
+            "type": "urlbar",
+            "action": "adress_bar"
         },
         {
             "type": "button",
