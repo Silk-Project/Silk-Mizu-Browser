@@ -202,7 +202,7 @@ class SettingsDialog(QDialog):
         self.start_page_urledit.setEnabled(enable)
     
     def open_manage_navigation_ui_dialog(self):
-        dialog = ManageNavigationUIDialog(self, self.current_settings["navigation_ui_elements"])
+        dialog = ManageNavigationUIDialog(self, self.current_settings.get("navigation_ui_elements"))
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.current_settings["navigation_ui_elements"] = dialog.get_current_ui_elements_dict()
 

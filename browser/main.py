@@ -595,7 +595,7 @@ class BrowserWindow(QMainWindow):
         self.top_navbar = NavBarManager(self.browser_controller, theme_manager)
         self.controls_layout.addWidget(self.top_navbar, 1)
 
-        self.top_navbar.rebuild_navbar(current_settings.get("navigation_ui_elements").get("top"))
+        self.top_navbar.rebuild_navbar(current_settings.get("navigation_ui_elements"))
 
         self.layout.addWidget(self.bottom_bar, 3, 0)
 

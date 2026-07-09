@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QFormLayout,
     QSpinBox,
-    QComboBox
 )
 from PySide6.QtCore import Qt, QSize
 import qtawesome as qta
@@ -55,8 +54,8 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Back Button", "button", "fa6s.arrow-left", "back"),
             NavigationUIElement("Forward Button", "button", "fa6s.arrow-right", "forward"),
             NavigationUIElement("Reload Button", "button", "fa6s.rotate-right", "reload"),
-            NavigationUIElement("Bookmark Button", "button", "fa6s.bookmark", "bookmark"),
-            NavigationUIElement("Address Bar", "urlbar", None, "address_bar"),
+            NavigationUIElement("Bookmark Button", "button", "fa6s.bookmark", "add_bookmark"),
+            NavigationUIElement("Adress Bar", "urlbar", None, "adress_bar"),
             NavigationUIElement("Search Bar", "searchbar", None, "search_bar"),
             NavigationUIElement("New Tab Button", "button", "fa6s.plus", "new_tab"),
             NavigationUIElement("Settings Button", "button", "fa6s.gear", "settings"),
@@ -93,8 +92,15 @@ class ManageNavigationUIDialog(QDialog):
             else:
                 styling = NavigationUIAdditionalStyling()
 
+            name = elem.get("name", "")
+            if not name:
+                for available in self.available_ui_elements:
+                    if available.action == action:
+                        name = available.name
+                        break
+
             item = NavigationUIListItem(NavigationUIElement(
-                name=elem.get("name", ""),
+                name=name,
                 type=elem.get("type", ""),
                 icon=icon,
                 action=action,
@@ -111,11 +117,6 @@ class ManageNavigationUIDialog(QDialog):
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px")
         self.layout.addWidget(self.title_label)
-
-        # Bar selector
-        self.bar_selector = QComboBox()
-        self.bar_selector.addItems(["Top bar", "Bottom bar", "Extension sidebar"])
-        self.layout.addWidget(self.bar_selector)
 
         # Top view (UI preview)
         self.preview_frame = QWidget()
