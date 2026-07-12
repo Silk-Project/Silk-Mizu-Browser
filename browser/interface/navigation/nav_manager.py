@@ -29,7 +29,7 @@ class NavBarManager(QWidget):
                     item.widget().deleteLater()
 
             if not elements:
-                return
+                return 1
 
             for raw in elements:
                 try:

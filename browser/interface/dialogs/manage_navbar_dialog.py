@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QFormLayout,
     QSpinBox,
+    QComboBox,
 )
 from PySide6.QtCore import Qt, QSize
 import qtawesome as qta
@@ -49,6 +50,11 @@ class ManageNavigationUIDialog(QDialog):
         self.setFixedSize(600, 400)
 
         self.passed_layout: dict = passed_layout
+        self.current_bar = "top"
+        self.current_layout: dict = {
+            "top": [],
+            "bottom": []
+        }
 
         self.available_ui_elements = [
             NavigationUIElement("Back Button", "button", "fa6s.arrow-left", "back"),
@@ -68,7 +74,9 @@ class ManageNavigationUIDialog(QDialog):
         ]
 
         self.init_ui()
-        self._populate_from_layout()
+
+        self._load_passed_layout(self.passed_layout)
+        self._populate_from_layout(self.current_layout["top"])
 
     def _resolve_icon(self, action: str, icon: str | None) -> str | None:
         if icon:
@@ -79,34 +87,58 @@ class ManageNavigationUIDialog(QDialog):
                 return available.icon
             
         return None
+    
+    def _load_passed_layout(self, layout):
+        if isinstance(layout, dict):
+            top_layout = layout.get("top", None)
+            bottom_layout = layout.get("bottom", None)
 
-    def _populate_from_layout(self):
-        for elem in self.passed_layout:
-            action = elem.get("action", "")
-            icon = self._resolve_icon(action, elem.get("icon"))
-            styling = elem.get("styling", None)
-            
-            if styling is not None:
-                styling = NavigationUIAdditionalStyling(**styling)
-            
-            else:
-                styling = NavigationUIAdditionalStyling()
+            if top_layout is not None and bottom_layout is not None:
+                self.current_layout["top"] = [self._dict_to_element(e) for e in top_layout]
+                self.current_layout["bottom"] = [self._dict_to_element(e) for e in bottom_layout]
+            elif top_layout is not None:
+                self.current_layout["top"] = [self._dict_to_element(e) for e in top_layout]
+            elif bottom_layout is not None:
+                self.current_layout["bottom"] = [self._dict_to_element(e) for e in bottom_layout]
 
-            name = elem.get("name", "")
+        elif isinstance(layout, list):
+            self.current_layout["top"] = [self._dict_to_element(e) for e in layout]
+
+    def _dict_to_element(self, d: dict) -> NavigationUIElement:
+        styling_data = d.get("styling")
+        if styling_data and isinstance(styling_data, dict):
+            styling = NavigationUIAdditionalStyling(**styling_data)
+        else:
+            styling = NavigationUIAdditionalStyling()
+
+        return NavigationUIElement(
+            name=d.get("name", ""),
+            type=d.get("type", ""),
+            icon=d.get("icon"),
+            action=d.get("action", ""),
+            styling=styling,
+        )
+
+    def _populate_from_layout(self, layout):
+        for elem in layout:
+            icon = self._resolve_icon(elem.action, elem.icon)
+
+            name = elem.name
             if not name:
                 for available in self.available_ui_elements:
-                    if available.action == action:
+                    if available.action == elem.action:
                         name = available.name
                         break
 
             item = NavigationUIListItem(NavigationUIElement(
                 name=name,
-                type=elem.get("type", ""),
+                type=elem.type,
                 icon=icon,
-                action=action,
-                styling=styling
+                action=elem.action,
+                styling=elem.styling
             ))
             self.current_ui_elements_list.addItem(item)
+
         self.update_preview()
 
     def init_ui(self):
@@ -117,6 +149,12 @@ class ManageNavigationUIDialog(QDialog):
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px")
         self.layout.addWidget(self.title_label)
+
+        # Bar Selector
+        self.bar_selector = QComboBox()
+        self.bar_selector.addItems(["Top bar", "Bottom bar"])
+        self.bar_selector.currentIndexChanged.connect(self._on_bar_select_changed)
+        self.layout.addWidget(self.bar_selector)
 
         # Top view (UI preview)
         self.preview_frame = QWidget()
@@ -243,6 +281,18 @@ class ManageNavigationUIDialog(QDialog):
                 else:
                     self.clear_layout(item.layout())
     
+    def _on_bar_select_changed(self, index):
+        self.current_layout[self.current_bar] = [self.current_ui_elements_list.item(i)._element for i in range(self.current_ui_elements_list.count())]
+        self.current_ui_elements_list.clear()
+
+        if index == 0:
+            self.current_bar = "top"
+            self._populate_from_layout(self.current_layout["top"])
+        
+        elif index == 1:
+            self.current_bar = "bottom"
+            self._populate_from_layout(self.current_layout["bottom"])
+    
     def update_preview(self):
         # Clear the preview layout
         self.clear_layout(self.preview_frame_layout)
@@ -326,11 +376,22 @@ class ManageNavigationUIDialog(QDialog):
         elif isinstance(widget, QLabel) and styling.label:
             widget.setText(styling.label)
     
-    def get_current_ui_elements(self) -> list[NavigationUIElement]:
-        return [self.current_ui_elements_list.item(i)._element for i in range(self.current_ui_elements_list.count())]
-    
-    def get_current_ui_elements_dict(self) -> list[dict]:
-        return [asdict(self.current_ui_elements_list.item(i)._element) for i in range(self.current_ui_elements_list.count())]
+    def get_current_ui_elements(self) -> dict[str, list[NavigationUIElement]]:
+        self._save_current_bar()
+        return self.current_layout
+
+    def get_current_ui_elements_dict(self) -> dict[str, list[dict]]:
+        self._save_current_bar()
+        return {
+            "top": [asdict(e) for e in self.current_layout["top"]],
+            "bottom": [asdict(e) for e in self.current_layout["bottom"]],
+        }
+
+    def _save_current_bar(self):
+        self.current_layout[self.current_bar] = [
+            self.current_ui_elements_list.item(i)._element
+            for i in range(self.current_ui_elements_list.count())
+        ]
 
 class CustomiseStylingDialog(QDialog):
     def __init__(self, parent, styling: NavigationUIAdditionalStyling | None = None):

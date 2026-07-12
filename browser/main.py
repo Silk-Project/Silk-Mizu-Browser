@@ -567,6 +567,7 @@ class BrowserWindow(QMainWindow):
         self.helpMenu.addAction(self.aboutAction)
 
     def init_control_ui(self):
+        # Bottom bar
         self.bottom_bar = QWidget()
         self.bottom_bar.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         self.bottom_bar.setContentsMargins(0, 0, 0, 0)
@@ -576,7 +577,9 @@ class BrowserWindow(QMainWindow):
         bottom_bar_layout.setSpacing(5)
 
         self.bottom_bar.setLayout(bottom_bar_layout)
+        self.layout.addWidget(self.bottom_bar, 4, 0)
 
+        # Tab system
         self.web_tabs = QTabWidget()
         self.web_tabs.setTabsClosable(True)
         self.web_tabs.setMovable(True)
@@ -586,18 +589,29 @@ class BrowserWindow(QMainWindow):
         self.web_tabs.currentChanged.connect(self.update_tab_info)
         self.web_tabs.tabCloseRequested.connect(self.remove_web_tab)
         self.middle_layout.addWidget(self.web_tabs, 1)
+        self.browser_controller = BrowserController(self, self.web_tabs)
 
         # Controls layout
-        self.controls_layout = QHBoxLayout()
-        self.layout.addLayout(self.controls_layout, 0, 0)
+        self.top_controls_layout = QHBoxLayout()
+        self.layout.addLayout(self.top_controls_layout, 0, 0)
 
-        self.browser_controller = BrowserController(self, self.web_tabs)
         self.top_navbar = NavBarManager(self.browser_controller, theme_manager)
-        self.controls_layout.addWidget(self.top_navbar, 1)
+        self.top_controls_layout.addWidget(self.top_navbar, 1)
 
-        self.top_navbar.rebuild_navbar(current_settings.get("navigation_ui_elements"))
+        self.bottom_controls_layout = QHBoxLayout()
+        self.layout.addLayout(self.bottom_controls_layout, 3, 0)
 
-        self.layout.addWidget(self.bottom_bar, 3, 0)
+        self.bottom_navbar = NavBarManager(self.browser_controller, theme_manager)
+        self.bottom_controls_layout.addWidget(self.bottom_navbar, 1)
+
+        nav_elements = current_settings.get("navigation_ui_elements")
+
+        if isinstance(nav_elements, dict):
+            self.top_navbar.rebuild_navbar(nav_elements.get("top", []))
+            self.bottom_navbar.rebuild_navbar(nav_elements.get("bottom", []))
+        else:
+            self.top_navbar.rebuild_navbar(nav_elements or [])
+            self.bottom_navbar.rebuild_navbar([])
 
         self.download_manager = DownloadManager()
         self._update_download_button_visibility()
@@ -1085,7 +1099,15 @@ class BrowserWindow(QMainWindow):
                 self.load_language(NAME_TO_LANGUAGE[settings["language"]])
 
             self.update_web_engine()
-            self.top_navbar.rebuild_navbar(current_settings["navigation_ui_elements"])
+            nav_elements = settings["navigation_ui_elements"]
+
+            if isinstance(nav_elements, dict):
+                self.top_navbar.rebuild_navbar(nav_elements.get("top", []))
+                self.bottom_navbar.rebuild_navbar(nav_elements.get("bottom", []))
+            else:
+                self.top_navbar.rebuild_navbar(nav_elements or [])
+                self.bottom_navbar.rebuild_navbar([])
+            
             self._update_download_button_visibility()
             self.browser_controller._on_tab_changed()
 
