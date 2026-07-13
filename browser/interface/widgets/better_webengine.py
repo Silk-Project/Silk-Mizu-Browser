@@ -10,6 +10,7 @@ from urllib.parse import urlparse, quote_plus
 class BetterWebEngineSignals(QObject):
     sum_selected_with_ai = Signal(str)
     sum_page_with_ai = Signal()
+    zoom_factor_changed = Signal(float)
 
 class BetterWebEngine(QWebEngineView):
     def __init__(self, parent, settings):
@@ -125,10 +126,12 @@ class BetterWebEngine(QWebEngineView):
     def scale_page_up(self):
         zoom_factor = self.zoomFactor()
         self.setZoomFactor(zoom_factor + 0.1)
+        self.signals.zoom_factor_changed.emit(self.zoomFactor())
 
     def scale_page_down(self):
         zoom_factor = self.zoomFactor()
         self.setZoomFactor(zoom_factor - 0.1)
+        self.signals.zoom_factor_changed.emit(self.zoomFactor())
 
     def scale_page_reset(self):
         self.setZoomFactor(1)

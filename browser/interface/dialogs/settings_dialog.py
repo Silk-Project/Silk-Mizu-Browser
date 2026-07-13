@@ -90,10 +90,6 @@ class SettingsDialog(QDialog):
         self.accent_color_btn = QColorButton(color=current_settings["accent_color"])
         display_settings_layout.addRow(self.tr("Accent color: "), self.accent_color_btn)
 
-        self.bottom_bar_visability_checkbox = QCheckBox()
-        self.bottom_bar_visability_checkbox.setChecked(current_settings["bottom_bar_visible"])
-        display_settings_layout.addRow(self.tr("Show bottom bar: "), self.bottom_bar_visability_checkbox)
-
         manage_navigation_ui_btn = QPushButton(self.tr("Manage Navigation UI"))
         manage_navigation_ui_btn.clicked.connect(self.open_manage_navigation_ui_dialog)
         display_settings_layout.addRow(self.tr("Navigation UI: "), manage_navigation_ui_btn)
@@ -212,7 +208,6 @@ class SettingsDialog(QDialog):
             "search_engine": self.search_engine_combobox.currentText(),
             "theme_index": self.theme_combobox.currentIndex(),
             "accent_color": self.accent_color_btn.color(),
-            "bottom_bar_visible": self.bottom_bar_visability_checkbox.isChecked(),
             "navigation_ui_elements": self.current_settings["navigation_ui_elements"],
             "download_warnings": self.download_warnings_checkbox.isChecked(),
             "downloads_path": self.downloads_path_selector.current_path,

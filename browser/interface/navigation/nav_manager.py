@@ -7,7 +7,19 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QHBoxLayout,
 )
-from interface.navigation.nav_items import AddressBar, BackBtn, ForwardBtn, ReloadBtn, ExtSidebarBtn, GoBtn, DownloadManagerBtn
+from interface.navigation.nav_items import (
+    AddressBar, 
+    BackBtn, 
+    ForwardBtn, 
+    ReloadBtn, 
+    ExtSidebarBtn, 
+    GoBtn, 
+    DownloadManagerBtn,
+    ZoomInBtn,
+    ZoomOutBtn,
+    ZoomAmountLabel,
+    PageProgressBar
+)
 from interface.dialogs.manage_navbar_dialog import NavigationUIElement, NavigationUIAdditionalStyling
 
 class NavBarManager(QWidget):
@@ -127,6 +139,14 @@ class NavBarManager(QWidget):
                 elif element.action == "extensions_sidebar":
                     button = ExtSidebarBtn(self.controller)
                     button.update_icon_color(icon_color)
+                
+                elif element.action == "zoom_in":
+                    button = ZoomInBtn(self.controller)
+                    button.update_icon_color(icon_color)
+                
+                elif element.action == "zoom_out":
+                    button = ZoomOutBtn(self.controller)
+                    button.update_icon_color(icon_color)
 
                 else:
                     button = QPushButton()
@@ -162,6 +182,16 @@ class NavBarManager(QWidget):
                 label.setStyleSheet("padding: 8px;")
                 label.setText(element.styling.label if element.styling and element.styling.label else "")
                 return label
+            
+            elif element.type == "dyn_label":
+                if element.action == "zoom_label":
+                    dyn_label = ZoomAmountLabel(self.controller)
+                    return dyn_label
+            
+            elif element.type == "progress_bar":
+                if element.action == "page_progressbar":
+                    progress_bar = PageProgressBar(self.controller)
+                    return progress_bar
 
             else:
                 label = QLabel(element.type)

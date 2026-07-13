@@ -1,7 +1,6 @@
 import sys
 import os
 import json
-import re
 import datetime
 import importlib.util
 from pathlib import Path
@@ -20,7 +19,6 @@ from PySide6.QtWidgets import (
     QDialog,
     QLabel,
     QDialogButtonBox,
-    QProgressBar,
     QTabWidget,
     QMessageBox,
     QSizePolicy,
@@ -32,7 +30,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile, QWebEnginePage
-from PySide6.QtGui import QPixmap, QAction, QKeySequence, QIcon
+from PySide6.QtGui import QAction, QKeySequence, QIcon
 
 # Dialogs
 from interface.dialogs.about_dialog import AboutDialog
@@ -72,7 +70,6 @@ default_settings = {
     "search_engine":"Google",
     "theme":"Dark",
     "accent_color":"#8370EB",
-    "bottom_bar_visible":False,
     "navigation_ui_elements":default_navbar_layout["navigation_ui_elements"],
     "download_warnings":True,
     "downloads_path":str(Path.home()) + "/Downloads",
@@ -460,7 +457,8 @@ class BrowserWindow(QMainWindow):
         self.setCentralWidget(widget)
 
         if not os.path.exists(START_PAGE_PATH):
-            QMessageBox.critical(self, self.tr("Start page not found"), self.tr("The Silk Start submodule was not found. Make sure you follow the cloning instructions carefully."))
+            QMessageBox.critical(self, self.tr("Start page not found"),
+                                 self.tr("The Silk Start submodule was not found. Make sure you follow the cloning instructions carefully."))
 
     def init_menu_bar(self):
         # Add menu bar
@@ -532,6 +530,16 @@ class BrowserWindow(QMainWindow):
         self.editMenu.addAction(self.moveToPreviousTabAction)
 
         # View Menu
+        self.toggleSidebarAction = QAction(self.tr("Toggle extension sidebar"), self)
+        self.toggleSidebarAction.triggered.connect(self.toggle_extension_sidebar)
+        self.toggleSidebarAction.setShortcut(QKeySequence("Ctrl + s"))
+        self.viewMenu.addAction(self.toggleSidebarAction)
+
+        self.toggleFocusModeAction = QAction(self.tr("Toggle focus mode"), self)
+        self.toggleFocusModeAction.triggered.connect(self.toggle_focus_mode)
+        self.toggleFocusModeAction.setShortcut(QKeySequence("Ctrl + f"))
+        self.viewMenu.addAction(self.toggleFocusModeAction)
+
         self.scaleUpAction = QAction(self.tr("Increase page zoom by 10%"), self)
         self.scaleUpAction.triggered.connect(self.request_scale_page_up)
         self.scaleUpAction.setShortcut(QKeySequence("Ctrl + +"))
@@ -567,18 +575,6 @@ class BrowserWindow(QMainWindow):
         self.helpMenu.addAction(self.aboutAction)
 
     def init_control_ui(self):
-        # Bottom bar
-        self.bottom_bar = QWidget()
-        self.bottom_bar.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
-        self.bottom_bar.setContentsMargins(0, 0, 0, 0)
-        self.bottom_bar.setVisible(current_settings["bottom_bar_visible"])
-        bottom_bar_layout = QHBoxLayout()
-        bottom_bar_layout.setContentsMargins(5, 5, 5, 5)
-        bottom_bar_layout.setSpacing(5)
-
-        self.bottom_bar.setLayout(bottom_bar_layout)
-        self.layout.addWidget(self.bottom_bar, 4, 0)
-
         # Tab system
         self.web_tabs = QTabWidget()
         self.web_tabs.setTabsClosable(True)
@@ -586,32 +582,53 @@ class BrowserWindow(QMainWindow):
         self.web_tabs.setIconSize(QSize(16, 16))
         self.web_tabs.setTabShape(QTabWidget.TabShape.Rounded)
         self.web_tabs.tabBar().setUsesScrollButtons(True)
-        self.web_tabs.currentChanged.connect(self.update_tab_info)
+        self.web_tabs.currentChanged.connect(self.update_tab_titles)
         self.web_tabs.tabCloseRequested.connect(self.remove_web_tab)
         self.middle_layout.addWidget(self.web_tabs, 1)
         self.browser_controller = BrowserController(self, self.web_tabs)
 
         # Controls layout
-        self.top_controls_layout = QHBoxLayout()
-        self.layout.addLayout(self.top_controls_layout, 0, 0)
-
+        self.focus_mode = False
         self.top_navbar = NavBarManager(self.browser_controller, theme_manager)
-        self.top_controls_layout.addWidget(self.top_navbar, 1)
-
-        self.bottom_controls_layout = QHBoxLayout()
-        self.layout.addLayout(self.bottom_controls_layout, 3, 0)
+        self.layout.addWidget(self.top_navbar, 0, 0)
 
         self.bottom_navbar = NavBarManager(self.browser_controller, theme_manager)
-        self.bottom_controls_layout.addWidget(self.bottom_navbar, 1)
+        self.layout.addWidget(self.bottom_navbar, 3, 0)
 
         nav_elements = current_settings.get("navigation_ui_elements")
 
         if isinstance(nav_elements, dict):
-            self.top_navbar.rebuild_navbar(nav_elements.get("top", []))
-            self.bottom_navbar.rebuild_navbar(nav_elements.get("bottom", []))
+            top_nav_layout = nav_elements.get("top", [])
+            bottom_nav_layout = nav_elements.get("bottom", [])
+
+            self.top_navbar.rebuild_navbar(top_nav_layout)
+            self.bottom_navbar.rebuild_navbar(bottom_nav_layout)
+
+            if top_nav_layout == []:
+                self.top_navbar.setVisible(False)
+            
+            else:
+                self.top_navbar.setVisible(True)
+
+            if bottom_nav_layout == []:
+                self.bottom_navbar.setVisible(False)
+            
+            else:
+                self.bottom_navbar.setVisible(True)
+
         else:
-            self.top_navbar.rebuild_navbar(nav_elements or [])
+            top_nav_layout = nav_elements or []
+
+            self.top_navbar.rebuild_navbar(top_nav_layout)
             self.bottom_navbar.rebuild_navbar([])
+
+            if top_nav_layout == []:
+                self.top_navbar.setVisible(False)
+            
+            else:
+                self.top_navbar.setVisible(True)
+
+            self.bottom_navbar.setVisible(False)
 
         self.download_manager = DownloadManager()
         self._update_download_button_visibility()
@@ -621,36 +638,6 @@ class BrowserWindow(QMainWindow):
         ))
         self.download_manager.download_added.connect(self._on_download_added)
         self.download_menu.signals.downloads_dialog_opened.connect(self.show_downloads_dialog)
-
-        # Bottom bar
-        self.page_progressbar = QProgressBar()
-        self.page_progressbar.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.page_progressbar.setVisible(False)
-        self.page_progressbar.setFixedWidth(200)
-        self.page_progressbar.setValue(0)
-        bottom_bar_layout.addWidget(self.page_progressbar)
-
-        bottom_bar_layout.addStretch(1)
-
-        icon_color = theme_manager.get_contrast_color_from_theme()
-
-        self.scale_down_btn = QPushButton()
-        self.scale_down_btn.setIcon(qta.icon("ph.magnifying-glass-minus", color=icon_color))
-        self.scale_down_btn.setProperty("class", "navbtns")
-        self.scale_down_btn.setStyleSheet("padding: 5px")
-        self.scale_down_btn.clicked.connect(self.request_scale_page_down)
-        bottom_bar_layout.addWidget(self.scale_down_btn)
-
-        self.zoom_factor_label = QLabel("100%")
-        bottom_bar_layout.addWidget(self.zoom_factor_label)
-
-        self.scale_up_btn = QPushButton()
-        self.scale_up_btn.setIcon(qta.icon("ph.magnifying-glass-plus", color=icon_color))
-        self.scale_up_btn.setProperty("class", "navbtns")
-        self.scale_up_btn.setStyleSheet("padding: 5px")
-        self.scale_up_btn.clicked.connect(self.request_scale_page_up)
-
-        bottom_bar_layout.addWidget(self.scale_up_btn)
     
     # Translation system
     def load_language(self, lang):
@@ -796,9 +783,6 @@ class BrowserWindow(QMainWindow):
         self.profile.setPersistentStoragePath(STORAGE_PATH)
         self.profile.setParent(self)
         self.profile.downloadRequested.connect(self.request_download)
-
-    def update_tab_info(self):
-        self.update_tab_titles()
     
     def create_new_tab(self, url=None):
         # Web Engine
@@ -811,25 +795,24 @@ class BrowserWindow(QMainWindow):
         
         if url:
             web_tab.setUrl(QUrl(url))
-
-        web_tab.loadProgress.connect(self.update_progressbar)
-        web_tab.loadFinished.connect(self.page_load_finished)
+        
+        web_tab.loadFinished.connect(self.update_tab_titles)
         web_tab.loadFinished.connect(web_tab.page_load_finished)
-        web_tab.loadStarted.connect(self.page_load_started)
-        web_tab.iconChanged.connect(self.update_tab_info)
+        web_tab.loadStarted.connect(self.update_tab_titles)
+        web_tab.iconChanged.connect(self.update_tab_titles)
         web_tab.signals.sum_selected_with_ai.connect(self.summarize_selected_with_ai)
         web_tab.signals.sum_page_with_ai.connect(self.summarize_current_page_ai)
 
         self.web_tabs.addTab(web_tab, None)
         self.web_tabs.setCurrentIndex(self.web_tabs.count() - 1)
-        self.update_tab_info()
+        self.update_tab_titles()
     
     def remove_web_tab(self, index):
         if index >= 0 and self.web_tabs.count() > 1:
             widget = self.web_tabs.widget(index)
             self.web_tabs.removeTab(index)
             widget.deleteLater()
-            self.update_tab_info()
+            self.update_tab_titles()
     
     def update_tab_titles(self):
         for tab_index in range(self.web_tabs.count()):
@@ -983,44 +966,40 @@ class BrowserWindow(QMainWindow):
         except Exception as e:
             print(f"Error parsing version string '{version_string}': {e}")
             return (0,)
-
-    # Website content specific functions
-    def update_progressbar(self, prog):
-        self.page_progressbar.setVisible(True)
-        self.page_progressbar.setValue(prog)
-
-    def page_load_finished(self):
-        self.page_progressbar.setVisible(False)
-        self.update_tab_info()
-    
-    def page_load_started(self):
-        self.update_progressbar(0)
-        self.update_tab_info()
     
     # Website navigation
     def request_back_page(self):
         self.web_tabs.currentWidget().history().back()
-        self.update_tab_info()
+        self.update_tab_titles()
 
     def request_next_page(self):
         self.web_tabs.currentWidget().history().forward()
-        self.update_tab_info()
+        self.update_tab_titles()
     
     # Scaling
     def request_scale_page_up(self):
         self.web_tabs.currentWidget().scale_page_up()
-        zoom_string = str(round(self.web_tabs.currentWidget().zoomFactor() * 100)) + "%"
-        self.zoom_factor_label.setText(zoom_string)
     
     def request_scale_page_down(self):
         self.web_tabs.currentWidget().scale_page_down()
-        zoom_string = str(round(self.web_tabs.currentWidget().zoomFactor() * 100)) + "%"
-        self.zoom_factor_label.setText(zoom_string)
     
     def request_scale_page_reset(self):
         self.web_tabs.currentWidget().scale_page_reset()
-        zoom_string = str(round(self.web_tabs.currentWidget().zoomFactor() * 100)) + "%"
-        self.zoom_factor_label.setText(zoom_string)
+    
+    # Misc
+    def toggle_focus_mode(self):
+        self.focus_mode = not self.focus_mode
+
+        if self.focus_mode:
+            self.top_navbar.setVisible(False)
+            self.bottom_navbar.setVisible(False)
+        
+        else:
+            if self.top_navbar.controls_layout.count() != 0:
+                self.top_navbar.setVisible(True)
+
+            if self.bottom_navbar.controls_layout.count() != 0:
+                self.bottom_navbar.setVisible(True)
     
     # Dialogs
     def add_current_to_bookmarks_dialog(self):
@@ -1093,7 +1072,6 @@ class BrowserWindow(QMainWindow):
             settings = dlg.get_settings()
 
             theme_manager.load_theme_from_index(settings["theme_index"])
-            self.bottom_bar.setVisible(settings["bottom_bar_visible"])
 
             if settings["language"] != current_settings["language"]:
                 self.load_language(NAME_TO_LANGUAGE[settings["language"]])
@@ -1102,11 +1080,39 @@ class BrowserWindow(QMainWindow):
             nav_elements = settings["navigation_ui_elements"]
 
             if isinstance(nav_elements, dict):
-                self.top_navbar.rebuild_navbar(nav_elements.get("top", []))
-                self.bottom_navbar.rebuild_navbar(nav_elements.get("bottom", []))
+                top_nav_layout = nav_elements.get("top", [])
+                bottom_nav_layout = nav_elements.get("bottom", [])
+
+                self.top_navbar.rebuild_navbar(top_nav_layout)
+                self.bottom_navbar.rebuild_navbar(bottom_nav_layout)
+
+                if not self.focus_mode:
+                    if top_nav_layout == []:
+                        self.top_navbar.setVisible(False)
+                    
+                    else:
+                        self.top_navbar.setVisible(True)
+
+                    if bottom_nav_layout == []:
+                        self.bottom_navbar.setVisible(False)
+                    
+                    else:
+                        self.bottom_navbar.setVisible(True)
+
             else:
-                self.top_navbar.rebuild_navbar(nav_elements or [])
+                top_nav_layout = nav_elements or []
+                
+                self.top_navbar.rebuild_navbar(top_nav_layout)
                 self.bottom_navbar.rebuild_navbar([])
+
+                if not self.focus_mode:
+                    if top_nav_layout == []:
+                        self.top_navbar.setVisible(False)
+                    
+                    else:
+                        self.top_navbar.setVisible(True)
+
+                    self.bottom_navbar.setVisible(False)
             
             self._update_download_button_visibility()
             self.browser_controller._on_tab_changed()
@@ -1122,7 +1128,6 @@ class BrowserWindow(QMainWindow):
                 "search_engine": settings["search_engine"],
                 "theme": theme_manager.available_themes[settings["theme_index"]],
                 "accent_color": settings["accent_color"],
-                "bottom_bar_visible": settings["bottom_bar_visible"],
                 "navigation_ui_elements": settings["navigation_ui_elements"],
                 "download_warnings": settings["download_warnings"],
                 "downloads_path": settings["downloads_path"],
@@ -1214,7 +1219,6 @@ if __name__ == "__main__":
     extension_manager = ExtensionManager()
     
     app.setWindowIcon(QIcon(LOGO_PATH))
-    app.setStyle("breeze")
     window = BrowserWindow()
     window.show()
     sys.exit(app.exec())

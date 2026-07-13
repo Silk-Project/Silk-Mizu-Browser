@@ -1,9 +1,8 @@
 from PySide6.QtWidgets import (
-    QVBoxLayout,
-    QHBoxLayout,
-    QFormLayout,
+    QLabel,
     QPushButton,
     QLineEdit,
+    QProgressBar
 )
 from PySide6.QtCore import QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -255,3 +254,111 @@ class DownloadManagerBtn(QPushButton):
     def update_icon_color(self, icon_color: str):
         self.icon_color = icon_color
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
+
+class ZoomInBtn(QPushButton):
+    def __init__(self, controller, parent = None):
+        super().__init__(parent)
+
+        self.browser: BetterWebEngine = None
+        self.icon_id = "ph.magnifying-glass-plus"
+        self.icon_color = "white"
+
+        self.setIcon(qta.icon(self.icon_id))
+        self.setStyleSheet("padding: 8px;")
+        self.setProperty("class", "navbtns")
+
+        controller.currentBrowserChanged.connect(self.set_browser)
+    
+    def set_browser(self, browser):
+        self.browser = browser
+        self.clicked.connect(self.zoom_in)
+    
+    def update_icon_color(self, icon_color: str):
+        self.icon_color = icon_color
+        self.setIcon(qta.icon(self.icon_id, color=icon_color))
+    
+    def zoom_in(self):
+        if self.browser:
+            self.browser.scale_page_up()
+
+class ZoomOutBtn(QPushButton):
+    def __init__(self, controller, parent = None):
+        super().__init__(parent)
+
+        self.browser: BetterWebEngine = None
+        self.icon_id = "ph.magnifying-glass-minus"
+        self.icon_color = "white"
+
+        self.setIcon(qta.icon(self.icon_id))
+        self.setStyleSheet("padding: 8px;")
+        self.setProperty("class", "navbtns")
+
+        controller.currentBrowserChanged.connect(self.set_browser)
+    
+    def set_browser(self, browser):
+        self.browser = browser
+        self.clicked.connect(self.zoom_in)
+    
+    def update_icon_color(self, icon_color: str):
+        self.icon_color = icon_color
+        self.setIcon(qta.icon(self.icon_id, color=icon_color))
+    
+    def zoom_in(self):
+        if self.browser:
+            self.browser.scale_page_down()
+
+class ZoomAmountLabel(QLabel):
+    def __init__(self, controller, parent = None):
+        super().__init__(parent)
+
+        self.browser: BetterWebEngine = None
+        self.setStyleSheet("padding: 8px;")
+
+        controller.currentBrowserChanged.connect(self.set_browser)
+    
+    def set_browser(self, browser):
+        if self.browser:
+            self.browser.signals.zoom_factor_changed.disconnect(self.update_factor)
+        
+        self.browser = browser
+        self.browser.signals.zoom_factor_changed.connect(self.update_factor)
+
+        self.update_factor(self.browser.zoomFactor())
+    
+    def update_factor(self, factor):
+        if self.browser:
+            zoom_string = str(round(factor * 100)) + "%"
+            self.setText(zoom_string)
+
+class PageProgressBar(QProgressBar):
+    def __init__(self, controller, parent = None):
+        super().__init__(parent)
+
+        self.browser: BetterWebEngine = None
+        self.setFixedWidth(250)
+        self.setTextVisible(True)
+
+        controller.currentBrowserChanged.connect(self.set_browser)
+    
+    def set_browser(self, browser):
+        if self.browser:
+            self.browser.loadProgress.disconnect(self.update_progress)
+            self.browser.loadStarted.disconnect(self.show_pb)
+            self.browser.loadFinished.disconnect(self.hide_pb)
+        
+        self.browser = browser
+        self.browser.loadProgress.connect(self.update_progress)
+        self.browser.loadStarted.connect(self.show_pb)
+        self.browser.loadFinished.connect(self.hide_pb)
+    
+    def update_progress(self, progress):
+        if self.browser:
+            self.setValue(progress)
+        
+    def show_pb(self):
+        if self.browser:
+            self.setVisible(True)
+    
+    def hide_pb(self):
+        if self.browser:
+            self.setVisible(False)

@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QSpinBox,
     QComboBox,
+    QProgressBar
 )
 from PySide6.QtCore import Qt, QSize
 import qtawesome as qta
@@ -69,6 +70,10 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Extensions Sidebar Button", "button", "msc.layout-sidebar-left", "extensions_sidebar"),
             NavigationUIElement("Go Button", "button", "mdi.arrow-right-bold-box", "go"),
             NavigationUIElement("Download Manager Button", "button", "ei.download", "download_manager"),
+            NavigationUIElement("Zoom in Button", "button", "ph.magnifying-glass-plus", "zoom_in"),
+            NavigationUIElement("Zoom out Button", "button", "ph.magnifying-glass-minus", "zoom_out"),
+            NavigationUIElement("Zoom amount label", "dyn_label", None, "zoom_label"),
+            NavigationUIElement("Webpage Progress bar", "progress_bar", None, "page_progressbar"),
             NavigationUIElement("Stretch Space", "spacer", None, "stretch"),
             NavigationUIElement("Text label", "label", None, "label"),
         ]
@@ -265,7 +270,7 @@ class ManageNavigationUIDialog(QDialog):
 
         if selected_item:
             current_styling = selected_item._element.styling or NavigationUIAdditionalStyling()
-            dialog = CustomiseStylingDialog(self, styling=current_styling)
+            dialog = CustomiseStylingDialog(self, styling=current_styling, element_type=selected_item._element.type)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 # Update the styling of the selected item
                 selected_item._element.styling = dialog.styling
@@ -282,7 +287,7 @@ class ManageNavigationUIDialog(QDialog):
                     self.clear_layout(item.layout())
     
     def _on_bar_select_changed(self, index):
-        self.current_layout[self.current_bar] = [self.current_ui_elements_list.item(i)._element for i in range(self.current_ui_elements_list.count())]
+        self._save_current_bar()
         self.current_ui_elements_list.clear()
 
         if index == 0:
@@ -310,8 +315,7 @@ class ManageNavigationUIDialog(QDialog):
 
             if resolved_icon:
                 button.setIcon(qta.icon(resolved_icon))
-
-            # Apply additional styling if available
+            
             if item.styling:
                 self.apply_styling_to_widget(button, item.styling)
 
@@ -323,7 +327,6 @@ class ManageNavigationUIDialog(QDialog):
             line.setReadOnly(True)
             line.setPlaceholderText("https://")
 
-            # Apply additional styling if available
             if item.styling:
                 self.apply_styling_to_widget(line, item.styling)
 
@@ -335,7 +338,6 @@ class ManageNavigationUIDialog(QDialog):
             line.setReadOnly(True)
             line.setPlaceholderText("Search...")
 
-            # Apply additional styling if available
             if item.styling:
                 self.apply_styling_to_widget(line, item.styling)
 
@@ -350,9 +352,29 @@ class ManageNavigationUIDialog(QDialog):
         
         elif item.type == "label":
             label = QLabel()
-            label.setStyleSheet("padding: 8px;")
-            label.setText(item.styling.label if item.styling and item.styling.label else "")
+            label.setStyleSheet("padding: 8px; border: none;")
+
+            if item.styling:
+                self.apply_styling_to_widget(label, item.styling)
+
             return label
+        
+        elif item.type == "dyn_label":
+            label = QLabel("100%")
+            label.setStyleSheet("padding: 8px; border: none;")
+
+            if item.styling:
+                self.apply_styling_to_widget(label, item.styling)
+
+            return label
+        
+        elif item.type == "progress_bar":
+            progress_bar = QProgressBar()
+            progress_bar.setMaximum(100)
+            progress_bar.setValue(50)
+            progress_bar.setTextVisible(True)
+
+            return progress_bar
         
         else:
             label = QLabel(item.name)
@@ -360,14 +382,17 @@ class ManageNavigationUIDialog(QDialog):
             return label
     
     def apply_styling_to_widget(self, widget, styling: NavigationUIAdditionalStyling):
+        updated_stylesheet = ""
+
         if styling.background_color:
-            widget.setStyleSheet(f"background-color: {styling.background_color}; padding: 8px;")
+            updated_stylesheet += f"background-color: {styling.background_color}; "
         if styling.border_radius:
-            widget.setStyleSheet(widget.styleSheet() + f"border-radius: {styling.border_radius}px;")
+            updated_stylesheet += f"border-radius: {styling.border_radius}px; "
         if styling.stretch_factor:
             widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-            self.preview_frame_layout.addStretch(styling.stretch_factor)
 
+        widget.setStyleSheet(widget.styleSheet() + updated_stylesheet)
+        
         # Check if the widget is a QPushButton QLineEdit or QLabel to add label
         if isinstance(widget, QPushButton) and styling.label:
             widget.setText(styling.label)
@@ -394,13 +419,14 @@ class ManageNavigationUIDialog(QDialog):
         ]
 
 class CustomiseStylingDialog(QDialog):
-    def __init__(self, parent, styling: NavigationUIAdditionalStyling | None = None):
+    def __init__(self, parent, styling: NavigationUIAdditionalStyling | None = None, element_type: str = ""):
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("Customize Styling"))
         self.setFixedSize(400, 300)
 
         self.styling = styling if styling else NavigationUIAdditionalStyling()
+        self.element_type = element_type
 
         self.init_ui()
     
@@ -436,6 +462,11 @@ class CustomiseStylingDialog(QDialog):
         # Label
         self.label_lineedit = QLineEdit()
         self.label_lineedit.setText(self.styling.label if self.styling.label is not None else "")
+
+        if self.element_type == "dyn_label":
+            self.label_lineedit.setEnabled(False)
+            self.label_lineedit.setPlaceholderText(self.tr("Dynamic - cannot be customized"))
+        
         self.form_layout.addRow(self.tr("Label:"), self.label_lineedit)
 
         # Dialog buttons
@@ -460,6 +491,7 @@ class CustomiseStylingDialog(QDialog):
         self.styling.background_color = self.bg_color_button.color()
         self.styling.border_radius = self.border_radius_spinbox.value()
         self.styling.stretch_factor = self.stretch_factor_spinbox.value()
-        self.styling.label = self.label_lineedit.text()
+        if self.label_lineedit.isEnabled():
+            self.styling.label = self.label_lineedit.text()
 
         super().accept()

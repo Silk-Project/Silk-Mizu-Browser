@@ -1,5 +1,5 @@
 .noborder {
-    border: none
+    border: none;
 }
 
 #rounded_sec_border {
