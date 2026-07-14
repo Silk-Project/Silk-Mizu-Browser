@@ -191,7 +191,6 @@ class ExtensionItemWidget(QFrame):
                 self.download_extension_btn.setIcon(qta.icon("fa6s.check"))
 
             self.refresh_local_extensions.emit()
-            # window.extension_sidebar.load_extensions()
 
             self.check_icons_timer.start()
 

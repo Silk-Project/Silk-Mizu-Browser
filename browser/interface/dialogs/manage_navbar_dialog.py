@@ -68,6 +68,7 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Settings Button", "button", "fa6s.gear", "settings"),
             NavigationUIElement("Extensions Button", "button", "fa6s.puzzle-piece", "extensions"),
             NavigationUIElement("Extensions Sidebar Button", "button", "msc.layout-sidebar-left", "extensions_sidebar"),
+            NavigationUIElement("Tab Manager Button", "button", "ri.menu-fill", "tab_manager"),
             NavigationUIElement("Go Button", "button", "mdi.arrow-right-bold-box", "go"),
             NavigationUIElement("Download Manager Button", "button", "ei.download", "download_manager"),
             NavigationUIElement("Zoom in Button", "button", "ph.magnifying-glass-plus", "zoom_in"),

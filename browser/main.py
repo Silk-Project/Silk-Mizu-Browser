@@ -1,16 +1,13 @@
 import sys
 import os
 import json
-import datetime
 import importlib.util
 from pathlib import Path
 import qtawesome as qta
-import ollama
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QWidget,
-    QVBoxLayout,
     QHBoxLayout,
     QGridLayout,
     QFormLayout,
@@ -20,12 +17,8 @@ from PySide6.QtWidgets import (
     QLabel,
     QDialogButtonBox,
     QTabWidget,
-    QMessageBox,
-    QSizePolicy,
-    QTextEdit,
-    QFileDialog,
-    QMenu,
     QStackedWidget,
+    QMessageBox,
 )
 from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -41,8 +34,12 @@ from interface.dialogs.downloads_dialog import DownloadManagerDialog
 
 # Widgets
 from interface.widgets.better_webengine import BetterWebEngine
+from interface.widgets.tab_manager import TabManager
 from interface.downloads.download_menu import DownloadMenu
 from interface.navigation.nav_items import DownloadManagerBtn
+
+# Extensions
+from interface.extensions.extension_sidebar import Extension_Sidebar
 
 # Navigation
 from interface.navigation.nav_manager import NavBarManager
@@ -50,12 +47,13 @@ from interface.navigation.nav_manager import NavBarManager
 # Services
 from services.theme_mgr import ThemeManager
 from services.extension_mgr import ExtensionManager, ExtensionMetadata
+from services.model_install_worker import InstallWorker
 from interface.downloads.download_mgr import DownloadManager
 from services.constants import (
     SCRIPT_DIR, CONFIG_PATH, BOOKMARKS_PATH, LOGO_PATH, START_PAGE_PATH,
-    AI_SYSPROMPT_PATH, DOWNLOAD_PATH, EXTENSIONS_PATH, EXTENSIONS_SETTINGS_PATH,
-    ADDITIONAL_QSS_PATH, DEFAULT_NAVBAR_LAYOUT_PATH, SUM_AI_MODEL, VERSION_NUMBER,
-    NAME_TO_LANGUAGE, LANGUAGE_TO_NAME,
+    DOWNLOAD_PATH, EXTENSIONS_PATH, EXTENSIONS_SETTINGS_PATH, ADDITIONAL_QSS_PATH, 
+    DEFAULT_NAVBAR_LAYOUT_PATH, SUM_AI_MODEL, VERSION_NUMBER, NAME_TO_LANGUAGE, 
+    LANGUAGE_TO_NAME,
 )
 
 STORAGE_PATH = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), "Silk-Mizu-Browser")
@@ -95,10 +93,6 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-logging"
 if not os.path.exists(EXTENSIONS_PATH):
     os.makedirs(EXTENSIONS_PATH, exist_ok=True)
 
-# Load AI system prompt
-with open(AI_SYSPROMPT_PATH, 'r') as f:
-    ai_system_prompt = f.read()
-
 # Load additional QSS stylesheet
 with open(ADDITIONAL_QSS_PATH, 'r') as f:
     additional_qss = f.read()
@@ -137,289 +131,6 @@ def load_config(path, settings_dict, fallback_dict):
 load_config(EXTENSIONS_SETTINGS_PATH, extensions_settings, default_extension_settings)
 load_config(BOOKMARKS_PATH, current_bookmarks, default_bookmarks)
 load_config(CONFIG_PATH, current_settings, default_settings)
-
-class WebExtensionsMenuSignals(QObject):
-    request_manage_extensions = Signal()
-
-class WebExtensionsMenu(QMenu):
-    def __init__(self):
-        super().__init__()
-
-        self.signals = WebExtensionsMenuSignals()
-
-        self.init_ui()
-    
-    def init_ui(self):
-        # Add base actions
-        manage_extensions_action = QAction(self.tr("Manage Extensions"), self)
-        manage_extensions_action.triggered.connect(self.signals.request_manage_extensions.emit)
-
-        self.addSeparator()
-        self.addAction(manage_extensions_action)
-
-class Extension_Sidebar_Button(QPushButton):
-    def __init__(self, metadata: ExtensionMetadata, parent=None):
-        super().__init__(parent)
-        self.metadata = metadata
-
-        self.setFixedSize(35, 35)
-
-        # Icon (if available)
-        self.extension_icon_path = os.path.join(EXTENSIONS_PATH, self.metadata.app_id, self.metadata.icon_path)
-
-        if os.path.exists(self.extension_icon_path) and self.metadata.icon_path != "":     
-            self.setIcon(QIcon(self.extension_icon_path))
-        else:
-            self.setText(self.metadata.name[0])
-
-class Extension_Sidebar(QWidget):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.setFixedWidth(50)
-        self.sidebar_layout = QHBoxLayout()
-        self.sidebar_layout.setContentsMargins(5, 5, 5, 5)
-        self.sidebar_layout.setSpacing(5)
-        self.showing_extension = False
-        self.extension_btns = {}
-
-        self.setLayout(self.sidebar_layout)
-
-        self.init_ui()
-        self.load_extensions()
-    
-    def init_ui(self):
-        self.extension_bar_layout = QVBoxLayout()
-        self.rounded_sec_border = QStackedWidget()
-        
-        self.rounded_sec_border.setStyleSheet("border-radius: 3px;")
-        self.rounded_sec_border.hide()
-
-        self.sidebar_layout.addLayout(self.extension_bar_layout)
-        self.sidebar_layout.addWidget(self.rounded_sec_border)
-
-    def load_extensions(self):
-        self.clear_layout(self.extension_bar_layout)
-
-        while self.rounded_sec_border.count() > 0:
-            widget = self.rounded_sec_border.widget(0)
-            self.rounded_sec_border.removeWidget(widget)
-            widget.deleteLater()
-        
-        extension_manager.update_extension_list()
-        extensions = extension_manager.get_installed()
-        ai_extensions_enabled = current_settings["ai_summarization_enabled"]
-
-        self.extension_bar_layout.addStretch()
-
-        # Extension content
-        if ai_extensions_enabled:
-            ai_sum_ext_btn = QPushButton()
-            ai_sum_ext_btn.setIcon(qta.icon("msc.sparkle-filled"))
-            ai_sum_ext_btn.setFixedSize(35, 35)
-            ai_sum_ext_btn.clicked.connect(lambda _, i=0: self.toggle_extension(i))
-            self.extension_bar_layout.addWidget(ai_sum_ext_btn, alignment=Qt.AlignmentFlag.AlignHCenter)
-
-            self.ai_sum_ext = AI_Extension(self)
-            self.rounded_sec_border.addWidget(self.ai_sum_ext)
-
-        for i, el in enumerate(extensions):
-            try:
-                spec = spec = importlib.util.spec_from_file_location(
-                        el.name, 
-                        os.path.join(EXTENSIONS_PATH, el.app_id, el.script_path)
-                    )
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                
-                plugin_class = getattr(module, "MainWidget")
-                plugin_instance = plugin_class()
-                
-                self.rounded_sec_border.addWidget(plugin_instance)
-
-                button = Extension_Sidebar_Button(el)
-
-                if not ai_extensions_enabled:
-                    button.clicked.connect(lambda _, i=i: self.toggle_extension(i))
-
-                else:
-                    button.clicked.connect(lambda _, i=i: self.toggle_extension(i+1))
-                
-                self.extension_bar_layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignHCenter)
-                
-            except Exception as e:
-                print(f"Error when trying to load {el.name}: {e}")
-
-        self.extension_bar_layout.addStretch()
-    
-    def toggle_extension(self, id):
-        if id != self.rounded_sec_border.currentIndex():
-            self.rounded_sec_border.setCurrentIndex(id)
-
-            if not self.showing_extension:
-                self.showing_extension = True
-        else:
-            self.showing_extension = not self.showing_extension
-
-        if self.showing_extension:
-            self.setFixedWidth(450)
-            self.rounded_sec_border.show()
-
-        else:
-            self.setFixedWidth(50)
-            self.rounded_sec_border.hide()
-    
-    def get_contrast_color_from_theme(self):
-        return theme_manager.get_contrast_color_from_theme()
-    
-    def clear_layout(self, layout):
-        if layout is not None:
-            while layout.count():
-                item = layout.takeAt(0)
-                widget = item.widget()
-                if widget is not None:
-                    widget.deleteLater()
-                else:
-                    self.clear_layout(item.layout())
-
-class InstallWorkerSignals(QObject):
-    installation_complete = Signal()
-
-class InstallWorker(QRunnable):
-    def __init__(self, model_name):
-        super().__init__()
-        self.signals = InstallWorkerSignals()
-        self.model_name = model_name
-    
-    @Slot()
-    def run(self):
-        print(f"Installing model: {self.model_name}...")
-        ollama.pull(self.model_name)
-        print("Model installation complete.")
-        self.signals.installation_complete.emit()
-
-class AI_SummarizationWorkerSignals(QObject):
-    chunk_received = Signal(str)
-    finished = Signal()
-
-class AI_SummarizationWorker(QRunnable):
-    def __init__(self, text):
-        super().__init__()
-        self.text = text
-        self.signals = AI_SummarizationWorkerSignals()
-    
-    @Slot()
-    def run(self):
-        print("Summarizing page content...")
-        stream = ollama.chat(
-            model=SUM_AI_MODEL["name"],
-            messages=[{'role': 'system', 'content': ai_system_prompt},
-                      {'role': 'user', 'content': self.text}],
-            stream=True,
-        )
-
-        for chunk in stream:
-            content = chunk['message']['content']
-            self.signals.chunk_received.emit(content)
-        
-        self.signals.finished.emit()
-
-class AI_Extension(QWidget):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.layout = QVBoxLayout()
-
-        self.init_ui()
-
-    def init_ui(self):
-        self.messages = []
-
-        self.input_controls_layout = QHBoxLayout()
-
-        self.title_label = QLabel(self.tr("AI Summary"))
-        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title_label.setStyleSheet("font-size: 18px; font-weight: bold; padding: 20px")
-        self.layout.addWidget(self.title_label)
-
-        self.output_textedit = QTextEdit()
-        self.output_textedit.setReadOnly(True)
-        self.output_textedit.setPlaceholderText(self.tr("Summarization output will appear here..."))
-        self.output_textedit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.layout.addWidget(self.output_textedit)
-
-        self.download_chat_btn = QPushButton(self.tr("Download"))
-        self.download_chat_btn.setIcon(qta.icon("fa6s.download", color=theme_manager.get_contrast_color_from_theme()))
-        self.download_chat_btn.clicked.connect(self.download_chat_dlg)
-        self.input_controls_layout.addWidget(self.download_chat_btn)
-
-        self.clear_btn = QPushButton(self.tr("Clear"))
-        self.clear_btn.setIcon(qta.icon("fa6s.trash", color=theme_manager.get_contrast_color_from_theme()))
-        self.clear_btn.clicked.connect(self.clear_output)
-        self.input_controls_layout.addWidget(self.clear_btn)
-
-        self.update_output()
-
-        self.layout.addLayout(self.input_controls_layout)
-        self.setLayout(self.layout)
-    
-    def send_webpage(self, prompt):
-        prompt = prompt.strip()
-        self.messages.append({"role": "User", "content": f"[Sum]: {prompt[:400]}..."})
-        self.update_output()
-
-        # Start AI worker
-        worker = AI_SummarizationWorker(f"Summarize this text the way your system prompt intended to:\"{prompt}\"")
-        worker.signals.chunk_received.connect(self.handle_chunk)
-        worker.signals.finished.connect(self.summarization_complete)
-
-        QThreadPool.globalInstance().start(worker)
-    
-    def clear_output(self):
-        self.messages = []
-        self.update_output()
-    
-    def update_output(self):
-        self.output_textedit.clear()
-
-        formatted_output = ""
-        for message in self.messages:
-            formatted_output += f"**{message["role"]}:**  {message["content"]}\n\n"
-        
-        self.output_textedit.setMarkdown(formatted_output)
-    
-    def handle_chunk(self, chunk):
-        if self.messages and self.messages[-1]['role'] == "AI":
-            self.messages[-1]['content'] += chunk
-        else:
-            self.messages.append({"role": "AI", "content": chunk})
-        
-        self.update_output()
-    
-    def summarization_complete(self):
-        self.update_output()
-
-    def download_chat_dlg(self):
-        chat_content = self.output_textedit.toMarkdown()
-        time_now = datetime.datetime.now()
-        time_formatted = time_now.strftime("%H:%M-%d-%m-%Y")
-        file_name = f"chat-{time_formatted}.txt"
-
-        if not chat_content:
-            return
-        
-        dir_name = QFileDialog.getExistingDirectory(self, self.tr("Select a Directory"))
-        file_path = os.path.join(dir_name, file_name)
-
-        if os.path.exists(file_path):
-            QMessageBox.critical(self, self.tr("Cannot write file", f"The file {file_name} already exists in the selected directory."))
-        
-        with open(file_path, "w") as f:
-            f.write(chat_content)
-    
-    def retranslate_ui(self):
-        self.title_label.setText(self.tr("AI Summary"))
-        self.output_textedit.setPlaceholderText(self.tr("Summarization output will appear here..."))
-        self.download_chat_btn.setText(self.tr("Download"))
-        self.clear_btn.setText(self.tr("Clear"))
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
@@ -514,6 +225,11 @@ class BrowserWindow(QMainWindow):
         self.nextAction.setShortcut(QKeySequence("Alt + right"))
         self.editMenu.addAction(self.nextAction)
 
+        self.reloadPageAction = QAction(self.tr("Reload current tab"), self)
+        self.reloadPageAction.triggered.connect(self.request_reload_page)
+        self.reloadPageAction.setShortcuts(["Ctrl + R", "F5"])
+        self.editMenu.addAction(self.reloadPageAction)
+
         self.removeTabAction = QAction(self.tr("Remove current tab"), self)
         self.removeTabAction.triggered.connect(self.remove_tab_shortcut)
         self.removeTabAction.setShortcut(QKeySequence("Ctrl + w"))
@@ -583,8 +299,15 @@ class BrowserWindow(QMainWindow):
         self.web_tabs.setTabShape(QTabWidget.TabShape.Rounded)
         self.web_tabs.tabBar().setUsesScrollButtons(True)
         self.web_tabs.currentChanged.connect(self.update_tab_titles)
+        self.web_tabs.currentChanged.connect(self._refresh_tab_manager_if_visible)
         self.web_tabs.tabCloseRequested.connect(self.remove_web_tab)
-        self.middle_layout.addWidget(self.web_tabs, 1)
+
+        self.tab_manager_stack = QStackedWidget()
+        self.tab_manager_stack.addWidget(self.web_tabs)
+        self.tab_manager = TabManager(self.web_tabs, theme_manager)
+        self.tab_manager.tab_selected.connect(self._on_tab_manager_selected)
+        self.tab_manager_stack.addWidget(self.tab_manager)
+        self.middle_layout.addWidget(self.tab_manager_stack, 1)
         self.browser_controller = BrowserController(self, self.web_tabs)
 
         # Controls layout
@@ -735,7 +458,10 @@ class BrowserWindow(QMainWindow):
         self.layout.addLayout(self.middle_layout, 2, 0)
 
         # AI Sidebar
-        self.extension_sidebar = Extension_Sidebar(self)
+        self.extension_sidebar = Extension_Sidebar(self,
+                                                   extension_manager=extension_manager,
+                                                   theme_manager=theme_manager,
+                                                   ai_enabled=current_settings["ai_summarization_enabled"])
         self.extension_sidebar.setVisible(False)
         self.middle_layout.addWidget(self.extension_sidebar)
     
@@ -813,6 +539,7 @@ class BrowserWindow(QMainWindow):
             self.web_tabs.removeTab(index)
             widget.deleteLater()
             self.update_tab_titles()
+            self._refresh_tab_manager_if_visible()
     
     def update_tab_titles(self):
         for tab_index in range(self.web_tabs.count()):
@@ -852,6 +579,22 @@ class BrowserWindow(QMainWindow):
     def remove_tab_shortcut(self):
         current_tab_index = self.web_tabs.currentIndex()
         self.remove_web_tab(current_tab_index)
+
+    # Tab Manager
+    def _refresh_tab_manager_if_visible(self):
+        if self.tab_manager_stack.currentIndex() == 1:
+            self.tab_manager.populate()
+
+    def _on_tab_manager_selected(self, index):
+        self.web_tabs.setCurrentIndex(index)
+        self.tab_manager_stack.setCurrentIndex(0)
+
+    def toggle_tab_manager(self):
+        if self.tab_manager_stack.currentIndex() == 0:
+            self.tab_manager.populate()
+            self.tab_manager_stack.setCurrentIndex(1)
+        else:
+            self.tab_manager_stack.setCurrentIndex(0)
 
     # Download System
     def _update_download_button_visibility(self):
@@ -915,7 +658,7 @@ class BrowserWindow(QMainWindow):
         dlg = WebExtensionsDialog(parent=self, extension_manager=extension_manager, index_urls=extensions_settings["index_urls"])
         dlg.exec()
         self.check_extension_updates()
-        self.extension_sidebar.load_extensions()
+        self.extension_sidebar.load_extensions(ai_extensions_enabled=current_settings["ai_summarization_enabled"])
         
     def check_extension_updates(self):
         fetcher = WebExtensionFetcher(extensions_settings["index_urls"])
@@ -975,7 +718,10 @@ class BrowserWindow(QMainWindow):
     def request_next_page(self):
         self.web_tabs.currentWidget().history().forward()
         self.update_tab_titles()
-    
+
+    def request_reload_page(self):
+        self.web_tabs.currentWidget().reload_page()
+
     # Scaling
     def request_scale_page_up(self):
         self.web_tabs.currentWidget().scale_page_up()
@@ -1118,8 +864,7 @@ class BrowserWindow(QMainWindow):
             self.browser_controller._on_tab_changed()
 
             if settings["ai_summarization_enabled"] != current_settings["ai_summarization_enabled"]:
-                current_settings["ai_summarization_enabled"] = settings["ai_summarization_enabled"]
-                self.extension_sidebar.load_extensions()
+                self.extension_sidebar.load_extensions(ai_extensions_enabled=settings["ai_summarization_enabled"])
 
             theme_manager.set_accent_color(settings["accent_color"])
 
@@ -1205,6 +950,9 @@ class BrowserController(QObject):
     def open_download_menu(self, button):
         button_pos = button.mapToGlobal(button.rect().bottomLeft())
         self.window.download_menu.exec(button_pos)
+    
+    def toggle_tab_manager(self):
+        self.window.toggle_tab_manager()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -12,8 +12,9 @@ from interface.navigation.nav_items import (
     BackBtn, 
     ForwardBtn, 
     ReloadBtn, 
-    ExtSidebarBtn, 
-    GoBtn, 
+    ExtSidebarBtn,
+    TabManagerBtn,
+    GoBtn,
     DownloadManagerBtn,
     ZoomInBtn,
     ZoomOutBtn,
@@ -138,6 +139,10 @@ class NavBarManager(QWidget):
 
                 elif element.action == "extensions_sidebar":
                     button = ExtSidebarBtn(self.controller)
+                    button.update_icon_color(icon_color)
+                
+                elif element.action == "tab_manager":
+                    button = TabManagerBtn(self.controller)
                     button.update_icon_color(icon_color)
                 
                 elif element.action == "zoom_in":

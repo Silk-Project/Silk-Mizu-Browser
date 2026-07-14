@@ -61,7 +61,10 @@ python3 browser/main.py
 - [x] ~~Custom extension store (for the browser itself)~~
   - [x] ~~Widgets (e. g. Notes and additional widgets from the store)~~
     - [ ] Let widgets connect to a Browser Window API
-- [ ] Website
+- [ ] URL autocompletion
+- [ ] Tab manager
+- [ ] Floating Adress Bar
+- [x] Website
 
 ## 👥 Contributing
 Feel free to open issues and create pull requests.

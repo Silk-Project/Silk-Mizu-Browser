@@ -193,6 +193,28 @@ class ExtSidebarBtn(QPushButton):
         self.icon_color = icon_color
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
 
+class TabManagerBtn(QPushButton):
+    def __init__(self, ui_controller):
+        super().__init__()
+        
+        self.ui_controller = ui_controller
+
+        self.icon_id = "ri.menu-fill"
+        self.icon_color = "white"
+        
+        self.setIcon(qta.icon(self.icon_id))
+        self.setStyleSheet("padding: 8px;")
+        self.setProperty("class", "navbtns")
+
+        self.clicked.connect(self.toggle_sidebar)
+    
+    def toggle_sidebar(self):
+        self.ui_controller.toggle_tab_manager()
+    
+    def update_icon_color(self, icon_color: str):
+        self.icon_color = icon_color
+        self.setIcon(qta.icon(self.icon_id, color=icon_color))
+
 class GoBtn(QPushButton):
     def __init__(self, controller, parent = None):
         super().__init__(parent)
