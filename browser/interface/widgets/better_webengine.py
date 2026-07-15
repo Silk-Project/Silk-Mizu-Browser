@@ -89,7 +89,6 @@ class BetterWebEngine(QWebEngineView):
     
     def page_load_finished(self):
         self.page_is_loading = False
-        self.page().setBackgroundColor(QColor("#ffffff"))
     
     def validate_and_fix_url(self, url_string):
         clean_input = url_string.strip()

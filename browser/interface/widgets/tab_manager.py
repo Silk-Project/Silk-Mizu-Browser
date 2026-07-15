@@ -2,11 +2,13 @@ import re
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
+    QHBoxLayout,
     QScrollArea,
     QLineEdit,
     QPushButton,
 )
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QIcon
 
 class TabManager(QWidget):
     tab_selected = Signal(int)
@@ -20,17 +22,25 @@ class TabManager(QWidget):
 
     def _init_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(0)
+
+        search_layout = QHBoxLayout()
+        layout.addLayout(search_layout)
+
+        search_layout.addStretch()
 
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Search tabs...")
         self.search_bar.setClearButtonEnabled(True)
         self.search_bar.setStyleSheet("margin: 10px; padding: 8px; font-size: 14px;")
         self.search_bar.textChanged.connect(self._filter)
-        layout.addWidget(self.search_bar)
+        search_layout.addWidget(self.search_bar)
+
+        search_layout.addStretch()
 
         scroll = QScrollArea()
+        scroll.setProperty("class", "noborder")
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
@@ -58,8 +68,10 @@ class TabManager(QWidget):
         for i in range(self.web_tabs.count()):
             web_engine = self.web_tabs.widget(i)
             title = web_engine.title() if web_engine.title() else "New Tab"
+            icon = web_engine.icon() if web_engine.icon() else QIcon()
 
             btn = QPushButton(title)
+            btn.setIcon(icon)
             btn.setStyleSheet("text-align: left; padding: 10px; font-size: 14px;")
             btn.clicked.connect(lambda checked, index=i: self.tab_selected.emit(index))
 

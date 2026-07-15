@@ -35,6 +35,7 @@ from interface.dialogs.downloads_dialog import DownloadManagerDialog
 # Widgets
 from interface.widgets.better_webengine import BetterWebEngine
 from interface.widgets.tab_manager import TabManager
+from interface.widgets.floating_address_bar import FloatingAddressBar
 from interface.downloads.download_menu import DownloadMenu
 from interface.navigation.nav_items import DownloadManagerBtn
 
@@ -167,6 +168,9 @@ class BrowserWindow(QMainWindow):
         widget.setLayout(self.layout)
         self.setCentralWidget(widget)
 
+        # Floating address bar
+        self.floating_address_bar = FloatingAddressBar(self.browser_controller, self.centralWidget())
+
         if not os.path.exists(START_PAGE_PATH):
             QMessageBox.critical(self, self.tr("Start page not found"),
                                  self.tr("The Silk Start submodule was not found. Make sure you follow the cloning instructions carefully."))
@@ -245,6 +249,13 @@ class BrowserWindow(QMainWindow):
         self.moveToPreviousTabAction.setShortcut(QKeySequence("Ctrl + shift + Tab"))
         self.editMenu.addAction(self.moveToPreviousTabAction)
 
+        self.editMenu.addSeparator()
+
+        self.toggleFloatingBarAction = QAction(self.tr("Toggle address bar"), self)
+        self.toggleFloatingBarAction.triggered.connect(self.toggle_floating_address_bar)
+        self.toggleFloatingBarAction.setShortcut(QKeySequence("Ctrl + Space"))
+        self.editMenu.addAction(self.toggleFloatingBarAction)
+
         # View Menu
         self.toggleSidebarAction = QAction(self.tr("Toggle extension sidebar"), self)
         self.toggleSidebarAction.triggered.connect(self.toggle_extension_sidebar)
@@ -255,6 +266,11 @@ class BrowserWindow(QMainWindow):
         self.toggleFocusModeAction.triggered.connect(self.toggle_focus_mode)
         self.toggleFocusModeAction.setShortcut(QKeySequence("Ctrl + f"))
         self.viewMenu.addAction(self.toggleFocusModeAction)
+
+        self.toggleTabManagerAction = QAction(self.tr("Toggle tab manager"), self)
+        self.toggleTabManagerAction.triggered.connect(self.toggle_tab_manager)
+        self.toggleTabManagerAction.setShortcut(QKeySequence("Ctrl + ."))
+        self.viewMenu.addAction(self.toggleTabManagerAction)
 
         self.scaleUpAction = QAction(self.tr("Increase page zoom by 10%"), self)
         self.scaleUpAction.triggered.connect(self.request_scale_page_up)
@@ -405,6 +421,7 @@ class BrowserWindow(QMainWindow):
         self.removeTabAction.setText(self.tr("Remove current tab"))
         self.moveToNextTabAction.setText(self.tr("Next tab"))
         self.moveToPreviousTabAction.setText(self.tr("Previous tab"))
+        self.toggleFloatingBarAction.setText(self.tr("Toggle address bar"))
 
         # View menu
         self.scaleUpAction.setText(self.tr("Increase page zoom by 10%"))
@@ -494,6 +511,11 @@ class BrowserWindow(QMainWindow):
 
             self.web_tabs.removeTab(0)
             tab_widget.deleteLater()
+    
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self.floating_address_bar.isVisible():
+            self.floating_address_bar.show_bar()
 
     def init_web_engine(self):
         self.create_new_tab()
@@ -592,6 +614,7 @@ class BrowserWindow(QMainWindow):
     def toggle_tab_manager(self):
         if self.tab_manager_stack.currentIndex() == 0:
             self.tab_manager.populate()
+            self.tab_manager.search_bar.setFocus()
             self.tab_manager_stack.setCurrentIndex(1)
         else:
             self.tab_manager_stack.setCurrentIndex(0)
@@ -746,6 +769,12 @@ class BrowserWindow(QMainWindow):
 
             if self.bottom_navbar.controls_layout.count() != 0:
                 self.bottom_navbar.setVisible(True)
+    
+    def toggle_floating_address_bar(self):
+        if self.floating_address_bar.isVisible():
+            self.floating_address_bar.hide_bar()
+        else:
+            self.floating_address_bar.show_bar()
     
     # Dialogs
     def add_current_to_bookmarks_dialog(self):

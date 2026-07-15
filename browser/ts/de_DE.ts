@@ -64,161 +64,177 @@
 <context>
     <name>BrowserWindow</name>
     <message>
-        <location filename="../main.py" line="169"/>
+        <location filename="../main.py" line="175"/>
         <source>Start page not found</source>
         <translation>Die Startseite wurde nicht gefunden</translation>
     </message>
     <message>
-        <location filename="../main.py" line="170"/>
+        <location filename="../main.py" line="176"/>
         <source>The Silk Start submodule was not found. Make sure you follow the cloning instructions carefully.</source>
         <translation>Das Silk Start Submodul wurde nicht gefunden. Bitte befolgen sie die Anleitung zum Klonen dieses Repositorys sorgfältig.</translation>
     </message>
     <message>
-        <location filename="../main.py" line="176"/>
-        <location filename="../main.py" line="374"/>
+        <location filename="../main.py" line="182"/>
+        <location filename="../main.py" line="404"/>
         <source>&amp;File</source>
         <translation>&amp;Datei</translation>
     </message>
     <message>
-        <location filename="../main.py" line="177"/>
-        <location filename="../main.py" line="375"/>
+        <location filename="../main.py" line="183"/>
+        <location filename="../main.py" line="405"/>
         <source>&amp;Edit</source>
         <translation>&amp;Bearbeiten</translation>
     </message>
     <message>
-        <location filename="../main.py" line="178"/>
-        <location filename="../main.py" line="376"/>
+        <location filename="../main.py" line="184"/>
+        <location filename="../main.py" line="406"/>
         <source>&amp;View</source>
         <translation>&amp;Ansicht</translation>
     </message>
     <message>
-        <location filename="../main.py" line="179"/>
-        <location filename="../main.py" line="377"/>
+        <location filename="../main.py" line="185"/>
+        <location filename="../main.py" line="407"/>
         <source>&amp;Bookmarks</source>
         <translation>&amp;Lesezeichen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="180"/>
-        <location filename="../main.py" line="378"/>
+        <location filename="../main.py" line="186"/>
+        <location filename="../main.py" line="408"/>
         <source>&amp;Help</source>
         <translation>&amp;Hilfe</translation>
     </message>
     <message>
-        <location filename="../main.py" line="183"/>
-        <location filename="../main.py" line="381"/>
+        <location filename="../main.py" line="189"/>
+        <location filename="../main.py" line="411"/>
         <source>Program Settings</source>
         <translation>Programmeinstellungen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="188"/>
-        <location filename="../main.py" line="382"/>
+        <location filename="../main.py" line="194"/>
+        <location filename="../main.py" line="412"/>
         <source>Quit</source>
         <translation>Beenden</translation>
     </message>
     <message>
-        <location filename="../main.py" line="194"/>
-        <location filename="../main.py" line="385"/>
+        <location filename="../main.py" line="200"/>
+        <location filename="../main.py" line="415"/>
         <source>Cut</source>
         <translation>Ausschneiden</translation>
     </message>
     <message>
-        <location filename="../main.py" line="199"/>
-        <location filename="../main.py" line="386"/>
+        <location filename="../main.py" line="205"/>
+        <location filename="../main.py" line="416"/>
         <source>Copy</source>
         <translation>Kopieren</translation>
     </message>
     <message>
-        <location filename="../main.py" line="204"/>
-        <location filename="../main.py" line="387"/>
+        <location filename="../main.py" line="210"/>
+        <location filename="../main.py" line="417"/>
         <source>Paste</source>
         <translation>Einfügen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="211"/>
-        <location filename="../main.py" line="388"/>
-        <location filename="../main.py" line="529"/>
+        <location filename="../main.py" line="217"/>
+        <location filename="../main.py" line="418"/>
+        <location filename="../main.py" line="569"/>
         <source>New Tab</source>
         <translation>Neuer Tab</translation>
     </message>
     <message>
-        <location filename="../main.py" line="216"/>
-        <location filename="../main.py" line="389"/>
+        <location filename="../main.py" line="222"/>
+        <location filename="../main.py" line="419"/>
         <source>Back</source>
         <translation>Zurück</translation>
     </message>
     <message>
-        <location filename="../main.py" line="221"/>
-        <location filename="../main.py" line="390"/>
+        <location filename="../main.py" line="227"/>
+        <location filename="../main.py" line="420"/>
         <source>Next</source>
         <translation>Weiter</translation>
     </message>
     <message>
-        <location filename="../main.py" line="226"/>
-        <location filename="../main.py" line="391"/>
+        <location filename="../main.py" line="232"/>
+        <source>Reload current tab</source>
+        <translation>Aktuellen Tab neu laden</translation>
+    </message>
+    <message>
+        <location filename="../main.py" line="237"/>
+        <location filename="../main.py" line="421"/>
         <source>Remove current tab</source>
         <translation>Aktuellen Tab entfernen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="231"/>
-        <location filename="../main.py" line="392"/>
+        <location filename="../main.py" line="242"/>
+        <location filename="../main.py" line="422"/>
         <source>Next tab</source>
         <translation>Nächster Tab</translation>
     </message>
     <message>
-        <location filename="../main.py" line="236"/>
-        <location filename="../main.py" line="393"/>
+        <location filename="../main.py" line="247"/>
+        <location filename="../main.py" line="423"/>
         <source>Previous tab</source>
         <translation>Vorheriger Tab</translation>
     </message>
     <message>
-        <location filename="../main.py" line="242"/>
+        <location filename="../main.py" line="254"/>
+        <location filename="../main.py" line="424"/>
+        <source>Toggle address bar</source>
+        <translation>Adressleiste umschalten</translation>
+    </message>
+    <message>
+        <location filename="../main.py" line="260"/>
         <source>Toggle extension sidebar</source>
         <translation>Erweiterungs-Seitenleiste umschalten</translation>
     </message>
     <message>
-        <location filename="../main.py" line="247"/>
+        <location filename="../main.py" line="265"/>
         <source>Toggle focus mode</source>
         <translation>Konzentrationsmodus umschalten</translation>
     </message>
     <message>
-        <location filename="../main.py" line="252"/>
-        <location filename="../main.py" line="396"/>
+        <location filename="../main.py" line="270"/>
+        <source>Toggle tab manager</source>
+        <translation>Tab Manager umschalten</translation>
+    </message>
+    <message>
+        <location filename="../main.py" line="275"/>
+        <location filename="../main.py" line="427"/>
         <source>Increase page zoom by 10%</source>
         <translation>Webseiten Zoom um 10% erhöhen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="257"/>
-        <location filename="../main.py" line="397"/>
+        <location filename="../main.py" line="280"/>
+        <location filename="../main.py" line="428"/>
         <source>Decrease page zoom by 10%</source>
         <translation>Webseiten Zoom um 10% verringern</translation>
     </message>
     <message>
-        <location filename="../main.py" line="262"/>
-        <location filename="../main.py" line="398"/>
+        <location filename="../main.py" line="285"/>
+        <location filename="../main.py" line="429"/>
         <source>Set page zoom to 100%</source>
         <translation>Webseiten Zoom auf 100% setzen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="267"/>
-        <location filename="../main.py" line="401"/>
+        <location filename="../main.py" line="290"/>
+        <location filename="../main.py" line="432"/>
         <source>Manage bookmarks</source>
         <translation>Lesezeichen verwalten</translation>
     </message>
     <message>
-        <location filename="../main.py" line="272"/>
-        <location filename="../main.py" line="402"/>
+        <location filename="../main.py" line="295"/>
+        <location filename="../main.py" line="433"/>
         <source>Add current page to bookmarks</source>
         <translation>Aktuelle Seite zu Lesezeichen hinzufügen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="278"/>
-        <location filename="../main.py" line="405"/>
+        <location filename="../main.py" line="301"/>
+        <location filename="../main.py" line="436"/>
         <source>Project Page</source>
         <translation>Projektseite</translation>
     </message>
     <message>
-        <location filename="../main.py" line="282"/>
-        <location filename="../main.py" line="406"/>
+        <location filename="../main.py" line="305"/>
+        <location filename="../main.py" line="437"/>
         <source>About</source>
         <translation>Über</translation>
     </message>
@@ -227,7 +243,7 @@
         <translation type="vanished">Los</translation>
     </message>
     <message>
-        <location filename="../main.py" line="601"/>
+        <location filename="../main.py" line="658"/>
         <source>Download Request</source>
         <translation>Downloadanfrage</translation>
     </message>
@@ -240,22 +256,22 @@
         <translation type="vanished">Erweiterungsaktualisierungen: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="716"/>
+        <location filename="../main.py" line="782"/>
         <source>Add to Bookmarks</source>
         <translation>Zu Lesezeichen hinzufügen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="722"/>
+        <location filename="../main.py" line="788"/>
         <source>Add Current Page to Bookmarks</source>
         <translation>Aktuelle Webseite zu Lesezeichen hinzufügen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="731"/>
+        <location filename="../main.py" line="797"/>
         <source>Bookmark name: </source>
         <translation>Name des Lesezeichens: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="736"/>
+        <location filename="../main.py" line="802"/>
         <source>Bookmark URL: </source>
         <translation>URL des Lesezeichens: </translation>
     </message>
@@ -348,8 +364,8 @@
         <translation type="vanished">Installieren</translation>
     </message>
     <message>
-        <location filename="../main.py" line="866"/>
-        <location filename="../main.py" line="869"/>
+        <location filename="../main.py" line="932"/>
+        <location filename="../main.py" line="935"/>
         <source>Model Installed</source>
         <translation>Modell installiert</translation>
     </message>
@@ -394,12 +410,12 @@
         <translation type="vanished">KI Funktionen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="856"/>
+        <location filename="../main.py" line="922"/>
         <source>Installing...</source>
         <translation>Installieren...</translation>
     </message>
     <message>
-        <location filename="../main.py" line="869"/>
+        <location filename="../main.py" line="935"/>
         <source>The AI page summarization model has been installed successfully. You can now enable AI page summarization in the settings.</source>
         <translation>Das KI Modell wurde erfolgreich installiert. Sie können die KI Zusammenfassung in den Einstellungen einschalten.</translation>
     </message>
@@ -419,38 +435,38 @@
 <context>
     <name>CustomiseStylingDialog</name>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="425"/>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="437"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="426"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="438"/>
         <source>Customize Styling</source>
         <translation>Styling bearbeiten</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="448"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="449"/>
         <source>Background Color:</source>
         <translation>Hintergrundfarbe:</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="454"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="455"/>
         <source>Border Radius:</source>
         <translation>Eckenradius:</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="460"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="461"/>
         <source>Stretch Factor:</source>
         <translation>Dehnungsfaktor:</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="468"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="469"/>
         <source>Dynamic - cannot be customized</source>
         <translation>Dynamisch - kann nicht verändert werden</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="470"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="471"/>
         <source>Label:</source>
         <translation>Text:</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="477"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="478"/>
         <source>Reset</source>
         <translation>Zurücksetzen</translation>
     </message>
@@ -634,32 +650,32 @@
     <name>ManageNavigationUIDialog</name>
     <message>
         <location filename="../interface/dialogs/manage_navbar_dialog.py" line="50"/>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="153"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="154"/>
         <source>Manage Navigation UI</source>
         <translation>Navigationsleiste verwalten</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="196"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="197"/>
         <source>Add</source>
         <translation>Hinzufügen</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="201"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="202"/>
         <source>Remove</source>
         <translation>Entfernen</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="206"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="207"/>
         <source>Move Up</source>
         <translation>Nach oben bewegen</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="211"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="212"/>
         <source>Move Down</source>
         <translation>Nach unten bewegen</translation>
     </message>
     <message>
-        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="216"/>
+        <location filename="../interface/dialogs/manage_navbar_dialog.py" line="217"/>
         <source>Customize Styling</source>
         <translation>Styling bearbeiten</translation>
     </message>
