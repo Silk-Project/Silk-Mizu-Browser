@@ -12,6 +12,7 @@ build/
 develop-eggs/
 dist/
 downloads/
+!browser/interface/downloads/
 eggs/
 .eggs/
 lib/

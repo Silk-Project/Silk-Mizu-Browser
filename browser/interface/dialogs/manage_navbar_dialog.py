@@ -136,6 +136,13 @@ class ManageNavigationUIDialog(QDialog):
                         name = available.name
                         break
 
+            name = elem.get("name", "")
+            if not name:
+                for available in self.available_ui_elements:
+                    if available.action == action:
+                        name = available.name
+                        break
+
             item = NavigationUIListItem(NavigationUIElement(
                 name=name,
                 type=elem.type,
