@@ -14,12 +14,14 @@ from interface.navigation.nav_items import (
     ReloadBtn, 
     ExtSidebarBtn,
     TabManagerBtn,
+    HistoryManagerBtn,
     GoBtn,
     DownloadManagerBtn,
     ZoomInBtn,
     ZoomOutBtn,
     ZoomAmountLabel,
-    PageProgressBar
+    PageProgressBar,
+    ClockLabel,
 )
 from interface.dialogs.manage_navbar_dialog import NavigationUIElement, NavigationUIAdditionalStyling
 
@@ -145,6 +147,10 @@ class NavBarManager(QWidget):
                     button = TabManagerBtn(self.controller)
                     button.update_icon_color(icon_color)
                 
+                elif element.action == "history_manager":
+                    button = HistoryManagerBtn(self.controller)
+                    button.update_icon_color(icon_color)
+                
                 elif element.action == "zoom_in":
                     button = ZoomInBtn(self.controller)
                     button.update_icon_color(icon_color)
@@ -191,6 +197,10 @@ class NavBarManager(QWidget):
             elif element.type == "dyn_label":
                 if element.action == "zoom_label":
                     dyn_label = ZoomAmountLabel(self.controller)
+                    return dyn_label
+                
+                elif element.action == "clock":
+                    dyn_label = ClockLabel(self.controller.timer)
                     return dyn_label
             
             elif element.type == "progress_bar":

@@ -26,15 +26,15 @@
         },
         {
             "type": "button",
-            "action": "add_bookmark"
-        },
-        {
-            "type": "button",
             "action": "extensions"
         },
         {
             "type": "button",
             "action": "settings"
+        },
+        {
+            "type": "button",
+            "action": "tab_manager"
         }
     ]
 }

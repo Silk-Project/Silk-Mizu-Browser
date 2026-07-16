@@ -1,7 +1,6 @@
 import sys
 import os
 import json
-import importlib.util
 from pathlib import Path
 import qtawesome as qta
 from PySide6.QtWidgets import (
@@ -20,7 +19,7 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QMessageBox,
 )
-from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths
+from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths, QTimer
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile, QWebEnginePage
 from PySide6.QtGui import QAction, QKeySequence, QIcon
@@ -35,6 +34,7 @@ from interface.dialogs.downloads_dialog import DownloadManagerDialog
 # Widgets
 from interface.widgets.better_webengine import BetterWebEngine
 from interface.widgets.tab_manager import TabManager
+from interface.widgets.history_manager import HistoryManagerWidget
 from interface.widgets.floating_address_bar import FloatingAddressBar
 from interface.downloads.download_menu import DownloadMenu
 from interface.navigation.nav_items import DownloadManagerBtn
@@ -49,6 +49,7 @@ from interface.navigation.nav_manager import NavBarManager
 from services.theme_mgr import ThemeManager
 from services.extension_mgr import ExtensionManager, ExtensionMetadata
 from services.model_install_worker import InstallWorker
+from services.history_mgr import HistoryManager
 from interface.downloads.download_mgr import DownloadManager
 from services.constants import (
     SCRIPT_DIR, CONFIG_PATH, BOOKMARKS_PATH, LOGO_PATH, START_PAGE_PATH,
@@ -272,6 +273,11 @@ class BrowserWindow(QMainWindow):
         self.toggleTabManagerAction.setShortcut(QKeySequence("Ctrl + ."))
         self.viewMenu.addAction(self.toggleTabManagerAction)
 
+        self.toggleHistoryManagerAction = QAction(self.tr("Toggle history manager"), self)
+        self.toggleHistoryManagerAction.triggered.connect(self.toggle_history_manager)
+        self.toggleHistoryManagerAction.setShortcut(QKeySequence("Ctrl + h"))
+        self.viewMenu.addAction(self.toggleHistoryManagerAction)
+
         self.scaleUpAction = QAction(self.tr("Increase page zoom by 10%"), self)
         self.scaleUpAction.triggered.connect(self.request_scale_page_up)
         self.scaleUpAction.setShortcut(QKeySequence("Ctrl + +"))
@@ -323,8 +329,21 @@ class BrowserWindow(QMainWindow):
         self.tab_manager = TabManager(self.web_tabs, theme_manager)
         self.tab_manager.tab_selected.connect(self._on_tab_manager_selected)
         self.tab_manager_stack.addWidget(self.tab_manager)
-        self.middle_layout.addWidget(self.tab_manager_stack, 1)
+
+        # Setup History Manager and Browser Controller
         self.browser_controller = BrowserController(self, self.web_tabs)
+        self.history_manager = HistoryManager(controller=self.browser_controller)
+        self.browser_controller.history = self.history_manager
+
+        # History Manager UI
+        self.history_manager_widget = HistoryManagerWidget(self.history_manager, theme_manager)
+        self.history_manager_widget.history_entry_selected.connect(self._on_history_entry_selected)
+
+        # Outer stack: index 0 = tab_manager_stack, index 1 = history_manager_widget
+        self.history_manager_stack = QStackedWidget()
+        self.history_manager_stack.addWidget(self.tab_manager_stack)
+        self.history_manager_stack.addWidget(self.history_manager_widget)
+        self.middle_layout.addWidget(self.history_manager_stack, 1)
 
         # Controls layout
         self.focus_mode = False
@@ -604,7 +623,7 @@ class BrowserWindow(QMainWindow):
 
     # Tab Manager
     def _refresh_tab_manager_if_visible(self):
-        if self.tab_manager_stack.currentIndex() == 1:
+        if self.history_manager_stack.currentIndex() == 0 and self.tab_manager_stack.currentIndex() == 1:
             self.tab_manager.populate()
 
     def _on_tab_manager_selected(self, index):
@@ -612,12 +631,28 @@ class BrowserWindow(QMainWindow):
         self.tab_manager_stack.setCurrentIndex(0)
 
     def toggle_tab_manager(self):
+        if self.history_manager_stack.currentIndex() == 1:
+            self.history_manager_stack.setCurrentIndex(0)
+
         if self.tab_manager_stack.currentIndex() == 0:
             self.tab_manager.populate()
             self.tab_manager.search_bar.setFocus()
             self.tab_manager_stack.setCurrentIndex(1)
         else:
             self.tab_manager_stack.setCurrentIndex(0)
+
+    # History Manager
+    def _on_history_entry_selected(self, url):
+        self.web_tabs.currentWidget().setUrl(QUrl(url))
+        self.history_manager_stack.setCurrentIndex(0)
+
+    def toggle_history_manager(self):
+        if self.history_manager_stack.currentIndex() == 0:
+            self.history_manager_widget.populate()
+            self.history_manager_widget.search_bar.setFocus()
+            self.history_manager_stack.setCurrentIndex(1)
+        else:
+            self.history_manager_stack.setCurrentIndex(0)
 
     # Download System
     def _update_download_button_visibility(self):
@@ -949,6 +984,8 @@ class BrowserController(QObject):
         super().__init__()
         self.window = window
         self.tabs = tabs
+        self.timer = QTimer()
+
         tabs.currentChanged.connect(self._on_tab_changed)
 
     def _on_tab_changed(self):
@@ -982,6 +1019,9 @@ class BrowserController(QObject):
     
     def toggle_tab_manager(self):
         self.window.toggle_tab_manager()
+
+    def toggle_history_manager(self):
+        self.window.toggle_history_manager()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

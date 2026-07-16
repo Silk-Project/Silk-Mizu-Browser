@@ -4,8 +4,10 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QProgressBar
 )
-from PySide6.QtCore import QUrl
-from PySide6.QtWebEngineWidgets import QWebEngineView
+from urllib.parse import urlparse
+from PySide6.QtCore import QUrl, QTimer, Qt, QUrl
+from PySide6.QtGui import QKeyEvent
+from datetime import datetime
 from interface.widgets.better_webengine import BetterWebEngine
 import qtawesome as qta
 
@@ -14,10 +16,12 @@ class AddressBar(QLineEdit):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
+        self.controller = controller
 
         self.setPlaceholderText("https://")
 
-        controller.currentBrowserChanged.connect(self.set_browser)    
+        self.controller.currentBrowserChanged.connect(self.set_browser)
+        self.textChanged.connect(self._filter)
         self.returnPressed.connect(self.on_return_pressed)
     
     def set_browser(self, browser):
@@ -29,6 +33,58 @@ class AddressBar(QLineEdit):
         self.browser.urlChanged.connect(self.update_url)
 
         self.update_url(browser.url())
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key.Key_Backspace and self.hasSelectedText():
+            sel_start = self.selectionStart()
+            typed = self.text()[:sel_start]
+            new_text = typed[:-1] if typed else ""
+
+            self.blockSignals(True)
+            self.setText(new_text)
+            self.setCursorPosition(len(new_text))
+            self.blockSignals(False)
+            
+            self.textChanged.emit(new_text)
+        else:
+            super().keyPressEvent(event)
+
+    def _filter(self, user_url: str):
+        if self.browser:
+            if not user_url:
+                return
+
+            history: list[dict] = self.controller.history.get_history()
+
+            for entry in history:
+                url = entry.get("url")
+
+                if url is not None and url != "":
+                    domain = urlparse(url).netloc
+
+                    if url.startswith(user_url):
+                        end_pos = len(url) - len(user_url)
+
+                        self.textChanged.disconnect(self._filter)
+                        self.setText(url)
+                        self.textChanged.connect(self._filter)
+
+                        self.setCursorPosition(len(user_url))
+                        self.setSelection(len(user_url), end_pos)
+                        
+                        return
+                    
+                    elif domain.startswith(user_url) and domain is not None and domain != "":
+                        end_pos = len(domain) - len(user_url)
+
+                        self.textChanged.disconnect(self._filter)
+                        self.setText(domain)
+                        self.textChanged.connect(self._filter)
+
+                        self.setCursorPosition(len(user_url))
+                        self.setSelection(len(user_url), end_pos)
+                        
+                        return
 
     def update_url(self, url: QUrl):
         str_url = url.toString()
@@ -215,6 +271,28 @@ class TabManagerBtn(QPushButton):
         self.icon_color = icon_color
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
 
+class HistoryManagerBtn(QPushButton):
+    def __init__(self, ui_controller):
+        super().__init__()
+        
+        self.ui_controller = ui_controller
+
+        self.icon_id = "fa6s.clock-rotate-left"
+        self.icon_color = "white"
+        
+        self.setIcon(qta.icon(self.icon_id))
+        self.setStyleSheet("padding: 8px;")
+        self.setProperty("class", "navbtns")
+
+        self.clicked.connect(self.toggle_sidebar)
+    
+    def toggle_sidebar(self):
+        self.ui_controller.toggle_history_manager()
+    
+    def update_icon_color(self, icon_color: str):
+        self.icon_color = icon_color
+        self.setIcon(qta.icon(self.icon_id, color=icon_color))
+
 class GoBtn(QPushButton):
     def __init__(self, controller, parent = None):
         super().__init__(parent)
@@ -384,3 +462,21 @@ class PageProgressBar(QProgressBar):
     def hide_pb(self):
         if self.browser:
             self.setVisible(False)
+
+class ClockLabel(QLabel):
+    def __init__(self, timer: QTimer = QTimer(), parent = None):
+        super().__init__(parent)
+
+        self.setStyleSheet("padding: 8px;")
+
+        timer.timeout.connect(self.update_time)
+
+        if not timer.isActive():
+            timer.start(1000)
+
+        self.update_time()
+
+    def update_time(self):
+        now = datetime.now()
+        formatted_time = now.strftime("%d. %B %Y, %H:%M")
+        self.setText(formatted_time)

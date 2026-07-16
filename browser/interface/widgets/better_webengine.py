@@ -93,11 +93,12 @@ class BetterWebEngine(QWebEngineView):
     def validate_and_fix_url(self, url_string):
         clean_input = url_string.strip()
         
+        localhost_match = re.match(r'^(localhost)(?::\d+)?(?:\/.*)?$', clean_input, re.IGNORECASE)
         domain_match = re.match(r'^([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?::\d+)?(?:\/.*)?$', clean_input, re.IGNORECASE)
         
         # Add scheme if it's missing
-        if domain_match and not clean_input.startswith(('http://', 'https://', 'file://', 'ftp://')):
-            clean_input = "https://" + clean_input
+        if (domain_match or localhost_match) and not clean_input.startswith(('http://', 'https://', 'file://', 'ftp://')):
+            clean_input = "http://" + clean_input
 
         try:
             result = urlparse(clean_input)

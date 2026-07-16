@@ -69,6 +69,7 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Extensions Button", "button", "fa6s.puzzle-piece", "extensions"),
             NavigationUIElement("Extensions Sidebar Button", "button", "msc.layout-sidebar-left", "extensions_sidebar"),
             NavigationUIElement("Tab Manager Button", "button", "ri.menu-fill", "tab_manager"),
+            NavigationUIElement("History Button", "button", "fa6s.clock-rotate-left", "history_manager"),
             NavigationUIElement("Go Button", "button", "mdi.arrow-right-bold-box", "go"),
             NavigationUIElement("Download Manager Button", "button", "ei.download", "download_manager"),
             NavigationUIElement("Zoom in Button", "button", "ph.magnifying-glass-plus", "zoom_in"),
@@ -76,6 +77,7 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Zoom amount label", "dyn_label", None, "zoom_label"),
             NavigationUIElement("Webpage Progress bar", "progress_bar", None, "page_progressbar"),
             NavigationUIElement("Stretch Space", "spacer", None, "stretch"),
+            NavigationUIElement("Clock label", "dyn_label", None, "clock"),
             NavigationUIElement("Text label", "label", None, "label"),
         ]
 
@@ -133,13 +135,6 @@ class ManageNavigationUIDialog(QDialog):
             if not name:
                 for available in self.available_ui_elements:
                     if available.action == elem.action:
-                        name = available.name
-                        break
-
-            name = elem.get("name", "")
-            if not name:
-                for available in self.available_ui_elements:
-                    if available.action == action:
                         name = available.name
                         break
 
@@ -368,9 +363,15 @@ class ManageNavigationUIDialog(QDialog):
             return label
         
         elif item.type == "dyn_label":
-            label = QLabel("100%")
+            label = QLabel("Dynamic Label")
             label.setStyleSheet("padding: 8px; border: none;")
 
+            if item.action == "zoom_label":
+                label.setText("100%")
+            
+            elif item.action == "clock":
+                label.setText("16. July 2026, 12:00")
+            
             if item.styling:
                 self.apply_styling_to_widget(label, item.styling)
 

@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 from PySide6.QtWidgets import QWidget, QLineEdit, QHBoxLayout
 from PySide6.QtCore import Qt, Signal, QUrl
 from PySide6.QtGui import QKeyEvent
@@ -19,6 +20,17 @@ class FloatingAddressBarInput(QLineEdit):
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key.Key_Escape:
             self.escape_pressed.emit()
+        elif event.key() == Qt.Key.Key_Backspace and self.hasSelectedText():
+            sel_start = self.selectionStart()
+            typed = self.text()[:sel_start]
+            new_text = typed[:-1] if typed else ""
+
+            self.blockSignals(True)
+            self.setText(new_text)
+            self.setCursorPosition(len(new_text))
+            self.blockSignals(False)
+            
+            self.textChanged.emit(new_text)
         else:
             super().keyPressEvent(event)
 
@@ -37,6 +49,7 @@ class FloatingAddressBar(QWidget):
         layout.setContentsMargins(4, 4, 4, 4)
 
         self.url_input = FloatingAddressBarInput()
+        self.url_input.textChanged.connect(self._filter)
         self.url_input.returnPressed.connect(self._on_return_pressed)
         self.url_input.escape_pressed.connect(self.hide_bar)
 
@@ -61,6 +74,43 @@ class FloatingAddressBar(QWidget):
 
         self.browser = browser
         self.browser.urlChanged.connect(self._on_url_changed)
+    
+    def _filter(self, user_url: str):
+        if self.browser:
+            if not user_url:
+                return
+
+            history: list[dict] = self.controller.history.get_history()
+
+            for entry in history:
+                url = entry.get("url")
+
+                if url is not None and url != "":
+                    domain = urlparse(url).netloc
+
+                    if url.startswith(user_url):
+                        end_pos = len(url) - len(user_url)
+
+                        self.url_input.textChanged.disconnect(self._filter)
+                        self.url_input.setText(url)
+                        self.url_input.textChanged.connect(self._filter)
+
+                        self.url_input.setCursorPosition(len(user_url))
+                        self.url_input.setSelection(len(user_url), end_pos)
+                        
+                        return
+                    
+                    elif domain.startswith(user_url) and domain is not None and domain != "":
+                        end_pos = len(domain) - len(user_url)
+
+                        self.url_input.textChanged.disconnect(self._filter)
+                        self.url_input.setText(domain)
+                        self.url_input.textChanged.connect(self._filter)
+
+                        self.url_input.setCursorPosition(len(user_url))
+                        self.url_input.setSelection(len(user_url), end_pos)
+                        
+                        return
 
     def _on_url_changed(self, url: QUrl):
         if not self.url_input.hasFocus():
