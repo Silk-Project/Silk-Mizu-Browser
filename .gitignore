@@ -214,6 +214,7 @@ __marimo__/
 settings.json
 bookmarks.json
 extensions.json
+history.json
 
 # Dirs
 browser/Downloads/

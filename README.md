@@ -52,7 +52,7 @@ python3 browser/main.py
 - [x] ~~Improve website tab system and tab bar positioning at the top~~ (Unchanged because of performance reasons)
 - [x] ~~"Explain selected text with AI"~~
 - [x] ~~Rearrangeable browser interface~~
-  - ~~[x] Multiple bar customisation~~
+  - [x] ~~Multiple bar customisation~~
   - [x] Individual styling of navigation elements (color, icon, size, shape, text)
   - [ ] Theme import and export
 - [ ] Reader view
@@ -61,9 +61,9 @@ python3 browser/main.py
 - [x] ~~Custom extension store (for the browser itself)~~
   - [x] ~~Widgets (e. g. Notes and additional widgets from the store)~~
     - [ ] Let widgets connect to a Browser Window API
-- [ ] URL autocompletion
-- [ ] Tab manager
-- [ ] Floating Adress Bar
+- [x] URL autocompletion
+- [x] Tab manager
+- [x] Floating Adress Bar
 - [x] Website
 
 ## 👥 Contributing
