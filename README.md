@@ -31,6 +31,7 @@ Simple and lightweight PySide6 browser for Linux, Windows and Mac computers. Mad
 - `pyqtdarktheme` (pip)
 - `darkdetect` (pip)
 - `ollama` (pip and system wide)
+- `requests` (pip)
 
 ## ⬇️ Getting the program
 A normal git clone will result into missing submodules. Instead use this command:

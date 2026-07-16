@@ -8,7 +8,7 @@ LOGO_PATH = os.path.join(SCRIPT_DIR, "assets", "mizu2.png")
 ADDITIONAL_QSS_PATH = os.path.join(SCRIPT_DIR, "assets", "style.qss")
 
 # Metdata / Machine information
-VERSION_NUMBER = "0.4.0 Beta"
+VERSION_NUMBER = "0.4.0"
 OS_TYPE = platform.system()
 
 # User configs
