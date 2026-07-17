@@ -136,7 +136,7 @@
     <message>
         <location filename="../main.py" line="218"/>
         <location filename="../main.py" line="437"/>
-        <location filename="../main.py" line="588"/>
+        <location filename="../main.py" line="593"/>
         <source>New Tab</source>
         <translation>Neuer Tab</translation>
     </message>
@@ -154,6 +154,7 @@
     </message>
     <message>
         <location filename="../main.py" line="233"/>
+        <location filename="../main.py" line="443"/>
         <source>Reload current tab</source>
         <translation>Aktuellen Tab neu laden</translation>
     </message>
@@ -177,264 +178,126 @@
     </message>
     <message>
         <location filename="../main.py" line="255"/>
-        <location filename="../main.py" line="443"/>
+        <location filename="../main.py" line="444"/>
         <source>Toggle address bar</source>
         <translation>Adressleiste umschalten</translation>
     </message>
     <message>
         <location filename="../main.py" line="261"/>
+        <location filename="../main.py" line="447"/>
         <source>Toggle extension sidebar</source>
         <translation>Erweiterungs-Seitenleiste umschalten</translation>
     </message>
     <message>
         <location filename="../main.py" line="266"/>
+        <location filename="../main.py" line="448"/>
         <source>Toggle focus mode</source>
         <translation>Konzentrationsmodus umschalten</translation>
     </message>
     <message>
         <location filename="../main.py" line="271"/>
+        <location filename="../main.py" line="449"/>
         <source>Toggle tab manager</source>
         <translation>Tab Manager umschalten</translation>
     </message>
     <message>
         <location filename="../main.py" line="276"/>
+        <location filename="../main.py" line="450"/>
         <source>Toggle history manager</source>
         <translation>Chronik-Manager umschalten</translation>
     </message>
     <message>
         <location filename="../main.py" line="281"/>
-        <location filename="../main.py" line="446"/>
+        <location filename="../main.py" line="451"/>
         <source>Increase page zoom by 10%</source>
         <translation>Webseiten Zoom um 10% erhöhen</translation>
     </message>
     <message>
         <location filename="../main.py" line="286"/>
-        <location filename="../main.py" line="447"/>
+        <location filename="../main.py" line="452"/>
         <source>Decrease page zoom by 10%</source>
         <translation>Webseiten Zoom um 10% verringern</translation>
     </message>
     <message>
         <location filename="../main.py" line="291"/>
-        <location filename="../main.py" line="448"/>
+        <location filename="../main.py" line="453"/>
         <source>Set page zoom to 100%</source>
         <translation>Webseiten Zoom auf 100% setzen</translation>
     </message>
     <message>
         <location filename="../main.py" line="296"/>
-        <location filename="../main.py" line="451"/>
+        <location filename="../main.py" line="456"/>
         <source>Manage bookmarks</source>
         <translation>Lesezeichen verwalten</translation>
     </message>
     <message>
         <location filename="../main.py" line="301"/>
-        <location filename="../main.py" line="452"/>
+        <location filename="../main.py" line="457"/>
         <source>Add current page to bookmarks</source>
         <translation>Aktuelle Seite zu Lesezeichen hinzufügen</translation>
     </message>
     <message>
         <location filename="../main.py" line="307"/>
-        <location filename="../main.py" line="455"/>
+        <location filename="../main.py" line="460"/>
         <source>Project Page</source>
         <translation>Projektseite</translation>
     </message>
     <message>
         <location filename="../main.py" line="311"/>
-        <location filename="../main.py" line="456"/>
+        <location filename="../main.py" line="461"/>
         <source>About</source>
         <translation>Über</translation>
     </message>
     <message>
-        <source>Go</source>
-        <translation type="vanished">Los</translation>
-    </message>
-    <message>
-        <location filename="../main.py" line="693"/>
+        <location filename="../main.py" line="698"/>
         <source>Download Request</source>
         <translation>Downloadanfrage</translation>
     </message>
     <message>
+        <location filename="../main.py" line="699"/>
         <source>Do you really want to download</source>
-        <translation type="vanished">Wollen sie wirklich diese Datei herunterladen:</translation>
+        <translation>Wollen sie wirklich diese Datei herunterladen:</translation>
     </message>
     <message>
+        <location filename="../main.py" line="759"/>
         <source>Extension updates: </source>
-        <translation type="vanished">Erweiterungsaktualisierungen: </translation>
+        <translation>Erweiterungsaktualisierungen: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="817"/>
+        <location filename="../main.py" line="822"/>
         <source>Add to Bookmarks</source>
         <translation>Zu Lesezeichen hinzufügen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="823"/>
+        <location filename="../main.py" line="828"/>
         <source>Add Current Page to Bookmarks</source>
         <translation>Aktuelle Webseite zu Lesezeichen hinzufügen</translation>
     </message>
     <message>
-        <location filename="../main.py" line="832"/>
+        <location filename="../main.py" line="837"/>
         <source>Bookmark name: </source>
         <translation>Name des Lesezeichens: </translation>
     </message>
     <message>
-        <location filename="../main.py" line="837"/>
+        <location filename="../main.py" line="842"/>
         <source>Bookmark URL: </source>
         <translation>URL des Lesezeichens: </translation>
     </message>
     <message>
-        <source>Settings</source>
-        <translation type="vanished">Einstellungen</translation>
-    </message>
-    <message>
-        <source>Browser Settings</source>
-        <translation type="vanished">Browsereinstellungen</translation>
-    </message>
-    <message>
-        <source>Silk Start (local)</source>
-        <translation type="vanished">Silk Start (lokal)</translation>
-    </message>
-    <message>
-        <source>URL</source>
-        <translation type="vanished">URL</translation>
-    </message>
-    <message>
-        <source>Start page type: </source>
-        <translation type="vanished">Startseite: </translation>
-    </message>
-    <message>
-        <source>Start page URL: </source>
-        <translation type="vanished">URL: </translation>
-    </message>
-    <message>
-        <source>Search engine: </source>
-        <translation type="vanished">Suchmaschine: </translation>
-    </message>
-    <message>
-        <source>Light</source>
-        <translation type="vanished">Hell</translation>
-    </message>
-    <message>
-        <source>Dark</source>
-        <translation type="vanished">Dunkel</translation>
-    </message>
-    <message>
-        <source>Automatic</source>
-        <translation type="vanished">Automatisch</translation>
-    </message>
-    <message>
-        <source>Legacy (Native)</source>
-        <translation type="vanished">Legacy (Nativ)</translation>
-    </message>
-    <message>
-        <source>Theme: </source>
-        <translation type="vanished">Thema: </translation>
-    </message>
-    <message>
-        <source>Accent color: </source>
-        <translation type="vanished">Akzentfarbe: </translation>
-    </message>
-    <message>
-        <source>Show bottom bar: </source>
-        <translation type="vanished">Unterleiste anzeigen: </translation>
-    </message>
-    <message>
-        <source>Show &apos;Go&apos; button in URL bar: </source>
-        <translation type="vanished">&quot;Los&quot; Knopf in Navigationsleiste anzeigen: </translation>
-    </message>
-    <message>
-        <source>Display warning when download is requested: </source>
-        <translation type="vanished">Warnung bei Downloadanfrage anzeigen: </translation>
-    </message>
-    <message>
-        <source>Downloads path: </source>
-        <translation type="vanished">Download Pfad: </translation>
-    </message>
-    <message>
-        <source>Program Language: </source>
-        <translation type="vanished">Programmsprache: </translation>
-    </message>
-    <message>
-        <source>Default font size: </source>
-        <translation type="vanished">Standard Schriftgröße: </translation>
-    </message>
-    <message>
-        <source>Javascript enabled: </source>
-        <translation type="vanished">JavaScript aktivieren: </translation>
-    </message>
-    <message>
-        <source>Scrollbars enabled: </source>
-        <translation type="vanished">Scrollleisten anzeigen: </translation>
-    </message>
-    <message>
-        <source>Install</source>
-        <translation type="vanished">Installieren</translation>
-    </message>
-    <message>
-        <location filename="../main.py" line="967"/>
-        <location filename="../main.py" line="970"/>
+        <location filename="../main.py" line="972"/>
+        <location filename="../main.py" line="975"/>
         <source>Model Installed</source>
         <translation>Modell installiert</translation>
     </message>
     <message>
-        <source>Ollama not running</source>
-        <translation type="vanished">Ollama Service ist inaktiv</translation>
-    </message>
-    <message>
-        <source>Install AI Page Summarization Model: </source>
-        <translation type="vanished">KI Modell herunterladen: </translation>
-    </message>
-    <message>
-        <source>Enable AI Page Summarization: </source>
-        <translation type="vanished">KI Zusammenfassung einschalten: </translation>
-    </message>
-    <message>
-        <source>General</source>
-        <translation type="vanished">Allgemein</translation>
-    </message>
-    <message>
-        <source>Display</source>
-        <translation type="vanished">Erscheinungsbild</translation>
-    </message>
-    <message>
-        <source>Security</source>
-        <translation type="vanished">Sicherheit</translation>
-    </message>
-    <message>
-        <source>Downloads</source>
-        <translation type="vanished">Downloads</translation>
-    </message>
-    <message>
-        <source>Language</source>
-        <translation type="vanished">Sprache</translation>
-    </message>
-    <message>
-        <source>Engine</source>
-        <translation type="vanished">Engine</translation>
-    </message>
-    <message>
-        <source>AI Features</source>
-        <translation type="vanished">KI Funktionen</translation>
-    </message>
-    <message>
-        <location filename="../main.py" line="957"/>
+        <location filename="../main.py" line="962"/>
         <source>Installing...</source>
         <translation>Installieren...</translation>
     </message>
     <message>
-        <location filename="../main.py" line="970"/>
+        <location filename="../main.py" line="975"/>
         <source>The AI page summarization model has been installed successfully. You can now enable AI page summarization in the settings.</source>
         <translation>Das KI Modell wurde erfolgreich installiert. Sie können die KI Zusammenfassung in den Einstellungen einschalten.</translation>
-    </message>
-    <message>
-        <source>&amp;AI Summarization</source>
-        <translation type="vanished">&amp;KI Zusammenfassung</translation>
-    </message>
-    <message>
-        <source>Toggle AI Summarization Sidebar</source>
-        <translation type="vanished">KI Seitenleiste umschalten</translation>
-    </message>
-    <message>
-        <source>Summarize current page with AI</source>
-        <translation type="vanished">Aktuelle Webseite zusammenfassen</translation>
     </message>
 </context>
 <context>
@@ -479,20 +342,24 @@
 <context>
     <name>DownloadItemWidget</name>
     <message>
+        <location filename="../interface/downloads/download_item_widget.py" line="39"/>
         <source>Downloading:</source>
-        <translation type="vanished">Herunteraden:</translation>
+        <translation>Herunteraden:</translation>
     </message>
     <message>
+        <location filename="../interface/downloads/download_item_widget.py" line="75"/>
         <source>Finished:</source>
-        <translation type="vanished">Abgeschlossen:</translation>
+        <translation>Abgeschlossen:</translation>
     </message>
     <message>
+        <location filename="../interface/downloads/download_item_widget.py" line="78"/>
         <source>Canceled:</source>
-        <translation type="vanished">Abgebrochen:</translation>
+        <translation>Abgebrochen:</translation>
     </message>
     <message>
+        <location filename="../interface/downloads/download_item_widget.py" line="82"/>
         <source>Error:</source>
-        <translation type="vanished">Fehlgeschlagen:</translation>
+        <translation>Fehlgeschlagen:</translation>
     </message>
 </context>
 <context>
@@ -515,37 +382,31 @@
     </message>
 </context>
 <context>
-    <name>DownloadManagerWidget</name>
-    <message>
-        <source>Manage Downloads</source>
-        <translation type="vanished">Downloads verwalten</translation>
-    </message>
-    <message>
-        <source>Refresh</source>
-        <translation type="vanished">Aktualisieren</translation>
-    </message>
-    <message>
-        <source>No active downloads.</source>
-        <translation type="vanished">Keine aktiven Downloads.</translation>
-    </message>
-</context>
-<context>
     <name>DownloadMenu</name>
     <message>
+        <location filename="../interface/downloads/download_menu.py" line="23"/>
+        <source>Manage Downloads</source>
+        <translation>Downloads verwalten</translation>
+    </message>
+    <message>
+        <location filename="../interface/downloads/download_menu.py" line="36"/>
         <source>Downloading:</source>
-        <translation type="vanished">Herunteraden:</translation>
+        <translation>Herunteraden:</translation>
     </message>
     <message>
+        <location filename="../interface/downloads/download_menu.py" line="90"/>
         <source>Finished:</source>
-        <translation type="vanished">Abgeschlossen:</translation>
+        <translation>Abgeschlossen:</translation>
     </message>
     <message>
+        <location filename="../interface/downloads/download_menu.py" line="93"/>
         <source>Canceled:</source>
-        <translation type="vanished">Abgebrochen:</translation>
+        <translation>Abgebrochen:</translation>
     </message>
     <message>
+        <location filename="../interface/downloads/download_menu.py" line="97"/>
         <source>Error:</source>
-        <translation type="vanished">Fehlgeschlagen:</translation>
+        <translation>Fehlgeschlagen:</translation>
     </message>
 </context>
 <context>
@@ -555,28 +416,39 @@
         <source>Installation Failed</source>
         <translation>Installation fehlgeschlagen</translation>
     </message>
+    <message>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="284"/>
+        <source>Failed to install extension: </source>
+        <translation>Installation von folgender Erweiterung fehlgeschlagen:</translation>
+    </message>
 </context>
 <context>
     <name>ExtensionItemWidget</name>
     <message>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="75"/>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="151"/>
         <source>by</source>
-        <translation type="vanished">von</translation>
+        <translation>von</translation>
     </message>
     <message>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="85"/>
         <source>Required libraries: </source>
-        <translation type="vanished">Erforderliche Bibliotheken: </translation>
+        <translation>Erforderliche Bibliotheken: </translation>
     </message>
     <message>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="124"/>
         <source>About</source>
-        <translation type="vanished">Über</translation>
+        <translation>Über</translation>
     </message>
     <message>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="151"/>
         <source>Version: </source>
-        <translation type="vanished">Version: </translation>
+        <translation>Version: </translation>
     </message>
     <message>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="156"/>
         <source>Source: </source>
-        <translation type="vanished">Quelle: </translation>
+        <translation>Quelle: </translation>
     </message>
     <message>
         <location filename="../interface/dialogs/extensions_dialog.py" line="181"/>
@@ -585,12 +457,37 @@
         <translation>Downloadanfrage</translation>
     </message>
     <message>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="182"/>
         <source>Do you really want to download</source>
-        <translation type="vanished">Wollen sie wirklich diese Datei herunterladen:</translation>
+        <translation>Wollen sie wirklich diese Datei herunterladen:</translation>
     </message>
     <message>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="209"/>
         <source>Do you really want to delete</source>
-        <translation type="vanished">Wollen sie wirklich diese Datei löschen:</translation>
+        <translation>Wollen sie wirklich diese Datei löschen:</translation>
+    </message>
+</context>
+<context>
+    <name>HistoryManagerWidget</name>
+    <message>
+        <location filename="../interface/widgets/history_manager.py" line="74"/>
+        <source>Search history...</source>
+        <translation>Chronik durchsuchen...</translation>
+    </message>
+    <message>
+        <location filename="../interface/widgets/history_manager.py" line="81"/>
+        <source>Latest first</source>
+        <translation>Neueste zuerst</translation>
+    </message>
+    <message>
+        <location filename="../interface/widgets/history_manager.py" line="81"/>
+        <source>Oldest first</source>
+        <translation>Älteste zuerst</translation>
+    </message>
+    <message>
+        <location filename="../interface/widgets/history_manager.py" line="86"/>
+        <source>Clear History</source>
+        <translation>Chronik löschen</translation>
     </message>
 </context>
 <context>
@@ -684,10 +581,6 @@
         <source>Customize Styling</source>
         <translation>Styling bearbeiten</translation>
     </message>
-    <message>
-        <source>Adress Bar</source>
-        <translation type="vanished">Adressleiste</translation>
-    </message>
 </context>
 <context>
     <name>NoteViewer</name>
@@ -773,14 +666,6 @@
         <translation>Akzentfarbe: </translation>
     </message>
     <message>
-        <source>Show bottom bar: </source>
-        <translation type="obsolete">Unterleiste anzeigen: </translation>
-    </message>
-    <message>
-        <source>Show &apos;Go&apos; button in URL bar: </source>
-        <translation type="obsolete">&quot;Los&quot; Knopf in Navigationsleiste anzeigen: </translation>
-    </message>
-    <message>
         <location filename="../interface/dialogs/settings_dialog.py" line="93"/>
         <source>Manage Navigation UI</source>
         <translation>Navigationsleiste verwalten</translation>
@@ -819,6 +704,11 @@
         <location filename="../interface/dialogs/settings_dialog.py" line="141"/>
         <source>Scrollbars enabled: </source>
         <translation>Scrollleisten anzeigen: </translation>
+    </message>
+    <message>
+        <location filename="../interface/dialogs/settings_dialog.py" line="156"/>
+        <source>Install</source>
+        <translation>Installieren</translation>
     </message>
     <message>
         <location filename="../interface/dialogs/settings_dialog.py" line="159"/>
@@ -877,6 +767,14 @@
     </message>
 </context>
 <context>
+    <name>TabManager</name>
+    <message>
+        <location filename="../interface/widgets/tab_manager.py" line="34"/>
+        <source>Search tabs...</source>
+        <translation>Tabs suchen...</translation>
+    </message>
+</context>
+<context>
     <name>WebExtensionsDialog</name>
     <message>
         <location filename="../interface/dialogs/extensions_dialog.py" line="391"/>
@@ -908,8 +806,9 @@
         <translation>Repositories</translation>
     </message>
     <message>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="488"/>
         <source>Repositories: </source>
-        <translation type="vanished">Repositories: </translation>
+        <translation>Repositories: </translation>
     </message>
     <message>
         <location filename="../interface/dialogs/extensions_dialog.py" line="514"/>
@@ -933,37 +832,14 @@ Why not try to install some?</source>
         <translation>Erweiterungen werden geladen...</translation>
     </message>
     <message>
+        <location filename="../interface/dialogs/extensions_dialog.py" line="594"/>
         <source>Error when trying to load store items: </source>
-        <translation type="vanished">Beim Laden der Erweiterungen ist ein Fehler aufgetreten: </translation>
+        <translation>Beim Laden der Erweiterungen ist ein Fehler aufgetreten: </translation>
     </message>
     <message>
         <location filename="../interface/dialogs/extensions_dialog.py" line="607"/>
         <source>No extensions found.</source>
         <translation>Es wurden keine Erweiterungen gefunden.</translation>
-    </message>
-    <message>
-        <source>Repository</source>
-        <translation type="vanished">Repository</translation>
-    </message>
-    <message>
-        <source>Change repository URL</source>
-        <translation type="vanished">Repository-URL ändern</translation>
-    </message>
-    <message>
-        <source>Input your desired repository URL that points to an index:</source>
-        <translation type="vanished">Geben Sie eine gewünschte Repository-URL ein, die auf einen Index zeigt.</translation>
-    </message>
-    <message>
-        <source>Public extensions coming soon...</source>
-        <translation type="vanished">Öffentliche Erweiterungen sind demnächst verfügbar...</translation>
-    </message>
-    <message>
-        <source>Sort by Developer</source>
-        <translation type="vanished">Nach Entwickler sortieren</translation>
-    </message>
-    <message>
-        <source>Don&apos;t sort</source>
-        <translation type="vanished">Nicht sortieren</translation>
     </message>
 </context>
 <context>

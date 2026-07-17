@@ -1,3 +1,4 @@
+import re
 from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
@@ -9,6 +10,7 @@ from PySide6.QtCore import QUrl, QTimer, Qt, QUrl
 from PySide6.QtGui import QKeyEvent
 from datetime import datetime
 from interface.widgets.better_webengine import BetterWebEngine
+from services.history_mgr import HistoryEntryData
 import qtawesome as qta
 
 class AddressBar(QLineEdit):
@@ -49,42 +51,40 @@ class AddressBar(QLineEdit):
         else:
             super().keyPressEvent(event)
 
+    def _autocomplete(self, user_url: str, autocomp: str):
+        end_pos = len(autocomp) - len(user_url)
+
+        self.textChanged.disconnect(self._filter)
+        self.setText(autocomp)
+        self.textChanged.connect(self._filter)
+
+        self.setCursorPosition(len(user_url))
+        self.setSelection(len(user_url), end_pos)
+
     def _filter(self, user_url: str):
-        if self.browser:
-            if not user_url:
-                return
+        if not user_url or not self.browser:
+            return
 
-            history: list[dict] = self.controller.history.get_history()
+        history = self.controller.history.get_history()
+        matching: list[HistoryEntryData] = []
+        autocomp = None
 
-            for entry in history:
-                url = entry.get("url")
+        for entry in history:
+            url = entry.url
+            if not url:
+                continue
+            domain = re.sub(r"^https?://", "", url)
 
-                if url is not None and url != "":
-                    domain = urlparse(url).netloc
+            if url.startswith(user_url):
+                if autocomp is None:
+                    autocomp = url
 
-                    if url.startswith(user_url):
-                        end_pos = len(url) - len(user_url)
+            elif domain.startswith(user_url):
+                if autocomp is None:
+                    autocomp = domain
 
-                        self.textChanged.disconnect(self._filter)
-                        self.setText(url)
-                        self.textChanged.connect(self._filter)
-
-                        self.setCursorPosition(len(user_url))
-                        self.setSelection(len(user_url), end_pos)
-                        
-                        return
-                    
-                    elif domain.startswith(user_url) and domain is not None and domain != "":
-                        end_pos = len(domain) - len(user_url)
-
-                        self.textChanged.disconnect(self._filter)
-                        self.setText(domain)
-                        self.textChanged.connect(self._filter)
-
-                        self.setCursorPosition(len(user_url))
-                        self.setSelection(len(user_url), end_pos)
-                        
-                        return
+        if autocomp is not None and autocomp != user_url:
+            self._autocomplete(user_url, autocomp)
 
     def update_url(self, url: QUrl):
         str_url = url.toString()

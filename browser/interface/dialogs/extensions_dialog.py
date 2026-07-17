@@ -72,7 +72,7 @@ class ExtensionItemWidget(QFrame):
         extension_title.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         title_layout.addWidget(extension_title, alignment=Qt.AlignmentFlag.AlignLeft)
 
-        extension_author = QLabel(f"{self.tr('by')} {self.metadata.author}")
+        extension_author = QLabel(self.tr('by') + ' ' + self.metadata.author)
         extension_author.setStyleSheet("font-size: 10px; color: #808080; border: none;")
         title_layout.addWidget(extension_author, alignment=Qt.AlignmentFlag.AlignLeft)
 
@@ -82,7 +82,7 @@ class ExtensionItemWidget(QFrame):
             required_dependencies = check_dependencies(self.metadata.dependencies)
 
             if len(required_dependencies) > 0:
-                extension_deps = QLabel(f"{self.tr('Required libraries: ')}{', '.join(required_dependencies)}")
+                extension_deps = QLabel(self.tr('Required libraries: ') + ', '.join(required_dependencies))
                 extension_deps.setWordWrap(True)
                 extension_deps.setStyleSheet("color: #808080; border: none;")
                 extension_deps.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
@@ -121,7 +121,7 @@ class ExtensionItemWidget(QFrame):
     
     def show_extension_info(self):
         dlg = QDialog(self)
-        dlg.setWindowTitle(f"{self.tr('About')} {self.metadata.name}")
+        dlg.setWindowTitle(self.tr('About') + ' ' + self.metadata.name)
         dlg_layout = QVBoxLayout()
 
         dlg_layout.addStretch()
@@ -148,12 +148,12 @@ class ExtensionItemWidget(QFrame):
         about_description.setAlignment(Qt.AlignmentFlag.AlignCenter)
         dlg_layout.addWidget(about_description)
 
-        about_label = QLabel(f"{self.tr('Version: ')}{self.metadata.version}\n{self.tr('by')} {self.metadata.author}")
+        about_label = QLabel(self.tr('Version: ') + self.metadata.version + '\n' + self.tr('by') + ' ' + self.metadata.author)
         about_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         dlg_layout.addWidget(about_label)
 
         if self.installable:
-            source_label = QTextEdit(f"{self.tr('Source: ')}{self.metadata.index_source}")
+            source_label = QTextEdit(self.tr('Source: ') + self.metadata.index_source)
             source_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             source_label.setFixedHeight(90)
             source_label.setReadOnly(True)
@@ -179,7 +179,7 @@ class ExtensionItemWidget(QFrame):
 
         warning_dlg = QMessageBox(self)
         warning_dlg.setWindowTitle(self.tr("Download Request"))
-        warning_dlg.setText(f"{self.tr('Do you really want to download')} \"{self.metadata.name}\"?")
+        warning_dlg.setText(self.tr('Do you really want to download') + ' "' + self.metadata.name + '"?')
         warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
         warning_dlg.setIcon(QMessageBox.Icon.Warning)
 
@@ -206,7 +206,7 @@ class ExtensionItemWidget(QFrame):
     def delete_extension(self):
         warning_dlg = QMessageBox(self)
         warning_dlg.setWindowTitle(self.tr("Download Request"))
-        warning_dlg.setText(f"{self.tr('Do you really want to delete')} \"{self.metadata.name}\"?")
+        warning_dlg.setText(self.tr('Do you really want to delete') + ' "' + self.metadata.name + '"?')
         warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
         warning_dlg.setIcon(QMessageBox.Icon.Warning)
 
@@ -281,7 +281,7 @@ class ExtensionInstallDialog(QDialog):
         self.accept()
     
     def install_failed(self, message):
-        QMessageBox.critical(self, self.tr("Installation Failed"), f"{self.tr('Failed to install extension: ')}{message}")
+        QMessageBox.critical(self, self.tr("Installation Failed"), self.tr('Failed to install extension: ') + message)
         self.reject()
     
     def show_status(self, string):
@@ -485,7 +485,7 @@ class WebExtensionsDialog(QDialog):
         self.store_repository_btn = QPushButton(self.tr("Repositories"))
         self.store_repository_btn.setIcon(qta.icon("mdi.source-repository"))
         self.store_repository_btn.setStyleSheet("border: 1px solid #414242; border-radius: 3px; padding: 8px;")
-        self.store_repository_btn.setToolTip(f"{self.tr('Repositories: ')}{str(len(self.index_urls))}")
+        self.store_repository_btn.setToolTip(self.tr('Repositories: ') + str(len(self.index_urls)))
         self.store_repository_btn.clicked.connect(self.change_repo_url)
         self.store_widgets_controls.addWidget(self.store_repository_btn)
         
@@ -591,7 +591,7 @@ class WebExtensionsDialog(QDialog):
 
         self.store_widgets_repeatable_layout.addStretch()
 
-        info_label = QLabel(f"{self.tr('Error when trying to load store items: ')}{error}")
+        info_label = QLabel(self.tr('Error when trying to load store items: ') + error)
         info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         info_label.setStyleSheet("color: grey;")
         self.store_widgets_repeatable_layout.addWidget(info_label)

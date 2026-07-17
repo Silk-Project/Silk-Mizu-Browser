@@ -5,12 +5,21 @@ from datetime import datetime, timezone, date
 from PySide6.QtCore import QUrl
 from services.constants import HISTORY_PATH
 from interface.widgets.better_webengine import BetterWebEngine
+from dataclasses import dataclass, field, asdict
+
+
+@dataclass
+class HistoryEntryData:
+    url: str
+    visited_at: datetime = field(default_factory=lambda: datetime.min(timezone.utc))
+    title: str = ""
+
 
 class HistoryManager:
     def __init__(self, controller):
         self.controller = controller
         self.browser: BetterWebEngine = None
-        self.history: list[dict] = []
+        self.history: list[HistoryEntryData] = []
 
         self._load_history()
         self.controller.currentBrowserChanged.connect(self._set_browser)
@@ -26,78 +35,47 @@ class HistoryManager:
         if os.path.exists(HISTORY_PATH):
             try:
                 with open(HISTORY_PATH, "r") as f:
-                    history: list[dict] = json.load(f)
+                    raw: list[dict] = json.load(f)
 
-                if isinstance(history, list):
-                    for entry in history:
-                        url = entry.get("url", None)
-                        visited_at = entry.get("visited_at", None)
-
-                        if url is not None and visited_at is not None:
-                            self.history.append({
-                                "url": url,
-                                "title": entry.get("title", ""),
-                                "visited_at": datetime.fromisoformat(visited_at),
-                            })
+                if isinstance(raw, list):
+                    for entry in raw:
+                        visited_at = entry.get("visited_at")
+                        if visited_at is not None:
+                            self.history.append(HistoryEntryData(
+                                url=entry.get("url", ""),
+                                title=entry.get("title", ""),
+                                visited_at=datetime.fromisoformat(visited_at),
+                            ))
 
             except Exception as e:
                 print(f"Failed to read history: {e}")
     
     def _persist(self):
-        history_with_iso = self._get_history_with_iso_dates()
-
         with open(HISTORY_PATH, "w") as f:
-            json.dump(history_with_iso, f, indent=4)
-
-    def _get_history_with_iso_dates(self) -> list[dict]:
-        alt_history: list[dict] = []
-
-        for entry in self.history:
-            url = entry.get("url", None)
-            visited_at = entry.get("visited_at", None)
-
-            if url is not None and visited_at is not None:
-                alt_history.append({
-                    "url": url,
-                    "title": entry.get("title", ""),
-                    "visited_at": visited_at.isoformat(),
-                })
-        
-        return alt_history
+            json.dump([asdict(e) | {"visited_at": e.visited_at.isoformat()} for e in self.history], f, indent=4)
     
     def _update_history(self, url: QUrl):
         if self.browser:
-            now = datetime.now(timezone.utc)
-            title = self.browser.title() if self.browser.title() else ""
-
-            self.history.append({
-                "url": url.toString(),
-                "title": title,
-                "visited_at": now,
-            })
-
+            self.history.append(HistoryEntryData(
+                url=url.toString(),
+                title=self.browser.title() if self.browser.title() else "",
+                visited_at=datetime.now(timezone.utc),
+            ))
             self._persist()
     
-    def get_history(self) -> list[dict]:
+    def get_history(self) -> list[HistoryEntryData]:
         return self.history
     
-    def get_history_grouped_by_date(self) -> dict[date, list[dict]]:
+    def get_history_grouped_by_date(self) -> dict[date, list[HistoryEntryData]]:
         grouped = defaultdict(list)
 
         for entry in self.history:
-            visited_at = entry.get("visited_at")
-            if isinstance(visited_at, datetime):
-                grouped[visited_at.date()].append(entry)
-            else:
-                grouped[date.today()].append(entry)
+            grouped[entry.visited_at.date()].append(entry)
 
         return dict(sorted(grouped.items(), reverse=True))
     
-    def delete_entry(self, url, visited_at):
-        self.history = [
-            e for e in self.history
-            if not (e.get("url") == url and e.get("visited_at") == visited_at)
-        ]
+    def delete_entry(self, entry: HistoryEntryData):
+        self.history = [e for e in self.history if e is not entry]
         self._persist()
     
     def clear_history(self):

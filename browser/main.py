@@ -151,6 +151,11 @@ class BrowserWindow(QMainWindow):
 
         # Initialize whole UI
         self.init_menu_bar()
+
+        # Install translator
+        self.translator = QTranslator()
+        self.load_language(current_settings["language"])
+
         self.init_extension_sidebar()
         self.init_control_ui()
         self.init_bookmark_bar()
@@ -159,10 +164,6 @@ class BrowserWindow(QMainWindow):
 
         self.extension_updates = False
         self.check_extension_updates()
-
-        # Install translator
-        self.translator = QTranslator()
-        self.load_language(current_settings["language"])
 
         # Add main widget
         widget = QWidget()
@@ -440,9 +441,14 @@ class BrowserWindow(QMainWindow):
         self.removeTabAction.setText(self.tr("Remove current tab"))
         self.moveToNextTabAction.setText(self.tr("Next tab"))
         self.moveToPreviousTabAction.setText(self.tr("Previous tab"))
+        self.reloadPageAction.setText(self.tr("Reload current tab"))
         self.toggleFloatingBarAction.setText(self.tr("Toggle address bar"))
 
         # View menu
+        self.toggleSidebarAction.setText(self.tr("Toggle extension sidebar"))
+        self.toggleFocusModeAction.setText(self.tr("Toggle focus mode"))
+        self.toggleTabManagerAction.setText(self.tr("Toggle tab manager"))
+        self.toggleHistoryManagerAction.setText(self.tr("Toggle history manager"))
         self.scaleUpAction.setText(self.tr("Increase page zoom by 10%"))
         self.scaleDownAction.setText(self.tr("Decrease page zoom by 10%"))
         self.scaleDefaultAction.setText(self.tr("Set page zoom to 100%"))
@@ -691,7 +697,7 @@ class BrowserWindow(QMainWindow):
             if current_settings["download_warnings"]:
                 warning_dlg = QMessageBox(self)
                 warning_dlg.setWindowTitle(self.tr("Download Request"))
-                warning_dlg.setText(f"{self.tr('Do you really want to download')} \"{download.suggestedFileName()}\"?")
+                warning_dlg.setText(self.tr('Do you really want to download') + ' "' + download.suggestedFileName() + '"?')
                 warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
                 warning_dlg.setIcon(QMessageBox.Icon.Warning)
 
@@ -751,7 +757,7 @@ class BrowserWindow(QMainWindow):
                         self.extension_updates = True
             
             if self.extension_updates:
-                print(f"{self.tr('Extension updates: ')}{updateable_extensions}")
+                print(self.tr('Extension updates: ') + str(updateable_extensions))
             
             else:
                 # No updates

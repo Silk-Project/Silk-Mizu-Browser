@@ -36,7 +36,7 @@ class DownloadItemWidget(QFrame):
         download_filename = self.download.suggestedFileName()
 
         # Download UI elements
-        self.label = QLabel(f"{self.tr('Downloading:')} {download_filename}")
+        self.label = QLabel(self.tr('Downloading:') + ' ' + download_filename)
         self.label.setStyleSheet("border: none;")
         self.label.setWordWrap(True)
         self.label.setToolTip(download_filename)
@@ -72,12 +72,12 @@ class DownloadItemWidget(QFrame):
     
         if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
             self.progress.setValue(100)
-            self.label.setText(f"{self.tr('Finished:')} {download_filename}")
+            self.label.setText(self.tr('Finished:') + ' ' + download_filename)
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
-            self.label.setText(f"{self.tr('Canceled:')} {download_filename}")
+            self.label.setText(self.tr('Canceled:') + ' ' + download_filename)
             self.progress.setEnabled(False)
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
-            self.label.setText(f"{self.tr('Error:')} {download_filename}")
+            self.label.setText(self.tr('Error:') + ' ' + download_filename)
             self.progress.setStyleSheet("QProgressBar::chunk { background-color: red; }")
