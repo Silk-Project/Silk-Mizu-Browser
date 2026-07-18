@@ -86,36 +86,39 @@ class NavBarManager(QWidget):
     def _create_navbtn(self, element: NavigationUIElement):
         try:
             if element.type == "button":
-                try:
-                    icon_color = self.theme_mgr.get_contrast_color_from_theme()
-                except Exception:
-                    icon_color = "white"
+                if element.styling and element.styling.icon_color:
+                    icon_color = element.styling.icon_color
+                else:
+                    try:
+                        icon_color = self.theme_mgr.get_contrast_color_from_theme()
+                    except Exception:
+                        icon_color = "white"
 
                 if element.action == "back":
-                    button = BackBtn(self.controller)
+                    button = BackBtn(controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
 
                 elif element.action == "forward":
-                    button = ForwardBtn(self.controller)
+                    button = ForwardBtn(controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
 
                 elif element.action == "reload":
-                    button = ReloadBtn(self.controller)
+                    button = ReloadBtn(controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
 
                 elif element.action == "go":
-                    button = GoBtn(self.controller)
+                    button = GoBtn(controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
 
                 elif element.action == "new_tab":
                     button = QPushButton()
                     button.setStyleSheet("padding: 8px;")
                     button.setProperty("class", "navbtns")
-                    button.setIcon(qta.icon("fa6s.plus", color=icon_color))
+                    button.setIcon(qta.icon(element.icon, color=icon_color))
                     button.clicked.connect(self.controller.window.create_new_tab)
 
                 elif element.action in ("download_manager", "downloads"):
-                    button = DownloadManagerBtn(self.controller)
+                    button = DownloadManagerBtn(controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
 
                 elif element.action == "add_bookmark":
@@ -140,23 +143,23 @@ class NavBarManager(QWidget):
                     button.clicked.connect(self.controller.window.settings_dialog)
 
                 elif element.action == "extensions_sidebar":
-                    button = ExtSidebarBtn(self.controller)
+                    button = ExtSidebarBtn(controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
                 
                 elif element.action == "tab_manager":
-                    button = TabManagerBtn(self.controller)
+                    button = TabManagerBtn(ui_controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
                 
                 elif element.action == "history_manager":
-                    button = HistoryManagerBtn(self.controller)
+                    button = HistoryManagerBtn(ui_controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
                 
                 elif element.action == "zoom_in":
-                    button = ZoomInBtn(self.controller)
+                    button = ZoomInBtn(controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
                 
                 elif element.action == "zoom_out":
-                    button = ZoomOutBtn(self.controller)
+                    button = ZoomOutBtn(controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
 
                 else:
@@ -192,15 +195,18 @@ class NavBarManager(QWidget):
                 label = QLabel()
                 label.setStyleSheet("padding: 8px;")
                 label.setText(element.styling.label if element.styling and element.styling.label else "")
+                self._apply_styling_to_widget(label, element.styling)
                 return label
             
             elif element.type == "dyn_label":
                 if element.action == "zoom_label":
                     dyn_label = ZoomAmountLabel(self.controller)
+                    self._apply_styling_to_widget(dyn_label, element.styling)
                     return dyn_label
                 
                 elif element.action == "clock":
                     dyn_label = ClockLabel(self.controller.timer)
+                    self._apply_styling_to_widget(dyn_label, element.styling)
                     return dyn_label
             
             elif element.type == "progress_bar":
@@ -236,5 +242,13 @@ class NavBarManager(QWidget):
                 widget.setPlaceholderText(styling.label)
             elif isinstance(widget, QLabel) and styling.label:
                 widget.setText(styling.label)
+
+            if isinstance(widget, QPushButton) and hasattr(widget, 'update_icon_color') and styling.icon_color:
+                widget.update_icon_color(styling.icon_color)
+            elif isinstance(widget, QPushButton) and styling.icon_color and hasattr(widget, 'icon_id'):
+                widget.setIcon(qta.icon(widget.icon_id, color=styling.icon_color))
+            elif isinstance(widget, QLabel) and styling.icon_color:
+                existing = widget.styleSheet()
+                widget.setStyleSheet(existing + f"color: {styling.icon_color};")
         except Exception as e:
             print(f"Error applying styling to widget: {e}")

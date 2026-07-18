@@ -23,7 +23,7 @@ class HistoryPopup(QListWidget):
         self.setFixedHeight(min(len(entries) * 36 + 8, 300))
         self.setStyleSheet(
             "QListWidget { background: #202124; border: 1px solid #414242; border-radius: 8px; }"
-            "QListWidget::item { padding: 10px 25px; color: #ddd; }"
+            "QListWidget::item { padding: 10px 25px; color: #ddd; border-radius: 8px;}"
             "QListWidget::item:hover { background: #3a3a3a; }"
         )
 

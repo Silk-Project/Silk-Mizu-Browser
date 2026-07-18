@@ -23,6 +23,7 @@ from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile, QWebEnginePage
 from PySide6.QtGui import QAction, QKeySequence, QIcon
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 
 # Dialogs
 from interface.dialogs.about_dialog import AboutDialog
@@ -55,7 +56,7 @@ from services.constants import (
     SCRIPT_DIR, CONFIG_PATH, BOOKMARKS_PATH, LOGO_PATH, START_PAGE_PATH,
     DOWNLOAD_PATH, EXTENSIONS_PATH, EXTENSIONS_SETTINGS_PATH, ADDITIONAL_QSS_PATH, 
     DEFAULT_NAVBAR_LAYOUT_PATH, SUM_AI_MODEL, VERSION_NUMBER, NAME_TO_LANGUAGE, 
-    LANGUAGE_TO_NAME,
+    LANGUAGE_TO_NAME, NAVIGATION_SOUND_PATH
 )
 
 STORAGE_PATH = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), "Silk-Mizu-Browser")
@@ -151,6 +152,13 @@ class BrowserWindow(QMainWindow):
 
         # Initialize whole UI
         self.init_menu_bar()
+
+        # Navigation sound
+        # self.player = QMediaPlayer()
+        # self.audio_output = QAudioOutput()
+        # self.player.setAudioOutput(self.audio_output)
+        # self.audio_output.setVolume(0.7)
+        # self.player.setSource(NAVIGATION_SOUND_PATH)
 
         # Install translator
         self.translator = QTranslator()
@@ -572,6 +580,7 @@ class BrowserWindow(QMainWindow):
         web_tab.loadFinished.connect(self.update_tab_titles)
         web_tab.loadFinished.connect(web_tab.page_load_finished)
         web_tab.loadStarted.connect(self.update_tab_titles)
+        # web_tab.loadStarted.connect(self.player.play)
         web_tab.iconChanged.connect(self.update_tab_titles)
         web_tab.signals.sum_selected_with_ai.connect(self.summarize_selected_with_ai)
         web_tab.signals.sum_page_with_ai.connect(self.summarize_current_page_ai)

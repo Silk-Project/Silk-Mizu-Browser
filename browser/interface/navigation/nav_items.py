@@ -66,7 +66,6 @@ class AddressBar(QLineEdit):
             return
 
         history = self.controller.history.get_history()
-        matching: list[HistoryEntryData] = []
         autocomp = None
 
         for entry in history:
@@ -98,11 +97,11 @@ class AddressBar(QLineEdit):
         self.browser.load_page(url)
 
 class BackBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "fa6s.arrow-left"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "fa6s.arrow-left"
+        self.icon_id = icon
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
@@ -137,11 +136,11 @@ class BackBtn(QPushButton):
             self.browser.back()
 
 class ForwardBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "fa6s.arrow-right"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "fa6s.arrow-right"
+        self.icon_id = icon
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
@@ -176,11 +175,12 @@ class ForwardBtn(QPushButton):
             self.browser.forward()
         
 class ReloadBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "fa6s.arrow-rotate-right"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "fa6s.arrow-rotate-right"
+        self.icon_id = icon
+        self.current_icon_id = self.icon_id
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
@@ -206,16 +206,16 @@ class ReloadBtn(QPushButton):
     
     def update_status(self):
         if self.browser.page_is_loading:
-            self.icon_id = "ei.remove"
+            self.current_icon_id = "ei.remove"
 
         else:
-            self.icon_id = "fa6s.arrow-rotate-right"
+            self.current_icon_id = self.icon_id
         
-        self.setIcon(qta.icon(self.icon_id, color=self.icon_color))
+        self.setIcon(qta.icon(self.current_icon_id, color=self.icon_color))
     
     def update_icon_color(self, icon_color: str):
         self.icon_color = icon_color
-        self.setIcon(qta.icon(self.icon_id, color=icon_color))
+        self.setIcon(qta.icon(self.current_icon_id, color=icon_color))
     
     def trigger_reload_stop(self):
         if self.browser:
@@ -228,12 +228,12 @@ class ReloadBtn(QPushButton):
             self.update_status()
 
 class ExtSidebarBtn(QPushButton):
-    def __init__(self, ui_controller):
+    def __init__(self, ui_controller, icon: str = "msc.layout-sidebar-left"):
         super().__init__()
         
         self.ui_controller = ui_controller
 
-        self.icon_id = "msc.layout-sidebar-left"
+        self.icon_id = icon
         self.icon_color = "white"
         
         self.setIcon(qta.icon(self.icon_id))
@@ -250,12 +250,12 @@ class ExtSidebarBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
 
 class TabManagerBtn(QPushButton):
-    def __init__(self, ui_controller):
+    def __init__(self, ui_controller, icon: str = "ri.menu-fill"):
         super().__init__()
         
         self.ui_controller = ui_controller
 
-        self.icon_id = "ri.menu-fill"
+        self.icon_id = icon
         self.icon_color = "white"
         
         self.setIcon(qta.icon(self.icon_id))
@@ -272,12 +272,12 @@ class TabManagerBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
 
 class HistoryManagerBtn(QPushButton):
-    def __init__(self, ui_controller):
+    def __init__(self, ui_controller, icon: str = "fa6s.clock-rotate-left"):
         super().__init__()
         
         self.ui_controller = ui_controller
 
-        self.icon_id = "fa6s.clock-rotate-left"
+        self.icon_id = icon
         self.icon_color = "white"
         
         self.setIcon(qta.icon(self.icon_id))
@@ -294,11 +294,11 @@ class HistoryManagerBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
 
 class GoBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "mdi.arrow-right-bold-box"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "mdi.arrow-right-bold-box"
+        self.icon_id = icon
         self.icon_color = "white"
         self.controller = controller
 
@@ -334,11 +334,11 @@ class GoBtn(QPushButton):
                 self.browser.load_page(url)
 
 class DownloadManagerBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "fa6s.download"):
         super().__init__(parent)
 
         self.controller = controller
-        self.icon_id = "fa6s.download"
+        self.icon_id = icon
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
@@ -356,11 +356,11 @@ class DownloadManagerBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
 
 class ZoomInBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "ph.magnifying-glass-plus"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "ph.magnifying-glass-plus"
+        self.icon_id = icon
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
@@ -382,11 +382,11 @@ class ZoomInBtn(QPushButton):
             self.browser.scale_page_up()
 
 class ZoomOutBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "ph.magnifying-glass-minus"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "ph.magnifying-glass-minus"
+        self.icon_id = icon
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
