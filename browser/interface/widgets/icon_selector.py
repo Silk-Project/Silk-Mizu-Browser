@@ -10,104 +10,11 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QSizePolicy,
 )
-from PySide6.QtCore import Qt, Signal, QObject
+from PySide6.QtCore import Qt, Signal
+from interface.widgets.icon_database import IconDatabase
 import qtawesome as qta
 
 GRID_WIDTH = 6
-
-class IconDatabase(QObject):
-    def __init__(self):
-        super().__init__()
-
-        self.icon_database = {
-            self.tr("Default"): [
-                "fa6s.arrow-left",
-                "fa6s.arrow-right",
-                "fa6s.arrow-rotate-right",
-                "msc.layout-sidebar-left",
-                "ri.menu-fill",
-                "fa6s.clock-rotate-left",
-                "mdi.arrow-right-bold-box",
-                "fa6s.download",
-                "ph.magnifying-glass-plus",
-                "ph.magnifying-glass-minus",
-            ],
-            self.tr("General"): [
-                "fa6s.angle-left",
-                "fa6s.angle-right",
-                "fa6s.angle-up",
-                "fa6s.angle-down",
-                "fa6s.arrow-rotate-left",
-                "fa6s.arrow-pointer",
-                "fa6s.arrows-rotate",
-                "fa6s.circle-arrow-left",
-                "fa6s.circle-arrow-right",
-                "fa6s.circle-arrow-up",
-                "fa6s.circle-arrow-down",
-                "fa6s.circle-chevron-left",
-                "fa6s.circle-chevron-right",
-                "fa6s.circle-chevron-up",
-                "fa6s.circle-chevron-down",
-                "fa6s.circle-left",
-                "fa6s.circle-right",
-                "fa6s.circle-up",
-                "fa6s.circle-down",
-                "fa6s.circle",
-                "fa6s.circle-dot",
-            ],
-            self.tr("People"): [
-                "ei.adult",
-                "ei.child",
-                "ei.smiley",
-                "ei.user",
-                "ei.wheelchair",
-                "ei.hand-left",
-                "ei.hand-right",
-                "ei.hand-down",
-                "ei.hand-up",
-                "ei.person",
-                "ei.torso",
-                "ei.universal-access",
-            ],
-            self.tr("Brands / Companies"): [
-                "ei.youtube",
-                "ei.wordpress",
-                "ei.vkontakte",
-                "ei.vimeo",
-                "ei.w3c",
-                "ei.twitter",
-                "ei.tumblr",
-                "ei.viadeo",
-                "ei.stumbleupon",
-                "ei.slideshare",
-                "ei.spotify",
-                "ei.stackoverflow",
-                "ei.soundcloud",
-                "ei.skype",
-                "ei.reddit",
-                "ei.redux",
-                "ei.livejournal",
-                "ei.instagram",
-                "ei.github",
-                "ei.foursquare",
-                "ei.friendfeed",
-                "ei.facebook",
-                "ei.blogger",
-                "ei.behance",
-                "ei.myspace",
-                "fa5b.amazon",
-                "fa5b.app-store",
-            ],
-            self.tr("Miscellaneous"): [
-                "fa6s.circle-radiation",
-                "fa6s.graduation-cap",
-                "fa6s.radio",
-                "fa6s.hammer",
-                "fa5s.adjust",
-                "fa5s.anchor",
-                "fa6s.dna",
-            ]
-        }
 
 class FontAwesomeIconSelectorBtn(QPushButton):
     icon_changed = Signal(str)
