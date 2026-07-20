@@ -480,7 +480,8 @@
 <context>
     <name>FontAwesomeIconSelector</name>
     <message>
-        <location filename="../interface/widgets/icon_selector.py" line="156"/>
+        <location filename="../interface/widgets/icon_selector.py" line="54"/>
+        <location filename="../interface/widgets/icon_selector.py" line="64"/>
         <source>Select an icon</source>
         <translation>Icon auswählen</translation>
     </message>
@@ -511,27 +512,47 @@
 <context>
     <name>IconDatabase</name>
     <message>
-        <location filename="../interface/widgets/icon_selector.py" line="23"/>
+        <location filename="../interface/widgets/icon_database.py" line="8"/>
         <source>Default</source>
         <translation>Standard</translation>
     </message>
     <message>
-        <location filename="../interface/widgets/icon_selector.py" line="35"/>
+        <location filename="../interface/widgets/icon_database.py" line="24"/>
         <source>General</source>
         <translation>Allgemein</translation>
     </message>
     <message>
-        <location filename="../interface/widgets/icon_selector.py" line="58"/>
+        <location filename="../interface/widgets/icon_database.py" line="47"/>
         <source>People</source>
         <translation>Personen</translation>
     </message>
     <message>
-        <location filename="../interface/widgets/icon_selector.py" line="72"/>
-        <source>Brands / Companies</source>
-        <translation>Marken / Firmen</translation>
+        <location filename="../interface/widgets/icon_database.py" line="93"/>
+        <source>Activity</source>
+        <translation>Aktivitäten</translation>
     </message>
     <message>
-        <location filename="../interface/widgets/icon_selector.py" line="101"/>
+        <location filename="../interface/widgets/icon_database.py" line="109"/>
+        <source>Technology</source>
+        <translation>Technologie</translation>
+    </message>
+    <message>
+        <location filename="../interface/widgets/icon_database.py" line="148"/>
+        <source>Food and Drinks</source>
+        <translation>Essen und Trinken</translation>
+    </message>
+    <message>
+        <location filename="../interface/widgets/icon_database.py" line="164"/>
+        <source>Brands and Companies</source>
+        <translation>Marken und Firmen</translation>
+    </message>
+    <message>
+        <location filename="../interface/widgets/icon_database.py" line="193"/>
+        <source>Numbers and Letters</source>
+        <translation>Zahlen und Buchstaben</translation>
+    </message>
+    <message>
+        <location filename="../interface/widgets/icon_database.py" line="231"/>
         <source>Miscellaneous</source>
         <translation>Verschiedenes</translation>
     </message>

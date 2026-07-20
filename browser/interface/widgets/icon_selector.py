@@ -49,9 +49,10 @@ class FontAwesomeIconSelectorBtn(QPushButton):
 
 class FontAwesomeIconSelector(QDialog):
     def __init__(self, parent=None, icon: str = None):
-        super().__init__()
+        super().__init__(parent)
 
-        self.setFixedSize(400, 360)
+        self.setWindowTitle(self.tr("Select an icon"))
+        self.setFixedSize(450, 360)
         self.selected_icon = icon
 
         self.init_ui()
@@ -109,7 +110,7 @@ class GridIconView(QWidget):
 
         self.icon_grid = QWidget()
         self.icon_grid_layout = QGridLayout(self.icon_grid)
-        self.icon_grid_layout.setContentsMargins(10, 10, 10, 10)
+        self.icon_grid_layout.setContentsMargins(5, 5, 5, 5)
         self.icon_grid_layout.setSpacing(4)
         self._populate_icons()
 
@@ -129,11 +130,11 @@ class GridIconView(QWidget):
 
         for category in self.icons.keys():
             title = QLabel(self.tr(category))
-            title.setStyleSheet("font-size: 16px; font-weight: bold; padding-top: 10px; padding-bottom: 5px;")
+            title.setStyleSheet("font-size: 16px; font-weight: bold; padding-top: 10px; padding-bottom: 10px;")
 
             layout.addWidget(title, row, 0, 1, GRID_WIDTH)
 
-            row += 2
+            row += 4
             col = 0
 
             group = self.icons[category]

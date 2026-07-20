@@ -172,7 +172,10 @@ class NavBarManager(QWidget):
                     else:
                         button.setIcon(qta.icon("fa6s.question", color=icon_color))
 
-                self._apply_styling_to_widget(button, element.styling)
+                if not hasattr(button, "icon_id"):
+                    button.icon_id = element.icon
+
+                self._apply_styling_to_widget(widget=button, styling=element.styling)
                 return button
 
             elif element.type == "urlbar" or element.type == "searchbar":
@@ -242,7 +245,7 @@ class NavBarManager(QWidget):
                 widget.setPlaceholderText(styling.label)
             elif isinstance(widget, QLabel) and styling.label:
                 widget.setText(styling.label)
-
+            
             if isinstance(widget, QPushButton) and hasattr(widget, 'update_icon_color') and styling.icon_color:
                 widget.update_icon_color(styling.icon_color)
             elif isinstance(widget, QPushButton) and styling.icon_color and hasattr(widget, 'icon_id'):
