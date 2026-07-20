@@ -143,6 +143,8 @@ class BrowserWindow(QMainWindow):
         self.setWindowTitle("Silk Mizu")
         self.setMinimumSize(480, 360)
         self.resize(960, 720)
+        self.is_fullscreen = False
+        self._saved_geometry = None
         self.layout = QGridLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
@@ -276,6 +278,11 @@ class BrowserWindow(QMainWindow):
         self.toggleFocusModeAction.triggered.connect(self.toggle_focus_mode)
         self.toggleFocusModeAction.setShortcut(QKeySequence("Ctrl + f"))
         self.viewMenu.addAction(self.toggleFocusModeAction)
+
+        self.toggleFullscreenAction = QAction(self.tr("Toggle fullscreen"), self)
+        self.toggleFullscreenAction.triggered.connect(self.toggle_fullscreen)
+        self.toggleFullscreenAction.setShortcut(QKeySequence("F11"))
+        self.viewMenu.addAction(self.toggleFullscreenAction)
 
         self.toggleTabManagerAction = QAction(self.tr("Toggle tab manager"), self)
         self.toggleTabManagerAction.triggered.connect(self.toggle_tab_manager)
@@ -455,6 +462,7 @@ class BrowserWindow(QMainWindow):
         # View menu
         self.toggleSidebarAction.setText(self.tr("Toggle extension sidebar"))
         self.toggleFocusModeAction.setText(self.tr("Toggle focus mode"))
+        self.toggleFullscreenAction.setText(self.tr("Toggle fullscreen"))
         self.toggleTabManagerAction.setText(self.tr("Toggle tab manager"))
         self.toggleHistoryManagerAction.setText(self.tr("Toggle history manager"))
         self.scaleUpAction.setText(self.tr("Increase page zoom by 10%"))
@@ -820,6 +828,17 @@ class BrowserWindow(QMainWindow):
             if self.bottom_navbar.controls_layout.count() != 0:
                 self.bottom_navbar.setVisible(True)
     
+    def toggle_fullscreen(self):
+        if self.is_fullscreen:
+            self.showNormal()
+            if self._saved_geometry:
+                self.restoreGeometry(self._saved_geometry)
+            self.is_fullscreen = False
+        else:
+            self._saved_geometry = self.saveGeometry()
+            self.showFullScreen()
+            self.is_fullscreen = True
+    
     def toggle_floating_address_bar(self):
         if self.floating_address_bar.isVisible():
             self.floating_address_bar.hide_bar()
@@ -1025,7 +1044,6 @@ class BrowserController(QObject):
         self.window.toggle_extension_sidebar()
     
     def open_download_manager(self):
-        print("Opening download manager...")
         self.window.show_downloads_dialog()
 
     def open_download_menu(self, button):
@@ -1037,6 +1055,9 @@ class BrowserController(QObject):
 
     def toggle_history_manager(self):
         self.window.toggle_history_manager()
+
+    def toggle_fullscreen(self):
+        self.window.toggle_fullscreen()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -15,6 +15,7 @@ from interface.navigation.nav_items import (
     ExtSidebarBtn,
     TabManagerBtn,
     HistoryManagerBtn,
+    FullscreenBtn,
     GoBtn,
     DownloadManagerBtn,
     ZoomInBtn,
@@ -114,6 +115,7 @@ class NavBarManager(QWidget):
                     button = QPushButton()
                     button.setStyleSheet("padding: 8px;")
                     button.setProperty("class", "navbtns")
+                    button.setToolTip("New tab")
                     button.setIcon(qta.icon(element.icon, color=icon_color))
                     button.clicked.connect(self.controller.window.create_new_tab)
 
@@ -125,6 +127,7 @@ class NavBarManager(QWidget):
                     button = QPushButton()
                     button.setStyleSheet("padding: 8px;")
                     button.setProperty("class", "navbtns")
+                    button.setToolTip("Add current page to bookmarks")
                     button.setIcon(qta.icon("fa5s.bookmark", color=icon_color))
                     button.clicked.connect(self.controller.window.add_current_to_bookmarks_dialog)
 
@@ -132,6 +135,7 @@ class NavBarManager(QWidget):
                     button = QPushButton()
                     button.setStyleSheet("padding: 8px;")
                     button.setProperty("class", "navbtns")
+                    button.setToolTip("Open extension manager")
                     button.setIcon(qta.icon("mdi6.puzzle", color=icon_color))
                     button.clicked.connect(self.controller.window.web_extension_dialog)
 
@@ -139,6 +143,7 @@ class NavBarManager(QWidget):
                     button = QPushButton()
                     button.setStyleSheet("padding: 8px;")
                     button.setProperty("class", "navbtns")
+                    button.setToolTip("Open settings")
                     button.setIcon(qta.icon("fa5s.cog", color=icon_color))
                     button.clicked.connect(self.controller.window.settings_dialog)
 
@@ -154,6 +159,10 @@ class NavBarManager(QWidget):
                     button = HistoryManagerBtn(ui_controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
                 
+                elif element.action == "fullscreen":
+                    button = FullscreenBtn(ui_controller=self.controller, icon=element.icon)
+                    button.update_icon_color(icon_color)
+                
                 elif element.action == "zoom_in":
                     button = ZoomInBtn(controller=self.controller, icon=element.icon)
                     button.update_icon_color(icon_color)
@@ -167,6 +176,7 @@ class NavBarManager(QWidget):
                     button.setToolTip(element.action)
                     button.setStyleSheet("padding: 8px;")
                     button.setProperty("class", "navbtns")
+                    button.setToolTip(f"Unknown: {element.action}")
                     if element.icon:
                         button.setIcon(qta.icon(element.icon, color=icon_color))
                     else:

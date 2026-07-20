@@ -72,6 +72,7 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Extensions Sidebar Button", "button", "msc.layout-sidebar-left", "extensions_sidebar"),
             NavigationUIElement("Tab Manager Button", "button", "ri.menu-fill", "tab_manager"),
             NavigationUIElement("History Button", "button", "fa6s.clock-rotate-left", "history_manager"),
+            NavigationUIElement("Fullscreen Button", "button", "fa6s.up-right-and-down-left-from-center", "fullscreen"),
             NavigationUIElement("Go Button", "button", "mdi.arrow-right-bold-box", "go"),
             NavigationUIElement("Download Manager Button", "button", "ei.download", "download_manager"),
             NavigationUIElement("Zoom in Button", "button", "ph.magnifying-glass-plus", "zoom_in"),

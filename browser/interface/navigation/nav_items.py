@@ -108,6 +108,7 @@ class BackBtn(QPushButton):
         self.setEnabled(False)
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Go back")
 
         controller.currentBrowserChanged.connect(self.set_browser)
     
@@ -147,6 +148,7 @@ class ForwardBtn(QPushButton):
         self.setEnabled(False)
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Go forward")
 
         controller.currentBrowserChanged.connect(self.set_browser)
     
@@ -186,6 +188,7 @@ class ReloadBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Reload page")
 
         controller.currentBrowserChanged.connect(self.set_browser)
     
@@ -239,6 +242,7 @@ class ExtSidebarBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Toggle extension sidebar")
 
         self.clicked.connect(self.toggle_sidebar)
     
@@ -261,6 +265,7 @@ class TabManagerBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Toggle tab manager")
 
         self.clicked.connect(self.toggle_sidebar)
     
@@ -283,11 +288,35 @@ class HistoryManagerBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Toggle history manager")
 
         self.clicked.connect(self.toggle_sidebar)
     
     def toggle_sidebar(self):
         self.ui_controller.toggle_history_manager()
+    
+    def update_icon_color(self, icon_color: str):
+        self.icon_color = icon_color
+        self.setIcon(qta.icon(self.icon_id, color=icon_color))
+
+class FullscreenBtn(QPushButton):
+    def __init__(self, ui_controller, icon: str = "fa6s.up-right-and-down-left-from-center"):
+        super().__init__()
+        
+        self.ui_controller = ui_controller
+
+        self.icon_id = icon
+        self.icon_color = "white"
+        
+        self.setIcon(qta.icon(self.icon_id))
+        self.setStyleSheet("padding: 8px;")
+        self.setProperty("class", "navbtns")
+        self.setToolTip("Toggle fullscreen")
+
+        self.clicked.connect(self.toggle_fullscreen)
+    
+    def toggle_fullscreen(self):
+        self.ui_controller.toggle_fullscreen()
     
     def update_icon_color(self, icon_color: str):
         self.icon_color = icon_color
@@ -305,6 +334,7 @@ class GoBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Visit URL")
 
         self.controller.currentBrowserChanged.connect(self.set_browser)
     
@@ -344,6 +374,7 @@ class DownloadManagerBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Open download menu")
 
         self.setVisible(False)
         self.clicked.connect(self.open_download_menu)
@@ -366,6 +397,7 @@ class ZoomInBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Zoom in")
 
         controller.currentBrowserChanged.connect(self.set_browser)
     
@@ -392,6 +424,7 @@ class ZoomOutBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Zoom out")
 
         controller.currentBrowserChanged.connect(self.set_browser)
     
