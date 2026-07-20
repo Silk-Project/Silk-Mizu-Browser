@@ -153,7 +153,7 @@ class SettingsDialog(QDialog):
             sum_model_installed = SUM_AI_MODEL["name"] in ollama_model_names
 
             if not sum_model_installed:
-                self.install_model_btn.setText(f"{self.tr('Install')} ({SUM_AI_MODEL['size']})")
+                self.install_model_btn.setText(self.tr('Install') + ' (' + SUM_AI_MODEL['size'] + ')')
                 self.install_model_btn.setIcon(qta.icon("fa6s.download", color=theme_manager.get_contrast_color_from_theme()))
             else:
                 self.install_model_btn.setText(self.tr("Model Installed"))

@@ -31,7 +31,7 @@ class TabManager(QWidget):
         search_layout.addStretch()
 
         self.search_bar = QLineEdit()
-        self.search_bar.setPlaceholderText("Search tabs...")
+        self.search_bar.setPlaceholderText(self.tr("Search tabs..."))
         self.search_bar.setClearButtonEnabled(True)
         self.search_bar.setStyleSheet("margin: 10px; padding: 8px; font-size: 14px;")
         self.search_bar.textChanged.connect(self._filter)

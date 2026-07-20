@@ -1,8 +1,40 @@
-from urllib.parse import urlparse
-from PySide6.QtWidgets import QWidget, QLineEdit, QHBoxLayout
-from PySide6.QtCore import Qt, Signal, QUrl
+import re
+from PySide6.QtWidgets import QWidget, QLineEdit, QHBoxLayout, QListWidget, QListWidgetItem
+from PySide6.QtCore import Qt, Signal, QUrl, QPoint
 from PySide6.QtGui import QKeyEvent
 from interface.widgets.better_webengine import BetterWebEngine
+from services.history_mgr import HistoryEntryData
+
+class HistoryPopup(QListWidget):
+    entrySelected = Signal(str)
+
+    def __init__(self, entries: list[HistoryEntryData], parent=None):
+        super().__init__(parent)
+
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.Tool
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setFixedHeight(min(len(entries) * 36 + 8, 300))
+        self.setStyleSheet(
+            "QListWidget { background: #202124; border: 1px solid #414242; border-radius: 8px; }"
+            "QListWidget::item { padding: 10px 25px; color: #ddd; border-radius: 8px;}"
+            "QListWidget::item:hover { background: #3a3a3a; }"
+        )
+
+        for entry in entries:
+            self.addItem(QListWidgetItem(entry.url))
+
+        self.itemClicked.connect(self._on_clicked)
+
+    def _on_clicked(self, item: QListWidgetItem):
+        self.entrySelected.emit(item.text())
+        self.close()
 
 class FloatingAddressBarInput(QLineEdit):
     escape_pressed = Signal()
@@ -75,42 +107,78 @@ class FloatingAddressBar(QWidget):
         self.browser = browser
         self.browser.urlChanged.connect(self._on_url_changed)
     
+    def _display_menu(self, entries: list[HistoryEntryData]):
+        if not entries or not self.isVisible():
+            return
+
+        if hasattr(self, '_menu') and self._menu:
+            self._menu.close()
+
+        popup = HistoryPopup(entries=entries, parent=self)
+        popup.setFixedWidth(self.url_input.width())
+
+        bottom_pos = self.url_input.mapToGlobal(QPoint(0, self.url_input.height() + 10))
+        popup.move(bottom_pos)
+        popup.show()
+
+        popup.entrySelected.connect(self._on_history_entry_selected)
+
+        self._menu = popup
+    
+    def _autocomplete(self, user_url: str, autocomp: str):
+        end_pos = len(autocomp) - len(user_url)
+
+        self.url_input.textChanged.disconnect(self._filter)
+        self.url_input.setText(autocomp)
+        self.url_input.textChanged.connect(self._filter)
+
+        self.url_input.setCursorPosition(len(user_url))
+        self.url_input.setSelection(len(user_url), end_pos)
+
     def _filter(self, user_url: str):
+        if not user_url or not self.browser:
+            return
+
+        history = self.controller.history.get_history()
+        matching: list[HistoryEntryData] = []
+        autocomp = None
+
+        for entry in history:
+            url = entry.url
+            if not url:
+                continue
+            domain = re.sub(r"^https?://", "", url)
+
+            url_exists = False
+                
+            for match in matching:
+                if match.url == url:
+                    url_exists = True
+                    continue
+
+            if url.startswith(user_url):
+                if not url_exists:
+                    matching.append(entry)
+
+                if autocomp is None:
+                    autocomp = url
+
+            elif domain.startswith(user_url):
+                if not url_exists:
+                    matching.append(entry)
+
+                if autocomp is None:
+                    autocomp = domain
+
+        if autocomp is not None and autocomp != user_url:
+            self._autocomplete(user_url, autocomp)
+
+        self._display_menu(matching)
+    
+    def _on_history_entry_selected(self, url: str):
         if self.browser:
-            if not user_url:
-                return
-
-            history: list[dict] = self.controller.history.get_history()
-
-            for entry in history:
-                url = entry.get("url")
-
-                if url is not None and url != "":
-                    domain = urlparse(url).netloc
-
-                    if url.startswith(user_url):
-                        end_pos = len(url) - len(user_url)
-
-                        self.url_input.textChanged.disconnect(self._filter)
-                        self.url_input.setText(url)
-                        self.url_input.textChanged.connect(self._filter)
-
-                        self.url_input.setCursorPosition(len(user_url))
-                        self.url_input.setSelection(len(user_url), end_pos)
-                        
-                        return
-                    
-                    elif domain.startswith(user_url) and domain is not None and domain != "":
-                        end_pos = len(domain) - len(user_url)
-
-                        self.url_input.textChanged.disconnect(self._filter)
-                        self.url_input.setText(domain)
-                        self.url_input.textChanged.connect(self._filter)
-
-                        self.url_input.setCursorPosition(len(user_url))
-                        self.url_input.setSelection(len(user_url), end_pos)
-                        
-                        return
+            self.hide_bar()
+            self.browser.load_page(url)
 
     def _on_url_changed(self, url: QUrl):
         if not self.url_input.hasFocus():
@@ -146,6 +214,9 @@ class FloatingAddressBar(QWidget):
             self.move(x, y)
 
     def hide_bar(self):
+        if hasattr(self, '_menu') and self._menu:
+            self._menu.close()
+            self._menu = None
         self.hide()
         if self.browser:
             self.browser.setFocus()

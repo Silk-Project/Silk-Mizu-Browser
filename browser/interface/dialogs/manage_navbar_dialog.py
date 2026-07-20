@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QSize
 import qtawesome as qta
 from interface.widgets.color_button import QColorButton
+from interface.widgets.icon_selector import FontAwesomeIconSelectorBtn
 from dataclasses import dataclass, asdict
 
 @dataclass
@@ -26,6 +27,7 @@ class NavigationUIAdditionalStyling:
     border_radius: int | None = None
     stretch_factor: int | None = None
     label: str | None = None
+    icon_color: str | None = None
 
 @dataclass
 class NavigationUIElement:
@@ -70,6 +72,7 @@ class ManageNavigationUIDialog(QDialog):
             NavigationUIElement("Extensions Sidebar Button", "button", "msc.layout-sidebar-left", "extensions_sidebar"),
             NavigationUIElement("Tab Manager Button", "button", "ri.menu-fill", "tab_manager"),
             NavigationUIElement("History Button", "button", "fa6s.clock-rotate-left", "history_manager"),
+            NavigationUIElement("Fullscreen Button", "button", "fa6s.up-right-and-down-left-from-center", "fullscreen"),
             NavigationUIElement("Go Button", "button", "mdi.arrow-right-bold-box", "go"),
             NavigationUIElement("Download Manager Button", "button", "ei.download", "download_manager"),
             NavigationUIElement("Zoom in Button", "button", "ph.magnifying-glass-plus", "zoom_in"),
@@ -273,10 +276,18 @@ class ManageNavigationUIDialog(QDialog):
 
         if selected_item:
             current_styling = selected_item._element.styling or NavigationUIAdditionalStyling()
-            dialog = CustomiseStylingDialog(self, styling=current_styling, element_type=selected_item._element.type)
+
+            dialog = CustomiseStylingDialog(
+                parent=self, 
+                styling=current_styling,
+                element_type=selected_item._element.type, 
+                icon=selected_item._element.icon
+            )
+
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 # Update the styling of the selected item
                 selected_item._element.styling = dialog.styling
+                selected_item._element.icon = dialog.icon
                 self.update_preview()
 
     def clear_layout(self, layout):
@@ -317,7 +328,10 @@ class ManageNavigationUIDialog(QDialog):
             resolved_icon = self._resolve_icon(item.action, item.icon)
 
             if resolved_icon:
-                button.setIcon(qta.icon(resolved_icon))
+                icon_kwargs = {}
+                if item.styling and item.styling.icon_color:
+                    icon_kwargs["color"] = item.styling.icon_color
+                button.setIcon(qta.icon(resolved_icon, **icon_kwargs))
             
             if item.styling:
                 self.apply_styling_to_widget(button, item.styling)
@@ -359,6 +373,9 @@ class ManageNavigationUIDialog(QDialog):
 
             if item.styling:
                 self.apply_styling_to_widget(label, item.styling)
+                if item.styling.icon_color:
+                    existing = label.styleSheet()
+                    label.setStyleSheet(existing + f"color: {item.styling.icon_color};")
 
             return label
         
@@ -374,6 +391,9 @@ class ManageNavigationUIDialog(QDialog):
             
             if item.styling:
                 self.apply_styling_to_widget(label, item.styling)
+                if item.styling.icon_color:
+                    existing = label.styleSheet()
+                    label.setStyleSheet(existing + f"color: {item.styling.icon_color};")
 
             return label
         
@@ -428,14 +448,15 @@ class ManageNavigationUIDialog(QDialog):
         ]
 
 class CustomiseStylingDialog(QDialog):
-    def __init__(self, parent, styling: NavigationUIAdditionalStyling | None = None, element_type: str = ""):
+    def __init__(self, parent, styling: NavigationUIAdditionalStyling | None = None, element_type: str = "", icon: str = None):
         super().__init__(parent)
 
         self.setWindowTitle(self.tr("Customize Styling"))
-        self.setFixedSize(400, 300)
+        self.setFixedSize(600, 400)
 
         self.styling = styling if styling else NavigationUIAdditionalStyling()
         self.element_type = element_type
+        self.icon = icon
 
         self.init_ui()
     
@@ -445,7 +466,7 @@ class CustomiseStylingDialog(QDialog):
         # Title
         self.title_label = QLabel(self.tr("Customize Styling"))
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+        self.title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px;")
         self.layout.addWidget(self.title_label)
 
         # Form layout for styling options
@@ -455,6 +476,18 @@ class CustomiseStylingDialog(QDialog):
         # Background color
         self.bg_color_button = QColorButton(color=self.styling.background_color)
         self.form_layout.addRow(self.tr("Background Color:"), self.bg_color_button)
+
+        # Icon color
+        self.icon_color_button = QColorButton(color=self.styling.icon_color)
+        self.form_layout.addRow(self.tr("Icon / Text Color:"), self.icon_color_button)
+
+        # Icon
+        self.icon_button = FontAwesomeIconSelectorBtn(parent=self, icon=self.icon)
+
+        if self.element_type != "button":
+            self.icon_button.setEnabled(False)
+
+        self.form_layout.addRow(self.tr("Icon:"), self.icon_button)
 
         # Border radius
         self.border_radius_spinbox = QSpinBox()
@@ -478,6 +511,8 @@ class CustomiseStylingDialog(QDialog):
         
         self.form_layout.addRow(self.tr("Label:"), self.label_lineedit)
 
+        self.layout.addStretch()
+
         # Dialog buttons
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         self.button_box.accepted.connect(self.accept)
@@ -491,6 +526,7 @@ class CustomiseStylingDialog(QDialog):
 
     def reset_styling(self):
         self.bg_color_button.setColor(None)
+        self.icon_color_button.setColor(None)
         self.border_radius_spinbox.setValue(0)
         self.stretch_factor_spinbox.setValue(0)
         self.label_lineedit.setText("")
@@ -500,7 +536,12 @@ class CustomiseStylingDialog(QDialog):
         self.styling.background_color = self.bg_color_button.color()
         self.styling.border_radius = self.border_radius_spinbox.value()
         self.styling.stretch_factor = self.stretch_factor_spinbox.value()
+        
+        if self.icon_color_button.isEnabled():
+            self.styling.icon_color = self.icon_color_button.color()
         if self.label_lineedit.isEnabled():
             self.styling.label = self.label_lineedit.text()
+        if self.icon_button.isEnabled():
+            self.icon = self.icon_button.selected_icon
 
         super().accept()

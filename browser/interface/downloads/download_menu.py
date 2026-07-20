@@ -20,7 +20,7 @@ class DownloadMenu(QMenu):
     def __init__(self):
         super().__init__()
         self.signals = DownloadMenuSignals()
-        self.manage_downloads_action = QAction("Manage Downloads")
+        self.manage_downloads_action = QAction(self.tr("Manage Downloads"))
         self.manage_downloads_action.triggered.connect(lambda: self.signals.downloads_dialog_opened.emit())
         self.addAction(self.manage_downloads_action)
 
@@ -33,7 +33,7 @@ class DownloadMenu(QMenu):
         container = QWidget()
 
         # Download UI elements
-        label = QLabel(f"{self.tr('Downloading:')} {self.shorten_if_needed(download_filename)}")
+        label = QLabel(self.tr('Downloading:') + ' ' + self.shorten_if_needed(download_filename))
         label.setToolTip(download_filename)
         progress = QProgressBar()
         stop_btn = QPushButton()
@@ -87,12 +87,12 @@ class DownloadMenu(QMenu):
     
         if state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
             progress_bar.setValue(100)
-            label.setText(f"{self.tr('Finished:')} {self.shorten_if_needed(download_filename)}")
+            label.setText(self.tr('Finished:') + ' ' + self.shorten_if_needed(download_filename))
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadCancelled:
-            label.setText(f"{self.tr('Canceled:')} {self.shorten_if_needed(download_filename)}")
+            label.setText(self.tr('Canceled:') + ' ' + self.shorten_if_needed(download_filename))
             progress_bar.setEnabled(False)
         
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
-            label.setText(f"{self.tr('Error:')} {self.shorten_if_needed(download_filename)}")
+            label.setText(self.tr('Error:') + ' ' + self.shorten_if_needed(download_filename))
             progress_bar.setStyleSheet("QProgressBar::chunk { background-color: red; }")

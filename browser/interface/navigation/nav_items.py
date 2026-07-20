@@ -1,3 +1,4 @@
+import re
 from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
@@ -9,6 +10,7 @@ from PySide6.QtCore import QUrl, QTimer, Qt, QUrl
 from PySide6.QtGui import QKeyEvent
 from datetime import datetime
 from interface.widgets.better_webengine import BetterWebEngine
+from services.history_mgr import HistoryEntryData
 import qtawesome as qta
 
 class AddressBar(QLineEdit):
@@ -49,42 +51,39 @@ class AddressBar(QLineEdit):
         else:
             super().keyPressEvent(event)
 
+    def _autocomplete(self, user_url: str, autocomp: str):
+        end_pos = len(autocomp) - len(user_url)
+
+        self.textChanged.disconnect(self._filter)
+        self.setText(autocomp)
+        self.textChanged.connect(self._filter)
+
+        self.setCursorPosition(len(user_url))
+        self.setSelection(len(user_url), end_pos)
+
     def _filter(self, user_url: str):
-        if self.browser:
-            if not user_url:
-                return
+        if not user_url or not self.browser:
+            return
 
-            history: list[dict] = self.controller.history.get_history()
+        history = self.controller.history.get_history()
+        autocomp = None
 
-            for entry in history:
-                url = entry.get("url")
+        for entry in history:
+            url = entry.url
+            if not url:
+                continue
+            domain = re.sub(r"^https?://", "", url)
 
-                if url is not None and url != "":
-                    domain = urlparse(url).netloc
+            if url.startswith(user_url):
+                if autocomp is None:
+                    autocomp = url
 
-                    if url.startswith(user_url):
-                        end_pos = len(url) - len(user_url)
+            elif domain.startswith(user_url):
+                if autocomp is None:
+                    autocomp = domain
 
-                        self.textChanged.disconnect(self._filter)
-                        self.setText(url)
-                        self.textChanged.connect(self._filter)
-
-                        self.setCursorPosition(len(user_url))
-                        self.setSelection(len(user_url), end_pos)
-                        
-                        return
-                    
-                    elif domain.startswith(user_url) and domain is not None and domain != "":
-                        end_pos = len(domain) - len(user_url)
-
-                        self.textChanged.disconnect(self._filter)
-                        self.setText(domain)
-                        self.textChanged.connect(self._filter)
-
-                        self.setCursorPosition(len(user_url))
-                        self.setSelection(len(user_url), end_pos)
-                        
-                        return
+        if autocomp is not None and autocomp != user_url:
+            self._autocomplete(user_url, autocomp)
 
     def update_url(self, url: QUrl):
         str_url = url.toString()
@@ -98,17 +97,18 @@ class AddressBar(QLineEdit):
         self.browser.load_page(url)
 
 class BackBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "fa6s.arrow-left"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "fa6s.arrow-left"
+        self.icon_id = icon
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
         self.setEnabled(False)
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Go back")
 
         controller.currentBrowserChanged.connect(self.set_browser)
     
@@ -137,17 +137,18 @@ class BackBtn(QPushButton):
             self.browser.back()
 
 class ForwardBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "fa6s.arrow-right"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "fa6s.arrow-right"
+        self.icon_id = icon
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
         self.setEnabled(False)
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Go forward")
 
         controller.currentBrowserChanged.connect(self.set_browser)
     
@@ -176,16 +177,18 @@ class ForwardBtn(QPushButton):
             self.browser.forward()
         
 class ReloadBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "fa6s.arrow-rotate-right"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "fa6s.arrow-rotate-right"
+        self.icon_id = icon
+        self.current_icon_id = self.icon_id
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Reload page")
 
         controller.currentBrowserChanged.connect(self.set_browser)
     
@@ -206,16 +209,16 @@ class ReloadBtn(QPushButton):
     
     def update_status(self):
         if self.browser.page_is_loading:
-            self.icon_id = "ei.remove"
+            self.current_icon_id = "ei.remove"
 
         else:
-            self.icon_id = "fa6s.arrow-rotate-right"
+            self.current_icon_id = self.icon_id
         
-        self.setIcon(qta.icon(self.icon_id, color=self.icon_color))
+        self.setIcon(qta.icon(self.current_icon_id, color=self.icon_color))
     
     def update_icon_color(self, icon_color: str):
         self.icon_color = icon_color
-        self.setIcon(qta.icon(self.icon_id, color=icon_color))
+        self.setIcon(qta.icon(self.current_icon_id, color=icon_color))
     
     def trigger_reload_stop(self):
         if self.browser:
@@ -228,17 +231,18 @@ class ReloadBtn(QPushButton):
             self.update_status()
 
 class ExtSidebarBtn(QPushButton):
-    def __init__(self, ui_controller):
+    def __init__(self, ui_controller, icon: str = "msc.layout-sidebar-left"):
         super().__init__()
         
         self.ui_controller = ui_controller
 
-        self.icon_id = "msc.layout-sidebar-left"
+        self.icon_id = icon
         self.icon_color = "white"
         
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Toggle extension sidebar")
 
         self.clicked.connect(self.toggle_sidebar)
     
@@ -250,17 +254,18 @@ class ExtSidebarBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
 
 class TabManagerBtn(QPushButton):
-    def __init__(self, ui_controller):
+    def __init__(self, ui_controller, icon: str = "ri.menu-fill"):
         super().__init__()
         
         self.ui_controller = ui_controller
 
-        self.icon_id = "ri.menu-fill"
+        self.icon_id = icon
         self.icon_color = "white"
         
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Toggle tab manager")
 
         self.clicked.connect(self.toggle_sidebar)
     
@@ -272,17 +277,18 @@ class TabManagerBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
 
 class HistoryManagerBtn(QPushButton):
-    def __init__(self, ui_controller):
+    def __init__(self, ui_controller, icon: str = "fa6s.clock-rotate-left"):
         super().__init__()
         
         self.ui_controller = ui_controller
 
-        self.icon_id = "fa6s.clock-rotate-left"
+        self.icon_id = icon
         self.icon_color = "white"
         
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Toggle history manager")
 
         self.clicked.connect(self.toggle_sidebar)
     
@@ -293,18 +299,42 @@ class HistoryManagerBtn(QPushButton):
         self.icon_color = icon_color
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
 
+class FullscreenBtn(QPushButton):
+    def __init__(self, ui_controller, icon: str = "fa6s.up-right-and-down-left-from-center"):
+        super().__init__()
+        
+        self.ui_controller = ui_controller
+
+        self.icon_id = icon
+        self.icon_color = "white"
+        
+        self.setIcon(qta.icon(self.icon_id))
+        self.setStyleSheet("padding: 8px;")
+        self.setProperty("class", "navbtns")
+        self.setToolTip("Toggle fullscreen")
+
+        self.clicked.connect(self.toggle_fullscreen)
+    
+    def toggle_fullscreen(self):
+        self.ui_controller.toggle_fullscreen()
+    
+    def update_icon_color(self, icon_color: str):
+        self.icon_color = icon_color
+        self.setIcon(qta.icon(self.icon_id, color=icon_color))
+
 class GoBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "mdi.arrow-right-bold-box"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "mdi.arrow-right-bold-box"
+        self.icon_id = icon
         self.icon_color = "white"
         self.controller = controller
 
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Visit URL")
 
         self.controller.currentBrowserChanged.connect(self.set_browser)
     
@@ -334,16 +364,17 @@ class GoBtn(QPushButton):
                 self.browser.load_page(url)
 
 class DownloadManagerBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "fa6s.download"):
         super().__init__(parent)
 
         self.controller = controller
-        self.icon_id = "fa6s.download"
+        self.icon_id = icon
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Open download menu")
 
         self.setVisible(False)
         self.clicked.connect(self.open_download_menu)
@@ -356,16 +387,17 @@ class DownloadManagerBtn(QPushButton):
         self.setIcon(qta.icon(self.icon_id, color=icon_color))
 
 class ZoomInBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "ph.magnifying-glass-plus"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "ph.magnifying-glass-plus"
+        self.icon_id = icon
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Zoom in")
 
         controller.currentBrowserChanged.connect(self.set_browser)
     
@@ -382,16 +414,17 @@ class ZoomInBtn(QPushButton):
             self.browser.scale_page_up()
 
 class ZoomOutBtn(QPushButton):
-    def __init__(self, controller, parent = None):
+    def __init__(self, controller, parent = None, icon: str = "ph.magnifying-glass-minus"):
         super().__init__(parent)
 
         self.browser: BetterWebEngine = None
-        self.icon_id = "ph.magnifying-glass-minus"
+        self.icon_id = icon
         self.icon_color = "white"
 
         self.setIcon(qta.icon(self.icon_id))
         self.setStyleSheet("padding: 8px;")
         self.setProperty("class", "navbtns")
+        self.setToolTip("Zoom out")
 
         controller.currentBrowserChanged.connect(self.set_browser)
     

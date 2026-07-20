@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime
+from datetime import datetime
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -13,12 +13,14 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 import qtawesome as qta
+from services.history_mgr import HistoryEntryData
+
 
 class HistoryEntryWidget(QWidget):
     selected = Signal(str)
-    delete_requested = Signal(dict)
+    delete_requested = Signal(object)
 
-    def __init__(self, entry, parent=None):
+    def __init__(self, entry: HistoryEntryData, parent=None):
         super().__init__(parent)
         self.entry = entry
         self._init_ui()
@@ -28,20 +30,14 @@ class HistoryEntryWidget(QWidget):
         row.setContentsMargins(4, 4, 4, 4)
         row.setSpacing(8)
 
-        title = self.entry.get("title", "")
-        display_title = title if title else "No title"
-        url = self.entry.get("url", "")
-        visited_at = self.entry.get("visited_at")
+        display_title = self.entry.title if self.entry.title else "No title"
+        time_str = self.entry.visited_at.strftime("%H:%M")
 
-        time_str = ""
-        if isinstance(visited_at, datetime):
-            time_str = visited_at.strftime("%H:%M")
-
-        btn_label = f"{display_title}  —  {time_str}" if time_str else display_title
+        btn_label = f"{display_title}  —  {time_str}"
         btn = QPushButton(btn_label)
         btn.setStyleSheet("text-align: left; padding: 8px; font-size: 13px;")
-        btn.setToolTip(url)
-        btn.clicked.connect(lambda: self.selected.emit(url))
+        btn.setToolTip(self.entry.url)
+        btn.clicked.connect(lambda: self.selected.emit(self.entry.url))
         row.addWidget(btn, 1)
 
         del_btn = QPushButton()
@@ -51,6 +47,7 @@ class HistoryEntryWidget(QWidget):
         del_btn.setToolTip("Delete entry")
         del_btn.clicked.connect(lambda: self.delete_requested.emit(self.entry))
         row.addWidget(del_btn)
+
 
 class HistoryManagerWidget(QWidget):
     history_entry_selected = Signal(str)
@@ -74,19 +71,19 @@ class HistoryManagerWidget(QWidget):
         controls_layout.addStretch()
 
         self.search_bar = QLineEdit()
-        self.search_bar.setPlaceholderText("Search history...")
+        self.search_bar.setPlaceholderText(self.tr("Search history..."))
         self.search_bar.setClearButtonEnabled(True)
         self.search_bar.setStyleSheet("margin: 10px; padding: 8px; font-size: 14px;")
         self.search_bar.textChanged.connect(self._filter)
         controls_layout.addWidget(self.search_bar)
 
         self.sort_combo = QComboBox()
-        self.sort_combo.addItems(["Latest first", "Oldest first"])
+        self.sort_combo.addItems([self.tr("Latest first"), self.tr("Oldest first")])
         self.sort_combo.setStyleSheet("margin: 10px; padding: 4px; font-size: 14px;")
         self.sort_combo.currentIndexChanged.connect(self._on_sort_changed)
         controls_layout.addWidget(self.sort_combo)
 
-        self.clear_btn = QPushButton(" Clear History")
+        self.clear_btn = QPushButton(" " + self.tr("Clear History"))
         self.clear_btn.setIcon(qta.icon("fa6s.trash"))
         self.clear_btn.setStyleSheet("margin: 10px; padding: 8px; font-size: 14px;")
         self.clear_btn.clicked.connect(self._clear_history)
@@ -131,7 +128,7 @@ class HistoryManagerWidget(QWidget):
 
             entries_sorted = sorted(
                 entries,
-                key=lambda e: e.get("visited_at", datetime.min),
+                key=lambda e: e.visited_at,
                 reverse=reverse_groups,
             )
 
@@ -157,17 +154,16 @@ class HistoryManagerWidget(QWidget):
 
         layout.addStretch()
 
-    def _matches_filter(self, entry, pattern):
-        title = entry.get("title", "")
-        url = entry.get("url", "")
+    def _matches_filter(self, entry: HistoryEntryData, pattern):
+        text = entry.title + entry.url
 
         try:
-            return bool(re.search(pattern, title + url, re.IGNORECASE))
+            return bool(re.search(pattern, text, re.IGNORECASE))
         except re.error:
-            return pattern.lower() in (title + url).lower()
+            return pattern.lower() in text.lower()
 
-    def _delete_entry(self, entry):
-        self.history_manager.delete_entry(entry.get("url"), entry.get("visited_at"))
+    def _delete_entry(self, entry: HistoryEntryData):
+        self.history_manager.delete_entry(entry)
         self.populate()
 
     def _clear_history(self):

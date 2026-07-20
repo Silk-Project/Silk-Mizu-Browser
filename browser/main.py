@@ -23,6 +23,7 @@ from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile, QWebEnginePage
 from PySide6.QtGui import QAction, QKeySequence, QIcon
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 
 # Dialogs
 from interface.dialogs.about_dialog import AboutDialog
@@ -55,7 +56,7 @@ from services.constants import (
     SCRIPT_DIR, CONFIG_PATH, BOOKMARKS_PATH, LOGO_PATH, START_PAGE_PATH,
     DOWNLOAD_PATH, EXTENSIONS_PATH, EXTENSIONS_SETTINGS_PATH, ADDITIONAL_QSS_PATH, 
     DEFAULT_NAVBAR_LAYOUT_PATH, SUM_AI_MODEL, VERSION_NUMBER, NAME_TO_LANGUAGE, 
-    LANGUAGE_TO_NAME,
+    LANGUAGE_TO_NAME, NAVIGATION_SOUND_PATH
 )
 
 STORAGE_PATH = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), "Silk-Mizu-Browser")
@@ -142,6 +143,8 @@ class BrowserWindow(QMainWindow):
         self.setWindowTitle("Silk Mizu")
         self.setMinimumSize(480, 360)
         self.resize(960, 720)
+        self.is_fullscreen = False
+        self._saved_geometry = None
         self.layout = QGridLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
@@ -151,6 +154,18 @@ class BrowserWindow(QMainWindow):
 
         # Initialize whole UI
         self.init_menu_bar()
+
+        # Navigation sound
+        # self.player = QMediaPlayer()
+        # self.audio_output = QAudioOutput()
+        # self.player.setAudioOutput(self.audio_output)
+        # self.audio_output.setVolume(0.7)
+        # self.player.setSource(NAVIGATION_SOUND_PATH)
+
+        # Install translator
+        self.translator = QTranslator()
+        self.load_language(current_settings["language"])
+
         self.init_extension_sidebar()
         self.init_control_ui()
         self.init_bookmark_bar()
@@ -159,10 +174,6 @@ class BrowserWindow(QMainWindow):
 
         self.extension_updates = False
         self.check_extension_updates()
-
-        # Install translator
-        self.translator = QTranslator()
-        self.load_language(current_settings["language"])
 
         # Add main widget
         widget = QWidget()
@@ -267,6 +278,11 @@ class BrowserWindow(QMainWindow):
         self.toggleFocusModeAction.triggered.connect(self.toggle_focus_mode)
         self.toggleFocusModeAction.setShortcut(QKeySequence("Ctrl + f"))
         self.viewMenu.addAction(self.toggleFocusModeAction)
+
+        self.toggleFullscreenAction = QAction(self.tr("Toggle fullscreen"), self)
+        self.toggleFullscreenAction.triggered.connect(self.toggle_fullscreen)
+        self.toggleFullscreenAction.setShortcut(QKeySequence("F11"))
+        self.viewMenu.addAction(self.toggleFullscreenAction)
 
         self.toggleTabManagerAction = QAction(self.tr("Toggle tab manager"), self)
         self.toggleTabManagerAction.triggered.connect(self.toggle_tab_manager)
@@ -440,9 +456,15 @@ class BrowserWindow(QMainWindow):
         self.removeTabAction.setText(self.tr("Remove current tab"))
         self.moveToNextTabAction.setText(self.tr("Next tab"))
         self.moveToPreviousTabAction.setText(self.tr("Previous tab"))
+        self.reloadPageAction.setText(self.tr("Reload current tab"))
         self.toggleFloatingBarAction.setText(self.tr("Toggle address bar"))
 
         # View menu
+        self.toggleSidebarAction.setText(self.tr("Toggle extension sidebar"))
+        self.toggleFocusModeAction.setText(self.tr("Toggle focus mode"))
+        self.toggleFullscreenAction.setText(self.tr("Toggle fullscreen"))
+        self.toggleTabManagerAction.setText(self.tr("Toggle tab manager"))
+        self.toggleHistoryManagerAction.setText(self.tr("Toggle history manager"))
         self.scaleUpAction.setText(self.tr("Increase page zoom by 10%"))
         self.scaleDownAction.setText(self.tr("Decrease page zoom by 10%"))
         self.scaleDefaultAction.setText(self.tr("Set page zoom to 100%"))
@@ -566,6 +588,7 @@ class BrowserWindow(QMainWindow):
         web_tab.loadFinished.connect(self.update_tab_titles)
         web_tab.loadFinished.connect(web_tab.page_load_finished)
         web_tab.loadStarted.connect(self.update_tab_titles)
+        # web_tab.loadStarted.connect(self.player.play)
         web_tab.iconChanged.connect(self.update_tab_titles)
         web_tab.signals.sum_selected_with_ai.connect(self.summarize_selected_with_ai)
         web_tab.signals.sum_page_with_ai.connect(self.summarize_current_page_ai)
@@ -691,7 +714,7 @@ class BrowserWindow(QMainWindow):
             if current_settings["download_warnings"]:
                 warning_dlg = QMessageBox(self)
                 warning_dlg.setWindowTitle(self.tr("Download Request"))
-                warning_dlg.setText(f"{self.tr('Do you really want to download')} \"{download.suggestedFileName()}\"?")
+                warning_dlg.setText(self.tr('Do you really want to download') + ' "' + download.suggestedFileName() + '"?')
                 warning_dlg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
                 warning_dlg.setIcon(QMessageBox.Icon.Warning)
 
@@ -751,7 +774,7 @@ class BrowserWindow(QMainWindow):
                         self.extension_updates = True
             
             if self.extension_updates:
-                print(f"{self.tr('Extension updates: ')}{updateable_extensions}")
+                print(self.tr('Extension updates: ') + str(updateable_extensions))
             
             else:
                 # No updates
@@ -804,6 +827,17 @@ class BrowserWindow(QMainWindow):
 
             if self.bottom_navbar.controls_layout.count() != 0:
                 self.bottom_navbar.setVisible(True)
+    
+    def toggle_fullscreen(self):
+        if self.is_fullscreen:
+            self.showNormal()
+            if self._saved_geometry:
+                self.restoreGeometry(self._saved_geometry)
+            self.is_fullscreen = False
+        else:
+            self._saved_geometry = self.saveGeometry()
+            self.showFullScreen()
+            self.is_fullscreen = True
     
     def toggle_floating_address_bar(self):
         if self.floating_address_bar.isVisible():
@@ -1010,7 +1044,6 @@ class BrowserController(QObject):
         self.window.toggle_extension_sidebar()
     
     def open_download_manager(self):
-        print("Opening download manager...")
         self.window.show_downloads_dialog()
 
     def open_download_menu(self, button):
@@ -1022,6 +1055,9 @@ class BrowserController(QObject):
 
     def toggle_history_manager(self):
         self.window.toggle_history_manager()
+
+    def toggle_fullscreen(self):
+        self.window.toggle_fullscreen()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
