@@ -54,8 +54,9 @@ python3 browser/main.py
 - [x] ~~"Explain selected text with AI"~~
 - [x] ~~Rearrangeable browser interface~~
   - [x] ~~Multiple bar customisation~~
-  - [x] Individual styling of navigation elements (color, icon, size, shape, text)
-  - [ ] Theme import and export
+  - [x] ~~Individual styling of navigation elements (color, icon, size, shape, text)~~
+  - [ ] Theme import and export (WIP)
+  - [ ] Combine general theme settings and the Navigation UI Editor into one universal Theme Editor (WIP)
 - [ ] Reader view
 - [x] ~~Better overview of current downloads so it can't infinitely stack up in the download menu~~
 - [x] ~~Multi-language support~~
