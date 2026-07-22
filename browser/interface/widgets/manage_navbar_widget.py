@@ -19,23 +19,8 @@ from PySide6.QtCore import Qt, QSize
 import qtawesome as qta
 from interface.widgets.color_button import QColorButton
 from interface.widgets.icon_selector import FontAwesomeIconSelectorBtn
-from dataclasses import dataclass, asdict
-
-@dataclass
-class NavigationUIAdditionalStyling:
-    background_color: str | None = None
-    border_radius: int | None = None
-    stretch_factor: int | None = None
-    label: str | None = None
-    icon_color: str | None = None
-
-@dataclass
-class NavigationUIElement:
-    name: str
-    type: str
-    icon: str | None = None
-    action: str = ""
-    styling: NavigationUIAdditionalStyling = None
+from interface.navigation.nav_manager import NavigationUIElement, NavigationUIAdditionalStyling, AVAILABLE_UI_ELEMENTS, resolve_icon
+from dataclasses import asdict
 
 class NavigationUIListItem(QListWidgetItem):
     def __init__(self, data: NavigationUIElement):
@@ -45,12 +30,9 @@ class NavigationUIListItem(QListWidgetItem):
         self.setSizeHint(QSize(40, 25))
         self.setText(self._element.name)
 
-class ManageNavigationUIDialog(QDialog):
+class ManageNavigationUI(QWidget):
     def __init__(self, parent, passed_layout: dict):
         super().__init__(parent)
-
-        self.setWindowFilePath(self.tr("Manage Navigation UI"))
-        self.setFixedSize(600, 400)
 
         self.passed_layout: dict = passed_layout
         self.current_bar = "top"
@@ -59,47 +41,24 @@ class ManageNavigationUIDialog(QDialog):
             "bottom": []
         }
 
-        self.available_ui_elements = [
-            NavigationUIElement("Back Button", "button", "fa6s.arrow-left", "back"),
-            NavigationUIElement("Forward Button", "button", "fa6s.arrow-right", "forward"),
-            NavigationUIElement("Reload Button", "button", "fa6s.rotate-right", "reload"),
-            NavigationUIElement("Bookmark Button", "button", "fa6s.bookmark", "add_bookmark"),
-            NavigationUIElement("Adress Bar", "urlbar", None, "adress_bar"),
-            NavigationUIElement("Search Bar", "searchbar", None, "search_bar"),
-            NavigationUIElement("New Tab Button", "button", "fa6s.plus", "new_tab"),
-            NavigationUIElement("Settings Button", "button", "fa6s.gear", "settings"),
-            NavigationUIElement("Extensions Button", "button", "fa6s.puzzle-piece", "extensions"),
-            NavigationUIElement("Extensions Sidebar Button", "button", "msc.layout-sidebar-left", "extensions_sidebar"),
-            NavigationUIElement("Tab Manager Button", "button", "ri.menu-fill", "tab_manager"),
-            NavigationUIElement("History Button", "button", "fa6s.clock-rotate-left", "history_manager"),
-            NavigationUIElement("Fullscreen Button", "button", "fa6s.up-right-and-down-left-from-center", "fullscreen"),
-            NavigationUIElement("Go Button", "button", "mdi.arrow-right-bold-box", "go"),
-            NavigationUIElement("Download Manager Button", "button", "ei.download", "download_manager"),
-            NavigationUIElement("Zoom in Button", "button", "ph.magnifying-glass-plus", "zoom_in"),
-            NavigationUIElement("Zoom out Button", "button", "ph.magnifying-glass-minus", "zoom_out"),
-            NavigationUIElement("Zoom amount label", "dyn_label", None, "zoom_label"),
-            NavigationUIElement("Webpage Progress bar", "progress_bar", None, "page_progressbar"),
-            NavigationUIElement("Stretch Space", "spacer", None, "stretch"),
-            NavigationUIElement("Clock label", "dyn_label", None, "clock"),
-            NavigationUIElement("Text label", "label", None, "label"),
-        ]
+        self.available_ui_elements = AVAILABLE_UI_ELEMENTS
 
         self.init_ui()
 
-        self._load_passed_layout(self.passed_layout)
-        self._populate_from_layout(self.current_layout["top"])
+        self.load_passed_layout(self.passed_layout)
 
     def _resolve_icon(self, action: str, icon: str | None) -> str | None:
-        if icon:
-            return icon
-        
-        for available in self.available_ui_elements:
-            if available.action == action:
-                return available.icon
-            
-        return None
+        return resolve_icon(action, icon)
     
-    def _load_passed_layout(self, layout):
+    def load_passed_layout(self, layout):
+        if not (isinstance(layout, dict) or isinstance(layout, list)):
+            return 0
+
+        self.current_layout = {
+            "top": [],
+            "bottom": []
+        }
+
         if isinstance(layout, dict):
             top_layout = layout.get("top", None)
             bottom_layout = layout.get("bottom", None)
@@ -114,6 +73,8 @@ class ManageNavigationUIDialog(QDialog):
 
         elif isinstance(layout, list):
             self.current_layout["top"] = [self._dict_to_element(e) for e in layout]
+
+        self._populate_from_layout(self.current_layout["top"])
 
     def _dict_to_element(self, d: dict) -> NavigationUIElement:
         styling_data = d.get("styling")
@@ -131,6 +92,7 @@ class ManageNavigationUIDialog(QDialog):
         )
 
     def _populate_from_layout(self, layout):
+        self.current_ui_elements_list.clear()
         for elem in layout:
             icon = self._resolve_icon(elem.action, elem.icon)
 
@@ -155,15 +117,9 @@ class ManageNavigationUIDialog(QDialog):
     def init_ui(self):
         self.layout = QVBoxLayout(self)
 
-        # Title
-        self.title_label = QLabel(self.tr("Manage Navigation UI"))
-        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 20px")
-        self.layout.addWidget(self.title_label)
-
         # Bar Selector
         self.bar_selector = QComboBox()
-        self.bar_selector.addItems(["Top bar", "Bottom bar"])
+        self.bar_selector.addItems([self.tr("Top bar"), self.tr("Bottom bar")])
         self.bar_selector.currentIndexChanged.connect(self._on_bar_select_changed)
         self.layout.addWidget(self.bar_selector)
 
@@ -225,12 +181,6 @@ class ManageNavigationUIDialog(QDialog):
         controls_layout.addWidget(self.customise_styling_btn)
 
         controls_layout.addStretch()
-
-        # Bottom layout (Save/Cancel buttons)
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-        self.layout.addWidget(self.button_box)
 
     def add_ui_element(self):
         # Get selected item from available_ui_elements_list

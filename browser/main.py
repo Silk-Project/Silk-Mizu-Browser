@@ -69,9 +69,12 @@ current_settings = {}
 default_settings = {
     "start_page_url":START_PAGE_PATH,
     "search_engine":"Google",
-    "theme":"Dark",
-    "accent_color":"#8370EB",
-    "navigation_ui_elements":default_navbar_layout["navigation_ui_elements"],
+    "theme":{
+        "name":"Default",
+        "theme":"dark",
+        "accent_color":"#8370EB",
+        "navigation_ui_layout":default_navbar_layout["navigation_ui_elements"]
+    },
     "download_warnings":True,
     "downloads_path":str(Path.home()) + "/Downloads",
     "language":"en_US",
@@ -134,6 +137,29 @@ def load_config(path, settings_dict, fallback_dict):
 load_config(EXTENSIONS_SETTINGS_PATH, extensions_settings, default_extension_settings)
 load_config(BOOKMARKS_PATH, current_bookmarks, default_bookmarks)
 load_config(CONFIG_PATH, current_settings, default_settings)
+
+def migrate_theme_settings(settings):
+    if isinstance(settings.get("theme"), str):
+        old_theme_mode = settings["theme"].lower()
+        old_accent = settings.pop("accent_color", "#8370EB")
+        old_nav = settings.pop("navigation_ui_elements", default_navbar_layout["navigation_ui_elements"])
+        settings["theme"] = {
+            "name": "Default",
+            "theme": old_theme_mode,
+            "accent_color": old_accent,
+            "navigation_ui_layout": old_nav
+        }
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(settings, f, indent=4)
+    elif isinstance(settings.get("theme"), dict):
+        if "accent_color" in settings:
+            settings["theme"].setdefault("accent_color", settings.pop("accent_color"))
+        if "navigation_ui_elements" in settings:
+            settings["theme"].setdefault("navigation_ui_layout", settings.pop("navigation_ui_elements"))
+        settings.pop("accent_color", None)
+        settings.pop("navigation_ui_elements", None)
+
+migrate_theme_settings(current_settings)
 
 class BrowserWindow(QMainWindow):
     def __init__(self):
@@ -369,7 +395,7 @@ class BrowserWindow(QMainWindow):
         self.bottom_navbar = NavBarManager(self.browser_controller, theme_manager)
         self.layout.addWidget(self.bottom_navbar, 3, 0)
 
-        nav_elements = current_settings.get("navigation_ui_elements")
+        nav_elements = current_settings["theme"].get("navigation_ui_layout", {})
 
         if isinstance(nav_elements, dict):
             top_nav_layout = nav_elements.get("top", [])
@@ -915,13 +941,15 @@ class BrowserWindow(QMainWindow):
         if dlg.exec():
             settings = dlg.get_settings()
 
-            theme_manager.load_theme_from_index(settings["theme_index"])
+            new_theme = settings["theme"]
+            theme_manager.load_theme(new_theme["theme"])
+            theme_manager.set_accent_color(new_theme["accent_color"])
 
             if settings["language"] != current_settings["language"]:
                 self.load_language(NAME_TO_LANGUAGE[settings["language"]])
 
             self.update_web_engine()
-            nav_elements = settings["navigation_ui_elements"]
+            nav_elements = new_theme.get("navigation_ui_layout", {})
 
             if isinstance(nav_elements, dict):
                 top_nav_layout = nav_elements.get("top", [])
@@ -964,14 +992,10 @@ class BrowserWindow(QMainWindow):
             if settings["ai_summarization_enabled"] != current_settings["ai_summarization_enabled"]:
                 self.extension_sidebar.load_extensions(ai_extensions_enabled=settings["ai_summarization_enabled"])
 
-            theme_manager.set_accent_color(settings["accent_color"])
-
             updated_settings = {
                 "start_page_url": settings["start_page_url"],
                 "search_engine": settings["search_engine"],
-                "theme": theme_manager.available_themes[settings["theme_index"]],
-                "accent_color": settings["accent_color"],
-                "navigation_ui_elements": settings["navigation_ui_elements"],
+                "theme": new_theme,
                 "download_warnings": settings["download_warnings"],
                 "downloads_path": settings["downloads_path"],
                 "language": NAME_TO_LANGUAGE[settings["language"]],
@@ -1066,7 +1090,8 @@ if __name__ == "__main__":
     app.setOrganizationName("Silk Project")
 
     # Load theme
-    theme_manager = ThemeManager(app, additional_qss, current_settings.get("accent_color", "#8370EB"), current_settings["theme"])
+    theme_data = current_settings["theme"]
+    theme_manager = ThemeManager(app, additional_qss, theme_data.get("accent_color", "#8370EB"), theme_data["theme"])
 
     # Load extension manager
     extension_manager = ExtensionManager()
