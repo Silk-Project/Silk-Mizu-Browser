@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QHBoxLayout,
 )
+from dataclasses import dataclass
 from interface.navigation.nav_items import (
     AddressBar, 
     BackBtn, 
@@ -24,7 +25,55 @@ from interface.navigation.nav_items import (
     PageProgressBar,
     ClockLabel,
 )
-from interface.dialogs.manage_navbar_dialog import NavigationUIElement, NavigationUIAdditionalStyling
+
+@dataclass
+class NavigationUIAdditionalStyling:
+    background_color: str | None = None
+    border_radius: int | None = None
+    stretch_factor: int | None = None
+    label: str | None = None
+    icon_color: str | None = None
+
+@dataclass
+class NavigationUIElement:
+    name: str
+    type: str
+    icon: str | None = None
+    action: str = ""
+    styling: NavigationUIAdditionalStyling = None
+
+AVAILABLE_UI_ELEMENTS = [
+    NavigationUIElement("Back Button", "button", "fa6s.arrow-left", "back"),
+    NavigationUIElement("Forward Button", "button", "fa6s.arrow-right", "forward"),
+    NavigationUIElement("Reload Button", "button", "fa6s.rotate-right", "reload"),
+    NavigationUIElement("Bookmark Button", "button", "fa6s.bookmark", "add_bookmark"),
+    NavigationUIElement("Adress Bar", "urlbar", None, "adress_bar"),
+    NavigationUIElement("Search Bar", "searchbar", None, "search_bar"),
+    NavigationUIElement("New Tab Button", "button", "fa6s.plus", "new_tab"),
+    NavigationUIElement("Settings Button", "button", "fa6s.gear", "settings"),
+    NavigationUIElement("Extensions Button", "button", "fa6s.puzzle-piece", "extensions"),
+    NavigationUIElement("Extensions Sidebar Button", "button", "msc.layout-sidebar-left", "extensions_sidebar"),
+    NavigationUIElement("Tab Manager Button", "button", "ri.menu-fill", "tab_manager"),
+    NavigationUIElement("History Button", "button", "fa6s.clock-rotate-left", "history_manager"),
+    NavigationUIElement("Fullscreen Button", "button", "fa6s.up-right-and-down-left-from-center", "fullscreen"),
+    NavigationUIElement("Go Button", "button", "mdi.arrow-right-bold-box", "go"),
+    NavigationUIElement("Download Manager Button", "button", "ei.download", "download_manager"),
+    NavigationUIElement("Zoom in Button", "button", "ph.magnifying-glass-plus", "zoom_in"),
+    NavigationUIElement("Zoom out Button", "button", "ph.magnifying-glass-minus", "zoom_out"),
+    NavigationUIElement("Zoom amount label", "dyn_label", None, "zoom_label"),
+    NavigationUIElement("Webpage Progress bar", "progress_bar", None, "page_progressbar"),
+    NavigationUIElement("Stretch Space", "spacer", None, "stretch"),
+    NavigationUIElement("Clock label", "dyn_label", None, "clock"),
+    NavigationUIElement("Text label", "label", None, "label"),
+]
+
+def resolve_icon(action: str, icon: str | None) -> str | None:
+    if icon:
+        return icon
+    for available in AVAILABLE_UI_ELEMENTS:
+        if available.action == action:
+            return available.icon
+    return None
 
 class NavBarManager(QWidget):
     def __init__(self, controller, theme_mgr=None, parent=None):
@@ -76,11 +125,14 @@ class NavBarManager(QWidget):
         else:
             styling = NavigationUIAdditionalStyling()
 
+        action = d.get("action", "")
+        icon = resolve_icon(action, d.get("icon"))
+
         return NavigationUIElement(
             name=d.get("name", ""),
             type=d.get("type", ""),
-            icon=d.get("icon"),
-            action=d.get("action", ""),
+            icon=icon,
+            action=action,
             styling=styling,
         )
 

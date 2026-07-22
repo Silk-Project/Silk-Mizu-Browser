@@ -19,9 +19,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from services.constants import START_PAGE_PATH, NAME_TO_LANGUAGE, LANGUAGE_TO_NAME, SUM_AI_MODEL
-from interface.dialogs.manage_navbar_dialog import ManageNavigationUIDialog
+from interface.dialogs.theme_dialog import ThemeDialog
 from interface.widgets.dir_select_btn import QDirDialogBtn
-from interface.widgets.color_button import QColorButton
 
 
 class SettingsDialog(QDialog):
@@ -30,7 +29,7 @@ class SettingsDialog(QDialog):
         self.parent = parent
         self.theme_manager = theme_manager
         self.current_settings = current_settings
-
+        
         self.setWindowTitle(self.tr("Settings"))
         self.setFixedSize(480, 360)
 
@@ -82,17 +81,9 @@ class SettingsDialog(QDialog):
         display_settings_layout = QFormLayout()
         self.display_settings.setLayout(display_settings_layout)
 
-        self.theme_combobox = QComboBox()
-        self.theme_combobox.addItems([self.tr("Light"), self.tr("Dark"), self.tr("Automatic"), self.tr("Legacy (Native)")])
-        self.theme_combobox.setCurrentIndex(theme_manager.available_themes.index(theme_manager.theme))
-        display_settings_layout.addRow(self.tr("Theme: "), self.theme_combobox)
-
-        self.accent_color_btn = QColorButton(color=current_settings["accent_color"])
-        display_settings_layout.addRow(self.tr("Accent color: "), self.accent_color_btn)
-
-        manage_navigation_ui_btn = QPushButton(self.tr("Manage Navigation UI"))
-        manage_navigation_ui_btn.clicked.connect(self.open_manage_navigation_ui_dialog)
-        display_settings_layout.addRow(self.tr("Navigation UI: "), manage_navigation_ui_btn)
+        manage_theme_btn = QPushButton(self.tr("Manage Theme"))
+        manage_theme_btn.clicked.connect(self.open_manage_theme_dialog)
+        display_settings_layout.addRow(self.tr("Theme: "), manage_theme_btn)
 
         # Security settings
         self.security_settings = QWidget()
@@ -197,18 +188,16 @@ class SettingsDialog(QDialog):
     def _toggle_url_edit(self, enable):
         self.start_page_urledit.setEnabled(enable)
     
-    def open_manage_navigation_ui_dialog(self):
-        dialog = ManageNavigationUIDialog(self, self.current_settings.get("navigation_ui_elements"))
+    def open_manage_theme_dialog(self):
+        dialog = ThemeDialog(parent=self, theme=self.current_settings["theme"])
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.current_settings["navigation_ui_elements"] = dialog.get_current_ui_elements_dict()
+            self.current_settings["theme"] = dialog.get_theme_dict()
 
     def get_settings(self):
         return {
             "start_page_url": self.start_page_urledit.text() if self.start_page_url_radio_button.isChecked() else START_PAGE_PATH,
             "search_engine": self.search_engine_combobox.currentText(),
-            "theme_index": self.theme_combobox.currentIndex(),
-            "accent_color": self.accent_color_btn.color(),
-            "navigation_ui_elements": self.current_settings["navigation_ui_elements"],
+            "theme": self.current_settings["theme"],
             "download_warnings": self.download_warnings_checkbox.isChecked(),
             "downloads_path": self.downloads_path_selector.current_path,
             "language": self.language_select_combobox.currentText(),

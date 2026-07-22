@@ -2,6 +2,13 @@ from PySide6.QtGui import QColor
 import qdarktheme
 import darkdetect
 
+AVAILABLE_THEMES = (
+    "light",
+    "dark",
+    "auto",
+    "legacy"
+)
+
 class ThemeManager():
     def __init__(self, applic, additional_qss, accent_color="#8370EB", theme="dark"):
         self.applic = applic
@@ -10,18 +17,12 @@ class ThemeManager():
         self.custom_colors = {
             "primary": QColor(accent_color).name()
         }
-        self.available_themes = [
-            "light",
-            "dark",
-            "auto",
-            "legacy"
-        ]
         self.load_theme(theme)
 
     def load_theme(self, theme_input):
         theme_input = theme_input.strip().lower()
 
-        if theme_input in self.available_themes:
+        if theme_input in AVAILABLE_THEMES:
             if theme_input != "auto" and theme_input != "legacy":
                 qdarktheme.setup_theme(theme_input, custom_colors=self.custom_colors, additional_qss=self.additional_qss)
 
@@ -37,7 +38,7 @@ class ThemeManager():
             print("Theme not found")
 
     def load_theme_from_index(self, index):
-        theme = self.available_themes[index]
+        theme = [index]
         self.load_theme(theme)
 
     def set_accent_color(self, color: QColor):
