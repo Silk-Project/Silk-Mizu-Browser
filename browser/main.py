@@ -829,6 +829,9 @@ class BrowserWindow(QMainWindow):
     def request_reload_page(self):
         self.web_tabs.currentWidget().reload_page()
 
+    def request_load_page(self, url):
+        self.web_tabs.currentWidget().load_page(url)
+
     # Scaling
     def request_scale_page_up(self):
         self.web_tabs.currentWidget().scale_page_up()
