@@ -56,10 +56,10 @@ from services.constants import (
     SCRIPT_DIR, CONFIG_PATH, BOOKMARKS_PATH, LOGO_PATH, START_PAGE_PATH,
     DOWNLOAD_PATH, EXTENSIONS_PATH, EXTENSIONS_SETTINGS_PATH, ADDITIONAL_QSS_PATH, 
     DEFAULT_NAVBAR_LAYOUT_PATH, SUM_AI_MODEL, VERSION_NUMBER, NAME_TO_LANGUAGE, 
-    LANGUAGE_TO_NAME, NAVIGATION_SOUND_PATH
+    LANGUAGE_TO_NAME, APPLICATION_NAME
 )
 
-STORAGE_PATH = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), "Silk-Mizu-Browser")
+STORAGE_PATH = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), APPLICATION_NAME)
 
 # Get default navigation bar layout
 with open(DEFAULT_NAVBAR_LAYOUT_PATH, "r") as f:
@@ -166,7 +166,7 @@ class BrowserWindow(QMainWindow):
         super().__init__()
 
         # Window configuration
-        self.setWindowTitle("Silk Mizu")
+        self.setWindowTitle("Mizu Browser")
         self.setMinimumSize(480, 360)
         self.resize(960, 720)
         self.is_fullscreen = False
@@ -231,7 +231,7 @@ class BrowserWindow(QMainWindow):
 
         self.exitAction = QAction(self.tr("Quit"), self)
         self.exitAction.triggered.connect(sys.exit)
-        self.exitAction.setShortcut(QKeySequence("Ctrl + q"))
+        self.exitAction.setShortcut(QKeySequence.StandardKey.Quit)
         self.fileMenu.addAction(self.exitAction)
 
         # Edit Menu
@@ -254,80 +254,80 @@ class BrowserWindow(QMainWindow):
 
         self.createNewTabAction = QAction(self.tr("New Tab"), self)
         self.createNewTabAction.triggered.connect(self.create_new_tab)
-        self.createNewTabAction.setShortcut(QKeySequence("Ctrl + t"))
+        self.createNewTabAction.setShortcut(QKeySequence("Ctrl+t"))
         self.editMenu.addAction(self.createNewTabAction)
 
         self.backAction = QAction(self.tr("Back"), self)
         self.backAction.triggered.connect(self.request_back_page)
-        self.backAction.setShortcut(QKeySequence("Alt + left"))
+        self.backAction.setShortcut(QKeySequence("Alt+left"))
         self.editMenu.addAction(self.backAction)
 
         self.nextAction = QAction(self.tr("Next"), self)
         self.nextAction.triggered.connect(self.request_next_page)
-        self.nextAction.setShortcut(QKeySequence("Alt + right"))
+        self.nextAction.setShortcut(QKeySequence("Alt+right"))
         self.editMenu.addAction(self.nextAction)
 
         self.reloadPageAction = QAction(self.tr("Reload current tab"), self)
         self.reloadPageAction.triggered.connect(self.request_reload_page)
-        self.reloadPageAction.setShortcuts(["Ctrl + R", "F5"])
+        self.reloadPageAction.setShortcuts(["Ctrl+R", "F5"])
         self.editMenu.addAction(self.reloadPageAction)
 
         self.removeTabAction = QAction(self.tr("Remove current tab"), self)
         self.removeTabAction.triggered.connect(self.remove_tab_shortcut)
-        self.removeTabAction.setShortcut(QKeySequence("Ctrl + w"))
+        self.removeTabAction.setShortcut(QKeySequence("Ctrl+w"))
         self.editMenu.addAction(self.removeTabAction)
 
         self.moveToNextTabAction = QAction(self.tr("Next tab"), self)
         self.moveToNextTabAction.triggered.connect(self.move_to_next_tab)
-        self.moveToNextTabAction.setShortcut(QKeySequence("Ctrl + Tab"))
+        self.moveToNextTabAction.setShortcut(QKeySequence("Ctrl+Tab"))
         self.editMenu.addAction(self.moveToNextTabAction)
 
         self.moveToPreviousTabAction = QAction(self.tr("Previous tab"), self)
         self.moveToPreviousTabAction.triggered.connect(self.move_to_previous_tab)
-        self.moveToPreviousTabAction.setShortcut(QKeySequence("Ctrl + shift + Tab"))
+        self.moveToPreviousTabAction.setShortcut(QKeySequence("Ctrl+shift+Tab"))
         self.editMenu.addAction(self.moveToPreviousTabAction)
 
         self.editMenu.addSeparator()
 
         self.toggleFloatingBarAction = QAction(self.tr("Toggle address bar"), self)
         self.toggleFloatingBarAction.triggered.connect(self.toggle_floating_address_bar)
-        self.toggleFloatingBarAction.setShortcut(QKeySequence("Ctrl + Space"))
+        self.toggleFloatingBarAction.setShortcut(QKeySequence("Ctrl+Space"))
         self.editMenu.addAction(self.toggleFloatingBarAction)
 
         # View Menu
         self.toggleSidebarAction = QAction(self.tr("Toggle extension sidebar"), self)
         self.toggleSidebarAction.triggered.connect(self.toggle_extension_sidebar)
-        self.toggleSidebarAction.setShortcut(QKeySequence("Ctrl + s"))
+        self.toggleSidebarAction.setShortcut(QKeySequence("Ctrl+s"))
         self.viewMenu.addAction(self.toggleSidebarAction)
 
         self.toggleFocusModeAction = QAction(self.tr("Toggle focus mode"), self)
         self.toggleFocusModeAction.triggered.connect(self.toggle_focus_mode)
-        self.toggleFocusModeAction.setShortcut(QKeySequence("Ctrl + f"))
+        self.toggleFocusModeAction.setShortcut(QKeySequence("Ctrl+f"))
         self.viewMenu.addAction(self.toggleFocusModeAction)
 
         self.toggleFullscreenAction = QAction(self.tr("Toggle fullscreen"), self)
         self.toggleFullscreenAction.triggered.connect(self.toggle_fullscreen)
-        self.toggleFullscreenAction.setShortcut(QKeySequence("F11"))
+        self.toggleFullscreenAction.setShortcut(QKeySequence.StandardKey.FullScreen)
         self.viewMenu.addAction(self.toggleFullscreenAction)
 
         self.toggleTabManagerAction = QAction(self.tr("Toggle tab manager"), self)
         self.toggleTabManagerAction.triggered.connect(self.toggle_tab_manager)
-        self.toggleTabManagerAction.setShortcut(QKeySequence("Ctrl + ."))
+        self.toggleTabManagerAction.setShortcut(QKeySequence("Ctrl+."))
         self.viewMenu.addAction(self.toggleTabManagerAction)
 
         self.toggleHistoryManagerAction = QAction(self.tr("Toggle history manager"), self)
         self.toggleHistoryManagerAction.triggered.connect(self.toggle_history_manager)
-        self.toggleHistoryManagerAction.setShortcut(QKeySequence("Ctrl + h"))
+        self.toggleHistoryManagerAction.setShortcut(QKeySequence("Ctrl+h"))
         self.viewMenu.addAction(self.toggleHistoryManagerAction)
 
         self.scaleUpAction = QAction(self.tr("Increase page zoom by 10%"), self)
         self.scaleUpAction.triggered.connect(self.request_scale_page_up)
-        self.scaleUpAction.setShortcut(QKeySequence("Ctrl + +"))
+        self.scaleUpAction.setShortcut(QKeySequence.StandardKey.ZoomIn)
         self.viewMenu.addAction(self.scaleUpAction)
 
         self.scaleDownAction = QAction(self.tr("Decrease page zoom by 10%"), self)
         self.scaleDownAction.triggered.connect(self.request_scale_page_down)
-        self.scaleDownAction.setShortcut(QKeySequence("Ctrl + -"))
+        self.scaleDownAction.setShortcut(QKeySequence.StandardKey.ZoomOut)
         self.viewMenu.addAction(self.scaleDownAction)
 
         self.scaleDefaultAction = QAction(self.tr("Set page zoom to 100%"), self)
@@ -337,12 +337,12 @@ class BrowserWindow(QMainWindow):
         # Bookmarks Menu
         self.manageBookmarksAction = QAction(self.tr("Manage bookmarks"), self)
         self.manageBookmarksAction.triggered.connect(self.manage_bookmarks_dialog)
-        self.manageBookmarksAction.setShortcut(QKeySequence("Ctrl + shift + o"))
+        self.manageBookmarksAction.setShortcut(QKeySequence("Ctrl+shift+o"))
         self.bookmarkMenu.addAction(self.manageBookmarksAction)
 
         self.addPageToBookmarksAction = QAction(self.tr("Add current page to bookmarks"), self)
         self.addPageToBookmarksAction.triggered.connect(self.add_current_to_bookmarks_dialog)
-        self.addPageToBookmarksAction.setShortcut(QKeySequence("Ctrl + d"))
+        self.addPageToBookmarksAction.setShortcut(QKeySequence("Ctrl+d"))
         self.bookmarkMenu.addAction(self.addPageToBookmarksAction)
 
         # Help Menu
@@ -1085,7 +1085,7 @@ class BrowserController(QObject):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setApplicationName("Silk Mizu")
+    app.setApplicationName("Mizu Browser")
     app.setApplicationVersion(VERSION_NUMBER)
     app.setOrganizationName("Silk Project")
 
@@ -1096,7 +1096,7 @@ if __name__ == "__main__":
     # Load extension manager
     extension_manager = ExtensionManager()
     
-    app.setWindowIcon(QIcon(LOGO_PATH))
+    app.setWindowIcon(QIcon(str(LOGO_PATH.absolute())))
     window = BrowserWindow()
     window.show()
     sys.exit(app.exec())

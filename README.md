@@ -55,18 +55,19 @@ python3 browser/main.py
 - [x] ~~Rearrangeable browser interface~~
   - [x] ~~Multiple bar customisation~~
   - [x] ~~Individual styling of navigation elements (color, icon, size, shape, text)~~
-  - [ ] Theme import and export (WIP)
-  - [ ] Combine general theme settings and the Navigation UI Editor into one universal Theme Editor (WIP)
+  - [x] ~~Theme import and export~~
+  - [x] ~~Combine general theme settings and the Navigation UI Editor into one universal Theme Editor~~
 - [ ] Reader view
 - [x] ~~Better overview of current downloads so it can't infinitely stack up in the download menu~~
 - [x] ~~Multi-language support~~
 - [x] ~~Custom extension store (for the browser itself)~~
   - [x] ~~Widgets (e. g. Notes and additional widgets from the store)~~
     - [ ] Let widgets connect to a Browser Window API
-- [x] URL autocompletion
-- [x] Tab manager
-- [x] Floating Adress Bar
-- [x] Website
+- [x] ~~URL autocompletion~~
+- [x] ~~Tab manager~~
+- [x] ~~Floating Adress Bar~~
+- [x] ~~Website~~
+- [ ] Package application
 
 ## 👥 Contributing
 Feel free to open issues and create pull requests.

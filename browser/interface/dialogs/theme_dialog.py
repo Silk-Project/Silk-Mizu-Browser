@@ -149,7 +149,6 @@ class ThemeDialog(QDialog):
         
         if len(AVAILABLE_THEMES) - 1 >= theme_index:
             self.theme.theme = AVAILABLE_THEMES[theme_index]
-            print(self.theme.theme)
         
         self.theme.accent_color = self.theme_color_widget.accent_color_btn.color()
 
