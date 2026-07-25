@@ -67,6 +67,8 @@ python3 browser/main.py
 - [x] ~~Tab manager~~
 - [x] ~~Floating Adress Bar~~
 - [x] ~~Website~~
+- [ ] Package program for Linux, Windows, macOS and possibly FreeBSD
+- [ ] Improve browser's macOS version (user interface, unnecessary word breaks)
 - [ ] Package application
 
 ## 👥 Contributing
