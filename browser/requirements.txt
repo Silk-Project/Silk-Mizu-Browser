@@ -4,3 +4,4 @@ pyqtdarktheme-fork
 darkdetect
 ollama
 requests
+platformdirs
