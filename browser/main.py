@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import copy
 from pathlib import Path
 import qtawesome as qta
 from PySide6.QtWidgets import (
@@ -24,6 +25,7 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile, QWebEnginePage
 from PySide6.QtGui import QAction, QKeySequence, QIcon
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+from platformdirs import user_downloads_path
 
 # Dialogs
 from interface.dialogs.about_dialog import AboutDialog
@@ -67,7 +69,7 @@ with open(DEFAULT_NAVBAR_LAYOUT_PATH, "r") as f:
 
 current_settings = {}
 default_settings = {
-    "start_page_url":START_PAGE_PATH,
+    "start_page_url":str(START_PAGE_PATH),
     "search_engine":"Google",
     "theme":{
         "name":"Default",
@@ -76,7 +78,7 @@ default_settings = {
         "navigation_ui_layout":default_navbar_layout["navigation_ui_elements"]
     },
     "download_warnings":True,
-    "downloads_path":str(Path.home()) + "/Downloads",
+    "downloads_path":str(user_downloads_path()),
     "language":"en_US",
     "javascript_enabled":True,
     "default_font_size":16,
@@ -103,18 +105,33 @@ if not os.path.exists(EXTENSIONS_PATH):
 with open(ADDITIONAL_QSS_PATH, 'r') as f:
     additional_qss = f.read()
 
-def load_config(path, settings_dict, fallback_dict):
+def load_config(path: Path, settings_dict: dict, fallback_dict: dict):
     if os.path.exists(path):
-        with open(path, "r") as f:
-            d = json.load(f)
         try:
+            with open(path, "r") as f:
+                d = json.load(f)
+
+        except json.JSONDecodeError:
+            print(f"Failed to load {path}. Writing default configuration.")
+
+            with open(path, "w") as f:
+                json.dump(fallback_dict, f, indent=4)
+
+            settings_dict.clear()
+            settings_dict.update(fallback_dict)
+
+            return
+        
+        try:
+            # Load properties from the JSON file to the settings dictionary
             for key, val in d.items():
                 settings_dict[key] = val
 
+            # Add missing properties from the fallback dictionaries if they don't exist
             key_added = False
 
             for key, val in fallback_dict.items():
-                if not key in settings_dict:
+                if not key in settings_dict.keys():
                     settings_dict[key] = val
                     key_added = True
             
@@ -128,8 +145,10 @@ def load_config(path, settings_dict, fallback_dict):
             print(f"Failed to load {os.path.basename(path)}. Using default values.")
     else:
         os.makedirs(os.path.dirname(path), exist_ok=True)
+
         with open(path, "w") as f:
             json.dump(fallback_dict, f, indent=4)
+        
         settings_dict.clear()
         settings_dict.update(fallback_dict)
 
@@ -221,12 +240,13 @@ class BrowserWindow(QMainWindow):
         self.editMenu = menu_bar.addMenu(self.tr("&Edit"))
         self.viewMenu = menu_bar.addMenu(self.tr("&View"))
         self.bookmarkMenu = menu_bar.addMenu(self.tr("&Bookmarks"))
+        self.extensionsMenu = menu_bar.addMenu(self.tr("&Extensions"))
         self.helpMenu = menu_bar.addMenu(self.tr("&Help"))
 
         # File Menu
         self.settingsAction = QAction(self.tr("Program Settings"))
         self.settingsAction.triggered.connect(self.settings_dialog)
-        self.settingsAction.setShortcut(QKeySequence("Ctrl + ,"))
+        self.settingsAction.setShortcut(QKeySequence("Ctrl+,"))
         self.fileMenu.addAction(self.settingsAction)
 
         self.exitAction = QAction(self.tr("Quit"), self)
@@ -269,7 +289,7 @@ class BrowserWindow(QMainWindow):
 
         self.reloadPageAction = QAction(self.tr("Reload current tab"), self)
         self.reloadPageAction.triggered.connect(self.request_reload_page)
-        self.reloadPageAction.setShortcuts(["Ctrl+R", "F5"])
+        self.reloadPageAction.setShortcuts(["Ctrl+r", "F5"])
         self.editMenu.addAction(self.reloadPageAction)
 
         self.removeTabAction = QAction(self.tr("Remove current tab"), self)
@@ -291,7 +311,7 @@ class BrowserWindow(QMainWindow):
 
         self.toggleFloatingBarAction = QAction(self.tr("Toggle address bar"), self)
         self.toggleFloatingBarAction.triggered.connect(self.toggle_floating_address_bar)
-        self.toggleFloatingBarAction.setShortcut(QKeySequence("Ctrl+Space"))
+        self.toggleFloatingBarAction.setShortcut(QKeySequence("Ctrl+y"))
         self.editMenu.addAction(self.toggleFloatingBarAction)
 
         # View Menu
@@ -302,7 +322,7 @@ class BrowserWindow(QMainWindow):
 
         self.toggleFocusModeAction = QAction(self.tr("Toggle focus mode"), self)
         self.toggleFocusModeAction.triggered.connect(self.toggle_focus_mode)
-        self.toggleFocusModeAction.setShortcut(QKeySequence("Ctrl+f"))
+        self.toggleFocusModeAction.setShortcut(QKeySequence("Ctrl+shift+f"))
         self.viewMenu.addAction(self.toggleFocusModeAction)
 
         self.toggleFullscreenAction = QAction(self.tr("Toggle fullscreen"), self)
@@ -344,6 +364,12 @@ class BrowserWindow(QMainWindow):
         self.addPageToBookmarksAction.triggered.connect(self.add_current_to_bookmarks_dialog)
         self.addPageToBookmarksAction.setShortcut(QKeySequence("Ctrl+d"))
         self.bookmarkMenu.addAction(self.addPageToBookmarksAction)
+
+        # Extensions Menu
+        self.manageExtensionsMenu = QAction(self.tr("Manage browser extensions"), self)
+        self.manageExtensionsMenu.triggered.connect(self.web_extension_dialog)
+        self.manageExtensionsMenu.setShortcut(QKeySequence("Ctrl+e"))
+        self.extensionsMenu.addAction(self.manageExtensionsMenu)
 
         # Help Menu
         self.documentationAction = QAction(self.tr("Project Page"), self)
@@ -578,6 +604,8 @@ class BrowserWindow(QMainWindow):
 
             self.web_tabs.removeTab(0)
             tab_widget.deleteLater()
+
+        self.history_manager.persist()
     
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -996,11 +1024,11 @@ class BrowserWindow(QMainWindow):
                 self.extension_sidebar.load_extensions(ai_extensions_enabled=settings["ai_summarization_enabled"])
 
             updated_settings = {
-                "start_page_url": settings["start_page_url"],
+                "start_page_url": str(settings["start_page_url"]),
                 "search_engine": settings["search_engine"],
                 "theme": new_theme,
                 "download_warnings": settings["download_warnings"],
-                "downloads_path": settings["downloads_path"],
+                "downloads_path": str(settings["downloads_path"]),
                 "language": NAME_TO_LANGUAGE[settings["language"]],
                 "javascript_enabled": settings["javascript_enabled"],
                 "default_font_size": settings["default_font_size"],

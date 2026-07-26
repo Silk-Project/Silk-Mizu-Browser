@@ -35,7 +35,8 @@ class BetterWebEngine(QWebEngineView):
     
     def init_engine(self):
         # Check if start page exists
-        start_page_url: str = self.user_settings.get("start_page_url")
+        start_page_url: str = str(self.user_settings.get("start_page_url"))
+        
         if start_page_url:
             # Check if start page is a file
             formatted_start_page = (start_page_url.strip()).split("file:///")
@@ -57,7 +58,7 @@ class BetterWebEngine(QWebEngineView):
 
         else:
             if os.path.exists(START_PAGE_PATH):
-                self.setUrl(QUrl("file://" + START_PAGE_PATH))
+                self.setUrl(QUrl("file://" + str(START_PAGE_PATH)))
                 
             else:
                 self.load_page(SEARCH_ENGINE_SEARCH_QUERIES.get(self.user_settings["search_engine"]))
