@@ -17,7 +17,7 @@ NAVIGATION_SOUND_PATH = SCRIPT_DIR / "assets" / "sounds" / "navigation.wav"
 
 # Metdata / Machine information
 APPLICATION_NAME = "io.github.Silk-Project.Silk-Mizu-Browser"
-VERSION_NUMBER = "0.4.1"
+VERSION_NUMBER = "0.4.11"
 OS_TYPE = platform.system()
 
 # User configs
