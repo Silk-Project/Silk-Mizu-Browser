@@ -50,7 +50,7 @@ class HistoryManager:
             except Exception as e:
                 print(f"Failed to read history: {e}")
     
-    def _persist(self):
+    def persist(self):
         with open(HISTORY_PATH, "w") as f:
             json.dump([asdict(e) | {"visited_at": e.visited_at.isoformat()} for e in self.history], f, indent=4)
     
@@ -61,7 +61,6 @@ class HistoryManager:
                 title=self.browser.title() if self.browser.title() else "",
                 visited_at=datetime.now(timezone.utc),
             ))
-            self._persist()
     
     def get_history(self) -> list[HistoryEntryData]:
         return self.history
