@@ -7,7 +7,6 @@ from services.constants import HISTORY_PATH
 from interface.widgets.better_webengine import BetterWebEngine
 from dataclasses import dataclass, field, asdict
 
-
 @dataclass
 class HistoryEntryData:
     url: str

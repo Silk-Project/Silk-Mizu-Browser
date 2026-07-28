@@ -11,13 +11,10 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QMessageBox,
 )
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
-import qtawesome as qta
 import json
-from interface.widgets.color_button import QColorButton
-from interface.widgets.icon_selector import FontAwesomeIconSelectorBtn
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, field
 from interface.widgets.manage_navbar_widget import ManageNavigationUI
 from interface.widgets.manage_theme_colors_widget import ManageThemeColors
 from interface.navigation.nav_manager import NavigationUIElement

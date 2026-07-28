@@ -1,5 +1,4 @@
 import re
-from datetime import datetime
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -14,7 +13,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 import qtawesome as qta
 from services.history_mgr import HistoryEntryData
-
 
 class HistoryEntryWidget(QWidget):
     selected = Signal(str)
@@ -47,7 +45,6 @@ class HistoryEntryWidget(QWidget):
         del_btn.setToolTip("Delete entry")
         del_btn.clicked.connect(lambda: self.delete_requested.emit(self.entry))
         row.addWidget(del_btn)
-
 
 class HistoryManagerWidget(QWidget):
     history_entry_selected = Signal(str)

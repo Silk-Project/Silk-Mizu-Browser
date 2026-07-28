@@ -5,12 +5,10 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QProgressBar
 )
-from urllib.parse import urlparse
 from PySide6.QtCore import QUrl, QTimer, Qt, QUrl
 from PySide6.QtGui import QKeyEvent
 from datetime import datetime
 from interface.widgets.better_webengine import BetterWebEngine
-from services.history_mgr import HistoryEntryData
 import qtawesome as qta
 
 class AddressBar(QLineEdit):

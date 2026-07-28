@@ -22,7 +22,6 @@ from services.constants import START_PAGE_PATH, NAME_TO_LANGUAGE, LANGUAGE_TO_NA
 from interface.dialogs.theme_dialog import ThemeDialog
 from interface.widgets.dir_select_btn import QDirDialogBtn
 
-
 class SettingsDialog(QDialog):
     def __init__(self, parent, theme_manager, current_settings):
         super().__init__(parent)

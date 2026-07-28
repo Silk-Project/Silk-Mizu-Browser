@@ -1,4 +1,3 @@
-import os
 import sys
 import platform
 from platformdirs import user_config_dir, user_data_dir

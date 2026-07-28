@@ -1,25 +1,9 @@
 from PySide6.QtWidgets import (
-    QDialog,
-    QVBoxLayout,
-    QHBoxLayout,
     QWidget,
-    QPushButton,
-    QListWidget,
-    QLabel,
-    QDialogButtonBox,
-    QSizePolicy,
-    QLineEdit,
-    QListWidgetItem,
     QFormLayout,
-    QSpinBox,
     QComboBox,
-    QProgressBar
 )
-from PySide6.QtCore import Qt, QSize
-import qtawesome as qta
 from interface.widgets.color_button import QColorButton
-from interface.widgets.icon_selector import FontAwesomeIconSelectorBtn
-from dataclasses import dataclass
 from services.theme_mgr import AVAILABLE_THEMES
 
 class ManageThemeColors(QWidget):
