@@ -110,6 +110,10 @@ class MessageBox(QFrame):
         self.color = color
         self.setStyleSheet(f"padding: 4px; border-radius: 16px; background-color: {self.color}")
 
+    def update_content(self, content: str):
+        self.message["content"] = content
+        self.content_textedit.setMarkdown(f"**{self.message.get('role', 'Unknown')}**:\n{content}")
+
     def _copy_message(self):
         pyperclip.copy(self.message.get("content", ""))
         self.copy_btn.setIcon(qta.icon("fa6s.check"))
@@ -187,26 +191,47 @@ class AI_Extension(QWidget):
                 item.widget().deleteLater()
         
         for message in self.messages:
-            color = "#464646"
-
-            if message.get("role") == "User":
-                color = self.theme_manager.custom_colors['primary']
-
-            message_box = MessageBox(
-                message=message,
-                color=color
-            )
-            
-            self.message_container_layout.addWidget(message_box)
+            self.add_message_box(message)
         
         self.message_container_layout.addStretch()
+
+    def add_message_box(self, message) -> MessageBox:
+        color = "#464646"
+
+        if message.get("role") == "User":
+            color = self.theme_manager.custom_colors['primary']
+
+        message_box = MessageBox(
+            message=message,
+            color=color
+        )
+
+        last_item = self.message_container_layout.itemAt(self.message_container_layout.count() - 1)
+        if last_item is not None and last_item.spacerItem() is not None:
+            self.message_container_layout.insertWidget(self.message_container_layout.count() - 1, message_box)
+        else:
+            self.message_container_layout.addWidget(message_box)
+
+        return message_box
+
+    def get_last_message_box(self):
+        layout = self.message_container_layout
+        for i in range(layout.count() - 1, -1, -1):
+            widget = layout.itemAt(i).widget()
+            if isinstance(widget, MessageBox):
+                return widget
+        return None
     
     def handle_chunk(self, chunk) -> None:
         if self.messages and self.messages[-1]['role'] == "AI":
             self.messages[-1]['content'] += chunk
+            message_box = self.get_last_message_box()
+            if message_box is not None:
+                message_box.update_content(self.messages[-1]['content'])
+                return
         else:
             self.messages.append({"role": "AI", "content": chunk})
-        
+
         self.update_output()
     
     def summarization_complete(self) -> None:
