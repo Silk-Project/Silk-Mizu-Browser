@@ -1117,6 +1117,7 @@ if __name__ == "__main__":
     app.setApplicationName("Mizu Browser")
     app.setApplicationVersion(VERSION_NUMBER)
     app.setOrganizationName("Silk Project")
+    app.setWindowIcon(QIcon(str(LOGO_PATH.absolute())))
 
     # Load theme
     theme_data = current_settings["theme"]
@@ -1124,8 +1125,10 @@ if __name__ == "__main__":
 
     # Load extension manager
     extension_manager = ExtensionManager()
-    
-    app.setWindowIcon(QIcon(str(LOGO_PATH.absolute())))
+
     window = BrowserWindow()
+
+    extension_manager.set_browser_controller(window.browser_controller)
+
     window.show()
     sys.exit(app.exec())

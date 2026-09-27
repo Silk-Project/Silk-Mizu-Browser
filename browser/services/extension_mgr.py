@@ -21,7 +21,11 @@ class ExtensionMetadata:
 
 class ExtensionManager():
     def __init__(self):
+        self.controller = None
         self.installed_extensions_data = []
+
+    def set_browser_controller(self, controller):
+        self.controller = controller
 
     def update_extension_list(self):
         self.installed_extensions_data = []
@@ -42,8 +46,8 @@ class ExtensionManager():
         return self.installed_extensions_data
 
 def check_dependencies(deps_list):
-        missing = []
-        for dep in deps_list:
-            if importlib.util.find_spec(dep) is None:
-                missing.append(dep)
-        return missing
+    missing = []
+    for dep in deps_list:
+        if importlib.util.find_spec(dep) is None:
+            missing.append(dep)
+    return missing

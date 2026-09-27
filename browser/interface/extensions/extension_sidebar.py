@@ -75,7 +75,7 @@ class Extension_Sidebar(QWidget):
                 spec.loader.exec_module(module)
                 
                 plugin_class = getattr(module, "MainWidget")
-                plugin_instance = plugin_class()
+                plugin_instance = plugin_class(controller=self.extension_manager.controller)
                 
                 self.rounded_sec_border.addWidget(plugin_instance)
 
