@@ -24,18 +24,15 @@ from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile, QWebE
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 
-# 2. DANACH: Python Standard-Bibliotheken
 import sys
 import os
 import json
 import copy
 from pathlib import Path
 
-# 3. DANACH: Externe Pip-Pakete
 import qtawesome as qta
 from platformdirs import user_downloads_path
 
-# 4. SCHLIESSLICH: Eigene Projekt-Module (Dialoge & Widgets)
 # Dialogs
 from interface.dialogs.about_dialog import AboutDialog
 from interface.dialogs.bookmarks_mgr_dialog import ManageBookmarksDialog
