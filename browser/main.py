@@ -1,9 +1,9 @@
-import sys
-import os
-import json
-import copy
-from pathlib import Path
-import qtawesome as qta
+import PySide6.QtCore
+import PySide6.QtGui
+import PySide6.QtWidgets
+
+from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths, QTimer
+from PySide6.QtGui import QAction, QKeySequence, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -20,11 +20,17 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QMessageBox,
 )
-from PySide6.QtCore import Qt, QUrl, QSize, Slot, Signal, QThreadPool, QRunnable, QObject, QTranslator, QStandardPaths, QTimer
-from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile, QWebEnginePage
-from PySide6.QtGui import QAction, QKeySequence, QIcon
+from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+
+import sys
+import os
+import json
+import copy
+from pathlib import Path
+
+import qtawesome as qta
 from platformdirs import user_downloads_path
 
 # Dialogs
